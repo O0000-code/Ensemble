@@ -2,10 +2,18 @@
 
 /**
  * Check if running in Tauri environment
+ * Tauri 2.x uses __TAURI_INTERNALS__ instead of __TAURI__
  */
 export const isTauri = (): boolean => {
-  return typeof window !== 'undefined' &&
-    (window as unknown as { __TAURI__?: unknown }).__TAURI__ !== undefined;
+  if (typeof window === 'undefined') return false;
+
+  // Tauri 2.x detection
+  if ('__TAURI_INTERNALS__' in window) return true;
+
+  // Tauri 1.x fallback
+  if ('__TAURI__' in window) return true;
+
+  return false;
 };
 
 /**
