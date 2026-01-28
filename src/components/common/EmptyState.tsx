@@ -15,9 +15,9 @@ interface EmptyStateProps {
  *
  * Design specs:
  * - Container: flex column, centered, padding 48px
- * - Icon container: 48x48, color #D4D4D8
+ * - Icon container: 32x32, color #D4D4D8
  * - Title: margin-top 16px, 14px/500, #71717A
- * - Description: margin-top 8px, 12px/normal, #A1A1AA, max-width 280px
+ * - Description: margin-top 8px, 13px/normal, #D4D4D8, max-width 280px
  */
 export const EmptyState: React.FC<EmptyStateProps> = ({
   icon,
@@ -27,8 +27,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 }) => {
   return (
     <div className="flex flex-col items-center justify-center text-center p-12">
-      {/* Icon Container - 48x48, centered */}
-      <div className="w-12 h-12 flex items-center justify-center text-[#D4D4D8]">
+      {/* Icon Container - 32x32, centered */}
+      <div className="w-8 h-8 flex items-center justify-center text-[#D4D4D8]">
         {icon}
       </div>
 
@@ -39,7 +39,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 
       {/* Description */}
       {description && (
-        <p className="mt-2 text-xs font-normal text-[#A1A1AA] max-w-[280px]">
+        <p className="mt-2 text-[13px] font-normal text-[#D4D4D8] max-w-[280px]">
           {description}
         </p>
       )}
