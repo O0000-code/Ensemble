@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { invoke } from '@tauri-apps/api/core';
 import type { AppSettings } from '../types';
+import { isTauri, safeInvoke } from '@/utils/tauri';
 
 // ============================================================================
 // Settings Store
@@ -106,17 +106,28 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
 
   // Actions - Tauri integration
   loadSettings: async () => {
+    // Skip loading in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('Settings: Running in browser mode, using default settings');
+      set({ isLoading: false });
+      return;
+    }
+
     set({ isLoading: true, error: null });
     try {
-      const settings = await invoke<AppSettings>('read_settings');
-      set({
-        skillSourceDir: settings.skillSourceDir,
-        mcpSourceDir: settings.mcpSourceDir,
-        claudeConfigDir: settings.claudeConfigDir,
-        anthropicApiKey: settings.anthropicApiKey || '',
-        autoClassifyNewItems: settings.autoClassifyNewItems,
-        isLoading: false,
-      });
+      const settings = await safeInvoke<AppSettings>('read_settings');
+      if (settings) {
+        set({
+          skillSourceDir: settings.skillSourceDir,
+          mcpSourceDir: settings.mcpSourceDir,
+          claudeConfigDir: settings.claudeConfigDir,
+          anthropicApiKey: settings.anthropicApiKey || '',
+          autoClassifyNewItems: settings.autoClassifyNewItems,
+          isLoading: false,
+        });
+      } else {
+        set({ isLoading: false });
+      }
     } catch (error) {
       const message = typeof error === 'string' ? error : String(error);
       console.error('Failed to load settings:', error);
@@ -125,9 +136,15 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   },
 
   saveSettings: async () => {
+    // Skip saving in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('Settings: Cannot save in browser mode');
+      return;
+    }
+
     const state = get();
     try {
-      await invoke('write_settings', {
+      await safeInvoke('write_settings', {
         settings: {
           skillSourceDir: state.skillSourceDir,
           mcpSourceDir: state.mcpSourceDir,
@@ -144,8 +161,14 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   },
 
   selectDirectory: async (type: 'skill' | 'mcp' | 'claude') => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('Settings: Directory selection not available in browser mode');
+      return;
+    }
+
     try {
-      const path = await invoke<string | null>('select_folder');
+      const path = await safeInvoke<string | null>('select_folder');
       if (path) {
         if (type === 'skill') {
           set({ skillSourceDir: path });

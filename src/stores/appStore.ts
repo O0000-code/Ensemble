@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { invoke } from '@tauri-apps/api/core';
 import { Category, Tag } from '@/types';
+import { isTauri, safeInvoke } from '@/utils/tauri';
 
 interface AppState {
   // Navigation state (frontend-only)
@@ -77,9 +77,17 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Tauri-integrated Actions
   loadCategories: async () => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('AppStore: Cannot load categories in browser mode');
+      return;
+    }
+
     try {
-      const categories = await invoke<Category[]>('get_categories');
-      set({ categories });
+      const categories = await safeInvoke<Category[]>('get_categories');
+      if (categories) {
+        set({ categories });
+      }
     } catch (error) {
       console.error('Failed to load categories:', error);
       const message = typeof error === 'string' ? error : String(error);
@@ -88,9 +96,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   loadTags: async () => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('AppStore: Cannot load tags in browser mode');
+      return;
+    }
+
     try {
-      const tags = await invoke<Tag[]>('get_tags');
-      set({ tags });
+      const tags = await safeInvoke<Tag[]>('get_tags');
+      if (tags) {
+        set({ tags });
+      }
     } catch (error) {
       console.error('Failed to load tags:', error);
       const message = typeof error === 'string' ? error : String(error);
@@ -99,10 +115,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   addCategory: async (name: string, color: string) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('AppStore: Cannot add category in browser mode');
+      throw new Error('Not available in browser mode');
+    }
+
     try {
-      const category = await invoke<Category>('add_category', { name, color });
-      set((state) => ({ categories: [...state.categories, category] }));
-      return category;
+      const category = await safeInvoke<Category>('add_category', { name, color });
+      if (category) {
+        set((state) => ({ categories: [...state.categories, category] }));
+        return category;
+      }
+      throw new Error('Failed to create category');
     } catch (error) {
       console.error('Failed to add category:', error);
       const message = typeof error === 'string' ? error : String(error);
@@ -112,8 +137,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   updateCategory: async (id: string, name?: string, color?: string) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('AppStore: Cannot update category in browser mode');
+      throw new Error('Not available in browser mode');
+    }
+
     try {
-      await invoke('update_category', { id, name, color });
+      await safeInvoke('update_category', { id, name, color });
       set((state) => ({
         categories: state.categories.map((c) =>
           c.id === id
@@ -130,8 +161,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   deleteCategory: async (id: string) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('AppStore: Cannot delete category in browser mode');
+      throw new Error('Not available in browser mode');
+    }
+
     try {
-      await invoke('delete_category', { id });
+      await safeInvoke('delete_category', { id });
       set((state) => ({
         categories: state.categories.filter((c) => c.id !== id),
         activeCategory: state.activeCategory === id ? null : state.activeCategory,
@@ -145,10 +182,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   addTag: async (name: string) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('AppStore: Cannot add tag in browser mode');
+      throw new Error('Not available in browser mode');
+    }
+
     try {
-      const tag = await invoke<Tag>('add_tag', { name });
-      set((state) => ({ tags: [...state.tags, tag] }));
-      return tag;
+      const tag = await safeInvoke<Tag>('add_tag', { name });
+      if (tag) {
+        set((state) => ({ tags: [...state.tags, tag] }));
+        return tag;
+      }
+      throw new Error('Failed to create tag');
     } catch (error) {
       console.error('Failed to add tag:', error);
       const message = typeof error === 'string' ? error : String(error);
@@ -158,8 +204,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   deleteTag: async (id: string) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('AppStore: Cannot delete tag in browser mode');
+      throw new Error('Not available in browser mode');
+    }
+
     try {
-      await invoke('delete_tag', { id });
+      await safeInvoke('delete_tag', { id });
       set((state) => ({
         tags: state.tags.filter((t) => t.id !== id),
         activeTags: state.activeTags.filter((t) => t !== id),
@@ -173,9 +225,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   initApp: async () => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('AppStore: Cannot initialize app in browser mode');
+      set({ isLoading: false });
+      return;
+    }
+
     set({ isLoading: true, error: null });
     try {
-      await invoke('init_app_data');
+      await safeInvoke('init_app_data');
       await Promise.all([
         get().loadCategories(),
         get().loadTags(),

@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { invoke } from '@tauri-apps/api/core';
 import { Scene, Skill, McpServer } from '@/types';
 import { useSkillsStore } from './skillsStore';
 import { useMcpsStore } from './mcpsStore';
+import { isTauri, safeInvoke } from '@/utils/tauri';
 
 // ============================================================================
 // Types
@@ -100,16 +100,29 @@ export const useScenesStore = create<ScenesState>((set, get) => ({
 
   // Tauri Actions
   loadScenes: async () => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('ScenesStore: Cannot load scenes in browser mode');
+      set({ isLoading: false });
+      return;
+    }
+
     set({ isLoading: true, error: null });
     try {
-      const scenes = await invoke<Scene[]>('get_scenes');
-      set({ scenes, isLoading: false });
+      const scenes = await safeInvoke<Scene[]>('get_scenes');
+      set({ scenes: scenes || [], isLoading: false });
     } catch (error) {
       set({ error: String(error), isLoading: false });
     }
   },
 
   createScene: async () => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('ScenesStore: Cannot create scene in browser mode');
+      return null;
+    }
+
     const { createModal } = get();
 
     if (!createModal.name.trim()) {
@@ -117,13 +130,18 @@ export const useScenesStore = create<ScenesState>((set, get) => ({
     }
 
     try {
-      const scene = await invoke<Scene>('add_scene', {
+      const scene = await safeInvoke<Scene>('add_scene', {
         name: createModal.name.trim(),
         description: createModal.description.trim(),
         icon: 'layers',
         skillIds: createModal.selectedSkillIds,
         mcpIds: createModal.selectedMcpIds,
       });
+
+      if (!scene) {
+        set({ error: 'Failed to create scene' });
+        return null;
+      }
 
       set((state) => ({
         scenes: [...state.scenes, scene],
@@ -143,8 +161,14 @@ export const useScenesStore = create<ScenesState>((set, get) => ({
   },
 
   deleteScene: async (id) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('ScenesStore: Cannot delete scene in browser mode');
+      return;
+    }
+
     try {
-      await invoke('delete_scene', { id });
+      await safeInvoke('delete_scene', { id });
       set((state) => ({
         scenes: state.scenes.filter((scene) => scene.id !== id),
         selectedSceneId: state.selectedSceneId === id ? null : state.selectedSceneId,
@@ -157,8 +181,14 @@ export const useScenesStore = create<ScenesState>((set, get) => ({
   },
 
   updateScene: async (id, updates) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('ScenesStore: Cannot update scene in browser mode');
+      return;
+    }
+
     try {
-      await invoke('update_scene', { id, ...updates });
+      await safeInvoke('update_scene', { id, ...updates });
       set((state) => ({
         scenes: state.scenes.map((scene) =>
           scene.id === id ? { ...scene, ...updates } : scene

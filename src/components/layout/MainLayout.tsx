@@ -8,7 +8,8 @@ import { useSkillsStore } from '@/stores/skillsStore';
 import { useMcpsStore } from '@/stores/mcpsStore';
 import { useScenesStore } from '@/stores/scenesStore';
 import { useProjectsStore } from '@/stores/projectsStore';
-import { Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Pencil, Trash2, Loader2, Monitor } from 'lucide-react';
+import { isTauri, BROWSER_MODE_MESSAGE } from '@/utils/tauri';
 import type { Category } from '@/types';
 
 export default function MainLayout() {
@@ -16,6 +17,7 @@ export default function MainLayout() {
   const navigate = useNavigate();
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
+  const [isBrowserMode, setIsBrowserMode] = useState(false);
 
   const {
     activeCategory,
@@ -40,6 +42,14 @@ export default function MainLayout() {
       try {
         setIsInitializing(true);
         setInitError(null);
+
+        // Check if running in Tauri environment
+        if (!isTauri()) {
+          console.warn('Running in browser mode - Tauri API not available');
+          setIsBrowserMode(true);
+          setIsInitializing(false);
+          return;
+        }
 
         // Load settings first (needed by other stores)
         await loadSettings();
@@ -110,6 +120,27 @@ export default function MainLayout() {
         <div className="flex flex-col items-center gap-4">
           <Loader2 size={32} className="animate-spin text-zinc-400" />
           <p className="text-sm text-zinc-500">Loading Ensemble...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show browser mode notice
+  if (isBrowserMode) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-4 max-w-md text-center">
+          <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center">
+            <Monitor size={24} className="text-amber-500" />
+          </div>
+          <h2 className="text-lg font-semibold text-zinc-900">Browser Mode</h2>
+          <p className="text-sm text-zinc-500">{BROWSER_MODE_MESSAGE}</p>
+          <div className="mt-2 p-4 bg-zinc-50 rounded-lg">
+            <code className="text-sm text-zinc-700">npm run tauri dev</code>
+          </div>
+          <p className="text-xs text-zinc-400 mt-2">
+            Ensemble requires Tauri to access the native file system and manage configurations.
+          </p>
         </div>
       </div>
     );

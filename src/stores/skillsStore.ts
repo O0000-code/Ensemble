@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { invoke } from '@tauri-apps/api/core';
 import type { Skill } from '../types';
 import { useSettingsStore } from './settingsStore';
 import { useAppStore } from './appStore';
+import { isTauri, safeInvoke } from '@/utils/tauri';
 
 // Classification types
 interface ClassifyItem {
@@ -87,13 +87,20 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
 
   // Actions
   loadSkills: async () => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('SkillsStore: Cannot load skills in browser mode');
+      set({ isLoading: false });
+      return;
+    }
+
     const { skillSourceDir } = useSettingsStore.getState();
     set({ isLoading: true, error: null });
     try {
-      const skills = await invoke<Skill[]>('scan_skills', {
+      const skills = await safeInvoke<Skill[]>('scan_skills', {
         sourceDir: skillSourceDir,
       });
-      set({ skills, isLoading: false });
+      set({ skills: skills || [], isLoading: false });
     } catch (error) {
       const message = typeof error === 'string' ? error : String(error);
       set({ error: message, isLoading: false });
@@ -105,6 +112,12 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
   selectSkill: (id) => set({ selectedSkillId: id }),
 
   toggleSkill: async (id) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('SkillsStore: Cannot toggle skill in browser mode');
+      return;
+    }
+
     const skill = get().skills.find((s) => s.id === id);
     if (!skill) return;
 
@@ -118,7 +131,7 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
     }));
 
     try {
-      await invoke('update_skill_metadata', {
+      await safeInvoke('update_skill_metadata', {
         skillId: id,
         enabled: newEnabled,
       });
@@ -135,6 +148,12 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
   },
 
   updateSkillCategory: async (id, category) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('SkillsStore: Cannot update skill category in browser mode');
+      return;
+    }
+
     const skill = get().skills.find((s) => s.id === id);
     if (!skill) return;
 
@@ -148,7 +167,7 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
     }));
 
     try {
-      await invoke('update_skill_metadata', {
+      await safeInvoke('update_skill_metadata', {
         skillId: id,
         category,
       });
@@ -165,6 +184,12 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
   },
 
   updateSkillTags: async (id, tags) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('SkillsStore: Cannot update skill tags in browser mode');
+      return;
+    }
+
     const skill = get().skills.find((s) => s.id === id);
     if (!skill) return;
 
@@ -178,7 +203,7 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
     }));
 
     try {
-      await invoke('update_skill_metadata', {
+      await safeInvoke('update_skill_metadata', {
         skillId: id,
         tags,
       });
@@ -204,6 +229,13 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
   clearError: () => set({ error: null }),
 
   autoClassify: async () => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('SkillsStore: Cannot auto-classify in browser mode');
+      set({ error: 'Auto-classification is not available in browser mode' });
+      return;
+    }
+
     const { skills } = get();
     const { anthropicApiKey } = useSettingsStore.getState();
     const { categories, tags } = useAppStore.getState();
@@ -239,12 +271,17 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
       const existingTags = tags.map((t) => t.name);
 
       // Call the classification API
-      const results = await invoke<ClassifyResult[]>('auto_classify', {
+      const results = await safeInvoke<ClassifyResult[]>('auto_classify', {
         items,
         apiKey: anthropicApiKey,
         existingCategories,
         existingTags,
       });
+
+      if (!results) {
+        set({ error: 'Classification failed', isClassifying: false });
+        return;
+      }
 
       // Apply classification results
       for (const result of results) {
@@ -252,7 +289,7 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
         if (skill) {
           // Update category
           if (result.suggested_category && result.suggested_category !== skill.category) {
-            await invoke('update_skill_metadata', {
+            await safeInvoke('update_skill_metadata', {
               skillId: result.id,
               category: result.suggested_category,
             });
@@ -260,7 +297,7 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
           // Update tags
           if (result.suggested_tags.length > 0) {
             const newTags = [...new Set([...skill.tags, ...result.suggested_tags])];
-            await invoke('update_skill_metadata', {
+            await safeInvoke('update_skill_metadata', {
               skillId: result.id,
               tags: newTags,
             });

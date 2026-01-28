@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { invoke } from '@tauri-apps/api/core';
 import { McpServer } from '@/types';
 import { useSettingsStore } from './settingsStore';
+import { isTauri, safeInvoke } from '@/utils/tauri';
 
 interface McpsFilter {
   search: string;
@@ -47,19 +47,32 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
   selectMcp: (id) => set({ selectedMcpId: id }),
 
   loadMcps: async () => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('McpsStore: Cannot load MCPs in browser mode');
+      set({ isLoading: false });
+      return;
+    }
+
     const { mcpSourceDir } = useSettingsStore.getState();
     set({ isLoading: true, error: null });
     try {
-      const mcpServers = await invoke<McpServer[]>('scan_mcps', {
+      const mcpServers = await safeInvoke<McpServer[]>('scan_mcps', {
         sourceDir: mcpSourceDir,
       });
-      set({ mcpServers, isLoading: false });
+      set({ mcpServers: mcpServers || [], isLoading: false });
     } catch (error) {
       set({ error: String(error), isLoading: false });
     }
   },
 
   toggleMcp: async (id) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('McpsStore: Cannot toggle MCP in browser mode');
+      return;
+    }
+
     const mcp = get().mcpServers.find((m) => m.id === id);
     if (!mcp) return;
 
@@ -71,7 +84,7 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
     }));
 
     try {
-      await invoke('update_mcp_metadata', {
+      await safeInvoke('update_mcp_metadata', {
         mcpId: id,
         enabled: !mcp.enabled,
       });
@@ -87,8 +100,14 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
   },
 
   updateMcpCategory: async (id, category) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('McpsStore: Cannot update MCP category in browser mode');
+      return;
+    }
+
     try {
-      await invoke('update_mcp_metadata', {
+      await safeInvoke('update_mcp_metadata', {
         mcpId: id,
         category,
       });
@@ -103,8 +122,14 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
   },
 
   updateMcpTags: async (id, tags) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('McpsStore: Cannot update MCP tags in browser mode');
+      return;
+    }
+
     try {
-      await invoke('update_mcp_metadata', {
+      await safeInvoke('update_mcp_metadata', {
         mcpId: id,
         tags,
       });

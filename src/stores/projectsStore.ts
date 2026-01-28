@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { invoke } from '@tauri-apps/api/core';
 import type { Project, Scene } from '../types';
 import { useScenesStore } from './scenesStore';
 import { useSettingsStore } from './settingsStore';
+import { isTauri, safeInvoke } from '@/utils/tauri';
 
 // ============================================================================
 // Types
@@ -117,25 +117,42 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
 
   // Tauri Actions
   loadProjects: async () => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('ProjectsStore: Cannot load projects in browser mode');
+      set({ isLoading: false });
+      return;
+    }
+
     set({ isLoading: true, error: null });
     try {
-      const projects = await invoke<Project[]>('get_projects');
-      set({ projects, isLoading: false });
+      const projects = await safeInvoke<Project[]>('get_projects');
+      set({ projects: projects || [], isLoading: false });
     } catch (error) {
       set({ error: String(error), isLoading: false });
     }
   },
 
   createProject: async () => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('ProjectsStore: Cannot create project in browser mode');
+      return;
+    }
+
     const { newProject } = get();
     if (!newProject.name || !newProject.path) return;
 
     try {
-      const project = await invoke<Project>('add_project', {
+      const project = await safeInvoke<Project>('add_project', {
         name: newProject.name,
         path: newProject.path,
         sceneId: newProject.sceneId,
       });
+      if (!project) {
+        set({ error: 'Failed to create project' });
+        return;
+      }
       set((state) => ({
         projects: [...state.projects, project],
         isCreating: false,
@@ -154,8 +171,14 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   },
 
   updateProject: async (id, data) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('ProjectsStore: Cannot update project in browser mode');
+      return;
+    }
+
     try {
-      await invoke('update_project', { id, ...data });
+      await safeInvoke('update_project', { id, ...data });
       set((state) => ({
         projects: state.projects.map((p) =>
           p.id === id ? { ...p, ...data } : p
@@ -168,6 +191,12 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   },
 
   syncProject: async (id) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('ProjectsStore: Cannot sync project in browser mode');
+      return;
+    }
+
     const project = get().projects.find((p) => p.id === id);
     if (!project) return;
 
@@ -181,7 +210,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
 
     set({ syncingProjectId: id, error: null });
     try {
-      await invoke('sync_project_config', {
+      await safeInvoke('sync_project_config', {
         projectPath: project.path,
         skillIds: scene.skillIds,
         mcpIds: scene.mcpIds,
@@ -191,7 +220,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
 
       // Update lastSynced
       const now = new Date().toISOString();
-      await invoke('update_project', { id, lastSynced: now });
+      await safeInvoke('update_project', { id, lastSynced: now });
 
       set((state) => ({
         projects: state.projects.map((p) =>
@@ -206,14 +235,20 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   },
 
   clearProjectConfig: async (id) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('ProjectsStore: Cannot clear project config in browser mode');
+      return;
+    }
+
     const project = get().projects.find((p) => p.id === id);
     if (!project) return;
 
     try {
-      await invoke('clear_project_config', { projectPath: project.path });
+      await safeInvoke('clear_project_config', { projectPath: project.path });
 
       // Clear lastSynced
-      await invoke('update_project', { id, lastSynced: null });
+      await safeInvoke('update_project', { id, lastSynced: null });
 
       set((state) => ({
         projects: state.projects.map((p) =>
@@ -227,8 +262,14 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   },
 
   selectProjectFolder: async () => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('ProjectsStore: Cannot select folder in browser mode');
+      return;
+    }
+
     try {
-      const path = await invoke<string | null>('select_folder');
+      const path = await safeInvoke<string | null>('select_folder');
       if (path) {
         set((state) => ({
           newProject: { ...state.newProject, path },
@@ -240,8 +281,14 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   },
 
   deleteProject: async (id) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('ProjectsStore: Cannot delete project in browser mode');
+      return;
+    }
+
     try {
-      await invoke('delete_project', { id });
+      await safeInvoke('delete_project', { id });
       set((state) => ({
         projects: state.projects.filter((p) => p.id !== id),
         selectedProjectId:
