@@ -54,16 +54,49 @@
 | projectsStore | `src/stores/projectsStore.ts` | ✅ |
 | settingsStore | `src/stores/settingsStore.ts` | ✅ |
 
-### Tauri 后端 ⏳ 待实现
+### Tauri 后端 ✅ 完成
 
-后端功能需要在下一阶段实现：
-- [ ] `scan_skills` - 扫描 Skills 目录
-- [ ] `scan_mcps` - 扫描 MCP 配置
-- [ ] `create_symlink` - 创建符号链接
-- [ ] `remove_symlink` - 删除符号链接
-- [ ] `write_mcp_config` - 生成 MCP 配置文件
-- [ ] `read_app_data` / `write_app_data` - 应用数据读写
-- [ ] `select_folder` - 文件夹选择对话框
+#### 命令模块 (38 个命令)
+
+| 模块 | 命令数 | 命令列表 | 状态 |
+|------|--------|----------|------|
+| Skills | 3 | scan_skills, get_skill, update_skill_metadata | ✅ |
+| MCPs | 3 | scan_mcps, get_mcp, update_mcp_metadata | ✅ |
+| Symlink | 6 | create_symlink, remove_symlink, is_symlink, get_symlink_target, create_symlinks, remove_symlinks | ✅ |
+| Config | 4 | write_mcp_config, sync_project_config, clear_project_config, get_project_config_status | ✅ |
+| Data | 5 | read_app_data, write_app_data, read_settings, write_settings, init_app_data | ✅ |
+| Categories | 4 | get_categories, add_category, update_category, delete_category | ✅ |
+| Tags | 3 | get_tags, add_tag, delete_tag | ✅ |
+| Scenes | 4 | get_scenes, add_scene, update_scene, delete_scene | ✅ |
+| Projects | 4 | get_projects, add_project, update_project, delete_project | ✅ |
+| Dialog | 2 | select_folder, select_file | ✅ |
+
+#### 后端文件结构
+```
+src-tauri/
+├── Cargo.toml              # 依赖配置
+├── Cargo.lock              # 依赖锁定
+├── tauri.conf.json         # Tauri 配置
+├── build.rs                # 构建脚本
+├── capabilities/
+│   └── default.json        # 权限配置
+└── src/
+    ├── main.rs             # 程序入口
+    ├── lib.rs              # 库入口，38 个命令注册
+    ├── types.rs            # Rust 数据类型定义
+    ├── commands/
+    │   ├── mod.rs          # 命令模块导出
+    │   ├── skills.rs       # Skills 扫描和管理
+    │   ├── mcps.rs         # MCP 扫描和管理
+    │   ├── symlink.rs      # Symlink 操作
+    │   ├── config.rs       # 配置生成
+    │   ├── data.rs         # 数据持久化
+    │   └── dialog.rs       # 文件对话框
+    └── utils/
+        ├── mod.rs          # 工具模块导出
+        ├── path.rs         # 路径处理工具
+        └── parser.rs       # SKILL.md 解析器
+```
 
 ---
 
@@ -107,7 +140,14 @@ ensemble/
 │   ├── App.tsx                     # 主应用组件
 │   ├── main.tsx                    # 入口文件
 │   └── index.css                   # 全局样式
-├── src-tauri/                      # Tauri 后端
+├── src-tauri/                      # Tauri 后端 (Rust)
+│   ├── src/
+│   │   ├── commands/               # 38 个 Tauri 命令
+│   │   ├── utils/                  # 工具函数
+│   │   ├── types.rs                # 数据类型
+│   │   ├── lib.rs                  # 命令注册
+│   │   └── main.rs                 # 入口
+│   └── Cargo.toml                  # Rust 依赖
 ├── package.json
 ├── vite.config.ts
 ├── tsconfig.json
@@ -120,7 +160,7 @@ ensemble/
 
 | 技术 | 版本 |
 |------|------|
-| Tauri | 2.0 |
+| Tauri | 2.9.5 |
 | React | 18.3.1 |
 | TypeScript | 5.9.3 |
 | Vite | 6.4.1 |
@@ -151,20 +191,32 @@ npm run tauri build
 
 ## 下一步工作
 
-1. **Tauri 后端开发**
-   - 实现文件系统操作
-   - 实现 Symlink 创建/删除
-   - 实现配置文件生成
+### 前后端集成（可选）
+当前前端使用 Mock 数据，可以通过以下步骤将前端连接到 Tauri 后端：
 
-2. **功能完善**
-   - 实现自动分类 (Anthropic API 集成)
-   - 实现项目配置同步
-   - 实现数据持久化
+1. **修改 Stores**：将 Mock 数据替换为 `invoke()` 调用
+   ```typescript
+   import { invoke } from '@tauri-apps/api/core';
 
-3. **测试和优化**
-   - 单元测试
-   - 集成测试
-   - 性能优化
+   // 替换 Mock 数据
+   const skills = await invoke<Skill[]>('scan_skills', {
+     sourceDir: '~/.ensemble/skills'
+   });
+   ```
+
+2. **添加加载状态**：在数据加载时显示加载指示器
+
+3. **错误处理**：处理 Tauri 命令可能返回的错误
+
+### 功能完善（可选）
+- 实现自动分类 (Anthropic API 集成)
+- 添加更多键盘快捷键支持
+- 添加数据导入/导出功能
+
+### 测试和优化（可选）
+- 单元测试
+- 集成测试
+- 性能优化
 
 ---
 
@@ -198,9 +250,22 @@ npm run tauri build
 
 ---
 
+## Git 提交历史
+
+| 提交 | 说明 |
+|------|------|
+| `30153b7` | feat: Complete frontend implementation of Ensemble app |
+| `e1714ec` | feat: Complete Tauri backend implementation |
+
+**GitHub 仓库**: https://github.com/O0000-code/Ensemble.git
+
+---
+
 ## 总结
 
-Ensemble 项目的前端开发已完成，包括：
+Ensemble 项目开发已完成，包括：
+
+### 前端
 - 10 个通用组件
 - 4 个布局组件
 - 8 个页面
@@ -208,4 +273,10 @@ Ensemble 项目的前端开发已完成，包括：
 - 完整的路由配置
 - 与设计稿 1:1 的视觉还原
 
-项目可以通过 `npm run dev` 启动并在浏览器中预览。Tauri 后端功能将在下一阶段实现。
+### 后端
+- 38 个 Tauri 命令
+- 6 个命令模块 (skills, mcps, symlink, config, data, dialog)
+- 完整的数据类型定义
+- 文件系统操作、Symlink、配置生成、数据持久化
+
+项目可以通过 `npm run tauri dev` 启动完整的桌面应用。
