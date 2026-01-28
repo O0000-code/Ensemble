@@ -121,7 +121,7 @@ function formatRelativeTime(dateString?: string): string {
 // ============================================================================
 
 export function SkillDetailPage() {
-  const { skillId } = useParams<{ skillId: string }>();
+  const { skillId: encodedSkillId } = useParams<{ skillId: string }>();
   const navigate = useNavigate();
   const {
     filter,
@@ -134,11 +134,14 @@ export function SkillDetailPage() {
     getSelectedSkill,
   } = useSkillsStore();
 
+  // Decode the URL-encoded skill ID
+  const skillId = encodedSkillId ? decodeURIComponent(encodedSkillId) : null;
+
   const filteredSkills = getFilteredSkills();
   const enabledCount = getEnabledCount();
   const selectedSkill = getSelectedSkill();
 
-  // Sync URL param with store selection
+  // Sync URL param with store selection (useEffect is the correct place for side effects)
   useEffect(() => {
     if (skillId) {
       selectSkill(skillId);
@@ -151,7 +154,7 @@ export function SkillDetailPage() {
 
   const handleSkillClick = (id: string) => {
     selectSkill(id);
-    navigate(`/skills/${id}`);
+    navigate(`/skills/${encodeURIComponent(id)}`);
   };
 
   const handleToggle = (id: string) => {
@@ -274,7 +277,7 @@ export function SkillDetailPage() {
         <div className="flex items-center gap-3">
           <span className="text-[11px] font-medium text-[#71717A]">Tags</span>
           <div className="flex flex-wrap items-center gap-2">
-            {selectedSkill.tags.map((tag) => (
+            {selectedSkill?.tags?.map((tag) => (
               <span
                 key={tag}
                 className="flex items-center gap-1.5 rounded-md border border-[#E5E5E5] px-2.5 py-1.5"

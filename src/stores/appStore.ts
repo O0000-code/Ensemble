@@ -23,6 +23,14 @@ interface AppState {
   isLoading: boolean;
   error: string | null;
 
+  // Editing state - Categories
+  editingCategoryId: string | null;
+  isAddingCategory: boolean;
+
+  // Editing state - Tags
+  editingTagId: string | null;
+  isAddingTag: boolean;
+
   // Frontend-only Actions
   setActiveCategory: (categoryId: string | null) => void;
   toggleActiveTag: (tagId: string) => void;
@@ -40,8 +48,20 @@ interface AppState {
   updateCategory: (id: string, name?: string, color?: string) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
   addTag: (name: string) => Promise<Tag>;
+  updateTag: (id: string, name: string) => Promise<void>;
   deleteTag: (id: string) => Promise<void>;
   initApp: () => Promise<void>;
+
+  // Editing state Actions
+  clearAllEditingStates: () => void;
+  startEditingCategory: (id: string) => void;
+  stopEditingCategory: () => void;
+  startAddingCategory: () => void;
+  stopAddingCategory: () => void;
+  startEditingTag: (id: string) => void;
+  stopEditingTag: () => void;
+  startAddingTag: () => void;
+  stopAddingTag: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -58,6 +78,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   isLoading: false,
   error: null,
+
+  // Editing state initial values
+  editingCategoryId: null,
+  isAddingCategory: false,
+  editingTagId: null,
+  isAddingTag: false,
 
   // Frontend-only Actions
   setActiveCategory: (categoryId) => set({ activeCategory: categoryId }),
@@ -224,6 +250,28 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
+  updateTag: async (id: string, name: string) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('AppStore: Cannot update tag in browser mode');
+      throw new Error('Not available in browser mode');
+    }
+
+    try {
+      await safeInvoke('update_tag', { id, name });
+      set((state) => ({
+        tags: state.tags.map((t) =>
+          t.id === id ? { ...t, name } : t
+        ),
+      }));
+    } catch (error) {
+      console.error('Failed to update tag:', error);
+      const message = typeof error === 'string' ? error : String(error);
+      set({ error: message });
+      throw error;
+    }
+  },
+
   initApp: async () => {
     // Skip in non-Tauri environment
     if (!isTauri()) {
@@ -246,4 +294,42 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ error: message, isLoading: false });
     }
   },
+
+  // Editing state Actions - Clear all (for mutual exclusion)
+  clearAllEditingStates: () => set({
+    editingCategoryId: null,
+    isAddingCategory: false,
+    editingTagId: null,
+    isAddingTag: false,
+  }),
+
+  // Category editing state Actions
+  startEditingCategory: (id: string) => {
+    get().clearAllEditingStates();
+    set({ editingCategoryId: id });
+  },
+
+  stopEditingCategory: () => set({ editingCategoryId: null }),
+
+  startAddingCategory: () => {
+    get().clearAllEditingStates();
+    set({ isAddingCategory: true });
+  },
+
+  stopAddingCategory: () => set({ isAddingCategory: false }),
+
+  // Tag editing state Actions
+  startEditingTag: (id: string) => {
+    get().clearAllEditingStates();
+    set({ editingTagId: id });
+  },
+
+  stopEditingTag: () => set({ editingTagId: null }),
+
+  startAddingTag: () => {
+    get().clearAllEditingStates();
+    set({ isAddingTag: true });
+  },
+
+  stopAddingTag: () => set({ isAddingTag: false }),
 }));

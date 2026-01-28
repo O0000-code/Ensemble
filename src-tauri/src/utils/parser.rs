@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_assignments)]
+
 use std::collections::HashMap;
 
 /// Parsed SKILL.md frontmatter

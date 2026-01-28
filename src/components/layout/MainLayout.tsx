@@ -10,7 +10,8 @@ import { useScenesStore } from '@/stores/scenesStore';
 import { useProjectsStore } from '@/stores/projectsStore';
 import { Pencil, Trash2, Loader2 } from 'lucide-react';
 import { isTauri } from '@/utils/tauri';
-import type { Category } from '@/types';
+import { ErrorBoundary } from '../common/ErrorBoundary';
+import type { Category, Tag } from '@/types';
 
 export default function MainLayout() {
   const location = useLocation();
@@ -27,6 +28,27 @@ export default function MainLayout() {
     setActiveCategory,
     toggleActiveTag,
     initApp,
+    // Editing state
+    editingCategoryId,
+    isAddingCategory,
+    editingTagId,
+    isAddingTag,
+    // Editing actions
+    startEditingCategory,
+    stopEditingCategory,
+    startAddingCategory,
+    stopAddingCategory,
+    startEditingTag,
+    stopEditingTag,
+    startAddingTag,
+    stopAddingTag,
+    // CRUD actions
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    addTag,
+    updateTag,
+    deleteTag,
   } = useAppStore();
 
   const { loadSettings } = useSettingsStore();
@@ -74,9 +96,15 @@ export default function MainLayout() {
     initialize();
   }, []);
 
-  // Context menu state
+  // Context menu state - Category
   const [contextMenu, setContextMenu] = useState<{
     category: Category;
+    position: { x: number; y: number };
+  } | null>(null);
+
+  // Context menu state - Tag
+  const [tagContextMenu, setTagContextMenu] = useState<{
+    tag: Tag;
     position: { x: number; y: number };
   } | null>(null);
 
@@ -99,16 +127,104 @@ export default function MainLayout() {
     setContextMenu({ category, position });
   };
 
+  // Category handlers
+  const handleAddCategory = () => {
+    startAddingCategory();
+  };
+
+  const handleCategoryDoubleClick = (categoryId: string) => {
+    startEditingCategory(categoryId);
+  };
+
+  const handleCategorySave = async (id: string | null, name: string) => {
+    try {
+      if (id) {
+        // Edit mode
+        await updateCategory(id, name);
+      } else {
+        // Add mode - use default color
+        await addCategory(name, '#A1A1AA');
+      }
+      stopEditingCategory();
+      stopAddingCategory();
+    } catch (error) {
+      console.error('Failed to save category:', error);
+    }
+  };
+
+  const handleCategoryEditCancel = () => {
+    stopEditingCategory();
+    stopAddingCategory();
+  };
+
   const handleRenameCategory = () => {
-    // TODO: Implement rename modal
-    console.log('Rename category:', contextMenu?.category);
+    if (contextMenu?.category) {
+      startEditingCategory(contextMenu.category.id);
+    }
     setContextMenu(null);
   };
 
-  const handleDeleteCategory = () => {
-    // TODO: Implement delete confirmation
-    console.log('Delete category:', contextMenu?.category);
+  const handleDeleteCategory = async () => {
+    if (contextMenu?.category) {
+      try {
+        await deleteCategory(contextMenu.category.id);
+      } catch (error) {
+        console.error('Failed to delete category:', error);
+      }
+    }
     setContextMenu(null);
+  };
+
+  // Tag handlers
+  const handleAddTag = () => {
+    startAddingTag();
+  };
+
+  const handleTagDoubleClick = (tagId: string) => {
+    startEditingTag(tagId);
+  };
+
+  const handleTagContextMenu = (tag: Tag, position: { x: number; y: number }) => {
+    setTagContextMenu({ tag, position });
+  };
+
+  const handleRenameTag = () => {
+    if (tagContextMenu?.tag) {
+      startEditingTag(tagContextMenu.tag.id);
+    }
+    setTagContextMenu(null);
+  };
+
+  const handleDeleteTag = async () => {
+    if (tagContextMenu?.tag) {
+      try {
+        await deleteTag(tagContextMenu.tag.id);
+      } catch (error) {
+        console.error('Failed to delete tag:', error);
+      }
+    }
+    setTagContextMenu(null);
+  };
+
+  const handleTagSave = async (id: string | null, name: string) => {
+    try {
+      if (id) {
+        // Edit mode
+        await updateTag(id, name);
+      } else {
+        // Add mode
+        await addTag(name);
+      }
+      stopEditingTag();
+      stopAddingTag();
+    } catch (error) {
+      console.error('Failed to save tag:', error);
+    }
+  };
+
+  const handleTagEditCancel = () => {
+    stopEditingTag();
+    stopAddingTag();
   };
 
   // Show loading state during initialization
@@ -167,11 +283,27 @@ export default function MainLayout() {
           onCategoryChange={setActiveCategory}
           onTagToggle={toggleActiveTag}
           onCategoryContextMenu={handleCategoryContextMenu}
+          // Add/Edit handlers
+          onAddCategory={handleAddCategory}
+          onAddTag={handleAddTag}
+          editingCategoryId={editingCategoryId}
+          isAddingCategory={isAddingCategory}
+          editingTagId={editingTagId}
+          isAddingTag={isAddingTag}
+          onCategoryDoubleClick={handleCategoryDoubleClick}
+          onCategorySave={handleCategorySave}
+          onCategoryEditCancel={handleCategoryEditCancel}
+          onTagDoubleClick={handleTagDoubleClick}
+          onTagContextMenu={handleTagContextMenu}
+          onTagSave={handleTagSave}
+          onTagEditCancel={handleTagEditCancel}
         />
 
         {/* Main Content */}
         <main className="flex-1 overflow-hidden flex flex-col">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
 
@@ -193,6 +325,27 @@ export default function MainLayout() {
           ]}
           position={contextMenu.position}
           onClose={() => setContextMenu(null)}
+        />
+      )}
+
+      {/* Tag Context Menu */}
+      {tagContextMenu && (
+        <ContextMenu
+          items={[
+            {
+              label: 'Rename',
+              icon: <Pencil size={14} />,
+              onClick: handleRenameTag,
+            },
+            {
+              label: 'Delete',
+              icon: <Trash2 size={14} />,
+              onClick: handleDeleteTag,
+              danger: true,
+            },
+          ]}
+          position={tagContextMenu.position}
+          onClose={() => setTagContextMenu(null)}
         />
       )}
     </div>

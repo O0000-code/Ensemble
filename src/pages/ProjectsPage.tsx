@@ -41,6 +41,7 @@ export function ProjectsPage() {
     updateProject,
     syncProject,
     clearProjectConfig,
+    selectProjectFolder,
   } = useProjectsStore();
 
   // Get scenes from scenesStore
@@ -204,10 +205,7 @@ export function ProjectsPage() {
       onFormChange={updateNewProject}
       onSave={createProject}
       onCancel={cancelCreating}
-      onBrowse={() => {
-        // In Electron: would open file dialog
-        console.log('Browse for folder');
-      }}
+      onBrowse={selectProjectFolder}
     />
   ) : selectedProject ? (
     <ProjectConfigPanel

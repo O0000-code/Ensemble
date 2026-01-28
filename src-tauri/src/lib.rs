@@ -54,6 +54,7 @@ pub fn run() {
             // Tags
             data::get_tags,
             data::add_tag,
+            data::update_tag,
             data::delete_tag,
             // Scenes
             data::get_scenes,

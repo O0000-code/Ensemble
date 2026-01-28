@@ -162,36 +162,21 @@ export function SettingsPage() {
     anthropicApiKey,
     autoClassifyNewItems,
     stats,
-    setSkillSourceDir,
-    setMcpSourceDir,
-    setClaudeConfigDir,
     setAnthropicApiKey,
     setAutoClassifyNewItems,
     getMaskedApiKey,
     hasApiKey,
+    selectDirectory,
   } = useSettingsStore();
 
-  // Handlers for directory changes (would trigger native file picker in real app)
   const handleChangeDir = (type: 'skills' | 'mcp' | 'claude') => {
-    // In a real app, this would open a native directory picker
-    // For now, we'll just log the action
-    console.log(`Change ${type} directory requested`);
-
-    // Simulate directory selection for demo
-    const newPath = prompt(`Enter new ${type} directory path:`);
-    if (newPath) {
-      switch (type) {
-        case 'skills':
-          setSkillSourceDir(newPath);
-          break;
-        case 'mcp':
-          setMcpSourceDir(newPath);
-          break;
-        case 'claude':
-          setClaudeConfigDir(newPath);
-          break;
-      }
-    }
+    // Map from page type names to store type names
+    const typeMap: Record<string, 'skill' | 'mcp' | 'claude'> = {
+      skills: 'skill',
+      mcp: 'mcp',
+      claude: 'claude',
+    };
+    selectDirectory(typeMap[type]);
   };
 
   return (

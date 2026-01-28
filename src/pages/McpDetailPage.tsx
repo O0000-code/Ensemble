@@ -66,7 +66,7 @@ const mockScenes = [
  * - Used in Scenes
  */
 export const McpDetailPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id: encodedId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const {
     filter,
@@ -78,11 +78,14 @@ export const McpDetailPage: React.FC = () => {
     getSelectedMcp,
   } = useMcpsStore();
 
+  // Decode the URL-encoded MCP ID
+  const id = encodedId ? decodeURIComponent(encodedId) : null;
+
   const filteredMcps = getFilteredMcps();
   const enabledCount = getEnabledCount();
   const selectedMcp = getSelectedMcp();
 
-  // Update selected MCP when URL changes
+  // Sync URL param with store selection (useEffect is the correct place for side effects)
   useEffect(() => {
     if (id) {
       selectMcp(id);
@@ -94,7 +97,7 @@ export const McpDetailPage: React.FC = () => {
   };
 
   const handleMcpClick = (mcpId: string) => {
-    navigate(`/mcp-servers/${mcpId}`);
+    navigate(`/mcp-servers/${encodeURIComponent(mcpId)}`);
   };
 
   const handleToggle = (mcpId: string) => {
@@ -186,7 +189,7 @@ export const McpDetailPage: React.FC = () => {
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-medium text-[#71717A]">Tools</span>
             <span className="text-[13px] font-medium text-[#18181B]">
-              {selectedMcp.providedTools.length} available
+              {selectedMcp?.providedTools?.length ?? 0} available
             </span>
           </div>
           <div className="flex flex-col gap-1">
@@ -194,7 +197,7 @@ export const McpDetailPage: React.FC = () => {
               Total Calls
             </span>
             <span className="text-[13px] font-medium text-[#18181B]">
-              {selectedMcp.usageCount.toLocaleString()}
+              {selectedMcp?.usageCount?.toLocaleString()}
             </span>
           </div>
           <div className="flex flex-col gap-1">
@@ -210,7 +213,7 @@ export const McpDetailPage: React.FC = () => {
           <Badge variant="category" color="#18181B">
             {selectedMcp.category}
           </Badge>
-          {selectedMcp.tags.map((tag) => (
+          {selectedMcp?.tags?.map((tag) => (
             <Badge key={tag} variant="tag">
               {tag}
             </Badge>
@@ -222,11 +225,11 @@ export const McpDetailPage: React.FC = () => {
       <section className="flex flex-col gap-4">
         <h3 className="text-sm font-semibold text-[#18181B]">Provided Tools</h3>
         <div className="overflow-hidden rounded-lg border border-[#E5E5E5]">
-          {selectedMcp.providedTools.map((tool, index) => (
+          {selectedMcp?.providedTools?.map((tool, index) => (
             <ToolItem
               key={tool.name}
               tool={tool}
-              isLast={index === selectedMcp.providedTools.length - 1}
+              isLast={index === (selectedMcp?.providedTools?.length ?? 0) - 1}
             />
           ))}
         </div>

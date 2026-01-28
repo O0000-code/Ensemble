@@ -200,6 +200,20 @@ pub fn add_tag(name: String) -> Result<Tag, String> {
     Ok(tag)
 }
 
+/// Update a tag
+#[tauri::command]
+pub fn update_tag(id: String, name: String) -> Result<(), String> {
+    let mut data = read_app_data()?;
+
+    if let Some(tag) = data.tags.iter_mut().find(|t| t.id == id) {
+        tag.name = name;
+        write_app_data(data)?;
+        Ok(())
+    } else {
+        Err("Tag not found".to_string())
+    }
+}
+
 /// Delete a tag
 #[tauri::command]
 pub fn delete_tag(id: String) -> Result<(), String> {

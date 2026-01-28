@@ -33,7 +33,7 @@ export function SkillsPage() {
   };
 
   const handleSkillClick = (skillId: string) => {
-    navigate(`/skills/${skillId}`);
+    navigate(`/skills/${encodeURIComponent(skillId)}`);
   };
 
   const handleToggle = (skillId: string, _enabled: boolean) => {

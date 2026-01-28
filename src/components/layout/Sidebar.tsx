@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Plug, Layers, Folder, Plus, Settings } from 'lucide-react';
 import { Category, Tag } from '@/types';
+import { CategoryInlineInput, TagInlineInput } from '@/components/sidebar';
 
 export interface SidebarProps {
   activeNav: 'skills' | 'mcp-servers' | 'scenes' | 'projects' | 'settings';
@@ -20,6 +21,21 @@ export interface SidebarProps {
   onAddCategory?: () => void;
   onAddTag?: () => void;
   onCategoryContextMenu?: (category: Category, position: { x: number; y: number }) => void;
+
+  // 编辑状态 props
+  editingCategoryId?: string | null;
+  isAddingCategory?: boolean;
+  editingTagId?: string | null;
+  isAddingTag?: boolean;
+
+  // 编辑状态回调
+  onCategoryDoubleClick?: (categoryId: string) => void;
+  onCategorySave?: (id: string | null, name: string) => void;
+  onCategoryEditCancel?: () => void;
+  onTagDoubleClick?: (tagId: string) => void;
+  onTagContextMenu?: (tag: Tag, position: { x: number; y: number }) => void;
+  onTagSave?: (id: string | null, name: string) => void;
+  onTagEditCancel?: () => void;
 }
 
 // Navigation items configuration
@@ -46,6 +62,19 @@ export function Sidebar({
   onAddCategory,
   onAddTag,
   onCategoryContextMenu,
+  // 编辑状态 props
+  editingCategoryId,
+  isAddingCategory,
+  editingTagId,
+  isAddingTag,
+  // 编辑状态回调
+  onCategoryDoubleClick,
+  onCategorySave,
+  onCategoryEditCancel,
+  onTagDoubleClick,
+  onTagContextMenu,
+  onTagSave,
+  onTagEditCancel,
 }: SidebarProps) {
   const navigate = useNavigate();
 
@@ -176,11 +205,27 @@ export function Sidebar({
               <div className="flex flex-col gap-0.5">
                 {categories.map((category) => {
                   const isActive = activeCategory === category.id;
+                  const isEditing = editingCategoryId === category.id;
 
+                  // 编辑模式
+                  if (isEditing) {
+                    return (
+                      <CategoryInlineInput
+                        key={category.id}
+                        mode="edit"
+                        category={category}
+                        onSave={(name) => onCategorySave?.(category.id, name)}
+                        onCancel={() => onCategoryEditCancel?.()}
+                      />
+                    );
+                  }
+
+                  // 普通模式
                   return (
                     <button
                       key={category.id}
                       onClick={() => onCategoryChange(isActive ? null : category.id)}
+                      onDoubleClick={() => onCategoryDoubleClick?.(category.id)}
                       onContextMenu={(e) => handleCategoryContextMenu(e, category)}
                       className={`
                         h-8 px-2.5 flex items-center gap-2.5 rounded-[6px] cursor-pointer
@@ -212,9 +257,28 @@ export function Sidebar({
                     </button>
                   );
                 })}
+
+                {/* 新增模式 - 在列表末尾 */}
+                {isAddingCategory && (
+                  <CategoryInlineInput
+                    mode="add"
+                    onSave={(name) => onCategorySave?.(null, name)}
+                    onCancel={() => onCategoryEditCancel?.()}
+                  />
+                )}
               </div>
             ) : (
-              <p className="text-xs text-[#A1A1AA] px-2.5">No categories</p>
+              <div className="flex flex-col gap-0.5">
+                {isAddingCategory ? (
+                  <CategoryInlineInput
+                    mode="add"
+                    onSave={(name) => onCategorySave?.(null, name)}
+                    onCancel={() => onCategoryEditCancel?.()}
+                  />
+                ) : (
+                  <p className="text-xs text-[#A1A1AA] px-2.5">No categories</p>
+                )}
+              </div>
             )}
           </section>
 
@@ -244,11 +308,31 @@ export function Sidebar({
               <div className="flex flex-wrap gap-1.5">
                 {visibleTags.map((tag) => {
                   const isActive = activeTags.includes(tag.id);
+                  const isEditing = editingTagId === tag.id;
 
+                  // 编辑模式
+                  if (isEditing) {
+                    return (
+                      <TagInlineInput
+                        key={tag.id}
+                        mode="edit"
+                        tag={tag}
+                        onSave={(name) => onTagSave?.(tag.id, name)}
+                        onCancel={() => onTagEditCancel?.()}
+                      />
+                    );
+                  }
+
+                  // 普通模式
                   return (
                     <button
                       key={tag.id}
                       onClick={() => onTagToggle(tag.id)}
+                      onDoubleClick={() => onTagDoubleClick?.(tag.id)}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        onTagContextMenu?.(tag, { x: e.clientX, y: e.clientY });
+                      }}
                       className={`
                         px-2.5 py-[5px] rounded text-[11px] font-medium
                         transition-colors duration-150
@@ -272,9 +356,28 @@ export function Sidebar({
                     +{remainingTagsCount}
                   </button>
                 )}
+
+                {/* 新增模式 - 在标签末尾 */}
+                {isAddingTag && (
+                  <TagInlineInput
+                    mode="add"
+                    onSave={(name) => onTagSave?.(null, name)}
+                    onCancel={() => onTagEditCancel?.()}
+                  />
+                )}
               </div>
             ) : (
-              <p className="text-xs text-[#A1A1AA] px-2.5">No tags</p>
+              <div className="flex flex-wrap gap-1.5">
+                {isAddingTag ? (
+                  <TagInlineInput
+                    mode="add"
+                    onSave={(name) => onTagSave?.(null, name)}
+                    onCancel={() => onTagEditCancel?.()}
+                  />
+                ) : (
+                  <p className="text-xs text-[#A1A1AA] px-2.5">No tags</p>
+                )}
+              </div>
             )}
           </section>
         </div>

@@ -33,7 +33,7 @@ export const McpServersPage: React.FC = () => {
   };
 
   const handleMcpClick = (id: string) => {
-    navigate(`/mcp-servers/${id}`);
+    navigate(`/mcp-servers/${encodeURIComponent(id)}`);
   };
 
   const handleToggle = (id: string) => {
