@@ -6,7 +6,9 @@ import { Button } from '@/components/common/Button';
 import { EmptyState } from '@/components/common/EmptyState';
 import { SceneCard } from '@/components/scenes/SceneCard';
 import { CreateSceneModal } from '@/components/scenes/CreateSceneModal';
-import { useScenesStore, mockSkills, mockMcpServers } from '@/stores/scenesStore';
+import { useScenesStore } from '@/stores/scenesStore';
+import { useSkillsStore } from '@/stores/skillsStore';
+import { useMcpsStore } from '@/stores/mcpsStore';
 
 // ============================================================================
 // ScenesPage Component
@@ -30,6 +32,8 @@ export const ScenesPage: React.FC = () => {
   const scenes = useScenesStore((state) => state.scenes);
   const filter = useScenesStore((state) => state.filter);
   const setFilter = useScenesStore((state) => state.setFilter);
+  const skills = useSkillsStore((state) => state.skills);
+  const mcpServers = useMcpsStore((state) => state.mcpServers);
 
   // Modal state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -141,8 +145,8 @@ export const ScenesPage: React.FC = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onCreateScene={handleCreateScene}
-        skills={mockSkills}
-        mcpServers={mockMcpServers}
+        skills={skills}
+        mcpServers={mcpServers}
       />
     </>
   );

@@ -27,7 +27,10 @@ import { Badge } from '@/components/common/Badge';
 import { EmptyState } from '@/components/common/EmptyState';
 import { SceneItem } from '@/components/scenes/SceneItem';
 import { CreateSceneModal } from '@/components/scenes/CreateSceneModal';
-import { useScenesStore, mockSkills, mockMcpServers } from '@/stores/scenesStore';
+import { useScenesStore } from '@/stores/scenesStore';
+import { useSkillsStore } from '@/stores/skillsStore';
+import { useMcpsStore } from '@/stores/mcpsStore';
+import type { Skill, McpServer } from '@/types';
 
 // ============================================================================
 // Types & Constants
@@ -122,6 +125,8 @@ export const SceneDetailPage: React.FC = () => {
   // Store state
   const scenes = useScenesStore((state) => state.scenes);
   const deleteScene = useScenesStore((state) => state.deleteScene);
+  const allSkills = useSkillsStore((state) => state.skills);
+  const allMcpServers = useMcpsStore((state) => state.mcpServers);
 
   // Local state
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,15 +150,15 @@ export const SceneDetailPage: React.FC = () => {
   }, [scenes, searchQuery]);
 
   // Get skills and MCPs for selected scene
-  const includedSkills = useMemo(() => {
+  const includedSkills = useMemo((): Skill[] => {
     if (!selectedScene) return [];
-    return mockSkills.filter((s) => selectedScene.skillIds.includes(s.id));
-  }, [selectedScene]);
+    return allSkills.filter((s) => selectedScene.skillIds.includes(s.id));
+  }, [selectedScene, allSkills]);
 
-  const includedMcps = useMemo(() => {
+  const includedMcps = useMemo((): McpServer[] => {
     if (!selectedScene) return [];
-    return mockMcpServers.filter((m) => selectedScene.mcpIds.includes(m.id));
-  }, [selectedScene]);
+    return allMcpServers.filter((m) => selectedScene.mcpIds.includes(m.id));
+  }, [selectedScene, allMcpServers]);
 
   // Get projects using this scene
   const usingProjects = useMemo(() => {
@@ -431,8 +436,8 @@ export const SceneDetailPage: React.FC = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onCreateScene={handleCreateScene}
-        skills={mockSkills}
-        mcpServers={mockMcpServers}
+        skills={allSkills}
+        mcpServers={allMcpServers}
       />
     </>
   );

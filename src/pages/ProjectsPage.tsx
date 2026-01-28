@@ -3,7 +3,9 @@ import { Plus, Folder, ArrowLeft } from 'lucide-react';
 import { ListDetailLayout } from '../components/layout/ListDetailLayout';
 import { SearchInput, Button, EmptyState } from '../components/common';
 import { ProjectItem, NewProjectItem, ProjectConfigPanel } from '../components/projects';
-import { useProjectsStore, mockScenes } from '../stores/projectsStore';
+import { useProjectsStore } from '../stores/projectsStore';
+import { useScenesStore } from '../stores/scenesStore';
+import type { Scene } from '../types';
 
 // ============================================================================
 // ProjectsPage Component
@@ -41,6 +43,9 @@ export function ProjectsPage() {
     clearProjectConfig,
   } = useProjectsStore();
 
+  // Get scenes from scenesStore
+  const scenes = useScenesStore((state) => state.scenes);
+
   // Filter projects based on search
   const filteredProjects = useMemo(() => {
     if (!filter.search) return projects;
@@ -60,8 +65,8 @@ export function ProjectsPage() {
 
   // Get scene for selected project
   const selectedScene = useMemo(
-    () => mockScenes.find((s) => s.id === selectedProject?.sceneId),
-    [selectedProject]
+    (): Scene | undefined => scenes.find((s) => s.id === selectedProject?.sceneId),
+    [selectedProject, scenes]
   );
 
   // ============================================================================
@@ -120,7 +125,7 @@ export function ProjectsPage() {
       {/* Project Items */}
       {filteredProjects.length > 0 ? (
         filteredProjects.map((project) => {
-          const scene = mockScenes.find((s) => s.id === project.sceneId);
+          const scene = scenes.find((s) => s.id === project.sceneId);
           return (
             <ProjectItem
               key={project.id}
@@ -193,7 +198,7 @@ export function ProjectsPage() {
   const detailContent = isCreating ? (
     <ProjectConfigPanel
       project={null}
-      scenes={mockScenes}
+      scenes={scenes}
       isEditing
       formData={newProject}
       onFormChange={updateNewProject}
@@ -208,7 +213,7 @@ export function ProjectsPage() {
     <ProjectConfigPanel
       project={selectedProject}
       scene={selectedScene}
-      scenes={mockScenes}
+      scenes={scenes}
       onOpenFolder={() => console.log('Open folder:', selectedProject.path)}
       onChangeScene={(sceneId) => updateProject(selectedProject.id, { sceneId })}
       onSync={() => syncProject(selectedProject.id)}

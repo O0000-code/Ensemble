@@ -1,5 +1,23 @@
 import { create } from 'zustand';
-import type { Skill, Category, Tag } from '../types';
+import { invoke } from '@tauri-apps/api/core';
+import type { Skill } from '../types';
+import { useSettingsStore } from './settingsStore';
+import { useAppStore } from './appStore';
+
+// Classification types
+interface ClassifyItem {
+  id: string;
+  name: string;
+  description: string;
+  instructions?: string;
+}
+
+interface ClassifyResult {
+  id: string;
+  suggested_category: string;
+  suggested_tags: string[];
+  confidence: number;
+}
 
 // ============================================================================
 // Types
@@ -14,8 +32,6 @@ interface SkillsFilter {
 interface SkillsState {
   // Data
   skills: Skill[];
-  categories: Category[];
-  tags: Tag[];
 
   // Selection
   selectedSkillId: string | null;
@@ -26,250 +42,29 @@ interface SkillsState {
   // Loading state
   isLoading: boolean;
 
+  // Error state
+  error: string | null;
+
+  // Classification state
+  isClassifying: boolean;
+
   // Actions
+  loadSkills: () => Promise<void>;
   setSkills: (skills: Skill[]) => void;
   selectSkill: (id: string | null) => void;
-  toggleSkill: (id: string) => void;
+  toggleSkill: (id: string) => Promise<void>;
+  updateSkillCategory: (id: string, category: string) => Promise<void>;
+  updateSkillTags: (id: string, tags: string[]) => Promise<void>;
   setFilter: (filter: Partial<SkillsFilter>) => void;
   clearFilter: () => void;
+  clearError: () => void;
+  autoClassify: () => Promise<void>;
 
   // Computed
   getFilteredSkills: () => Skill[];
   getEnabledCount: () => number;
   getSelectedSkill: () => Skill | undefined;
 }
-
-// ============================================================================
-// Mock Data
-// ============================================================================
-
-const mockCategories: Category[] = [
-  { id: 'development', name: 'Development', color: '#18181B', count: 5 },
-  { id: 'design', name: 'Design', color: '#8B5CF6', count: 3 },
-  { id: 'research', name: 'Research', color: '#3B82F6', count: 2 },
-  { id: 'productivity', name: 'Productivity', color: '#10B981', count: 2 },
-  { id: 'other', name: 'Other', color: '#71717A', count: 1 },
-];
-
-const mockTags: Tag[] = [
-  { id: 'react', name: 'React', count: 4 },
-  { id: 'typescript', name: 'TypeScript', count: 5 },
-  { id: 'frontend', name: 'Frontend', count: 6 },
-  { id: 'backend', name: 'Backend', count: 3 },
-  { id: 'api', name: 'API', count: 2 },
-  { id: 'testing', name: 'Testing', count: 2 },
-  { id: 'ui', name: 'UI', count: 3 },
-  { id: 'automation', name: 'Automation', count: 2 },
-];
-
-const mockSkills: Skill[] = [
-  {
-    id: 'skill-1',
-    name: 'Frontend Development',
-    description: 'Expert knowledge in React, TypeScript, and modern frontend development practices',
-    category: 'development',
-    tags: ['react', 'typescript', 'frontend'],
-    enabled: true,
-    sourcePath: '~/.claude/skills/frontend-development.md',
-    scope: 'user',
-    invocation: '/frontend',
-    allowedTools: ['Read', 'Write', 'Bash', 'Glob', 'Grep'],
-    instructions: 'You are an expert frontend developer specializing in React and TypeScript. Follow best practices for component design, state management, and performance optimization. Use modern React patterns including hooks, context, and suspense.',
-    createdAt: '2024-01-15T10:00:00Z',
-    lastUsed: '2024-01-28T09:30:00Z',
-    usageCount: 156,
-  },
-  {
-    id: 'skill-2',
-    name: 'GitHub Explorer',
-    description: 'Systematic GitHub repository discovery using advanced search methodology',
-    category: 'development',
-    tags: ['api', 'automation'],
-    enabled: true,
-    sourcePath: '~/.claude/skills/github-explorer.md',
-    scope: 'user',
-    invocation: '/github-explorer',
-    allowedTools: ['WebFetch', 'Bash'],
-    instructions: 'Search GitHub repositories systematically using multiple strategies: trending repos, awesome lists, topic search, and user recommendations.',
-    createdAt: '2024-01-10T14:00:00Z',
-    lastUsed: '2024-01-27T15:45:00Z',
-    usageCount: 89,
-  },
-  {
-    id: 'skill-3',
-    name: 'SwiftUI Expert',
-    description: 'Write and review SwiftUI code following Apple best practices and iOS 18 patterns',
-    category: 'development',
-    tags: ['frontend', 'ui'],
-    enabled: true,
-    sourcePath: '~/.claude/skills/swiftui-expert.md',
-    scope: 'user',
-    invocation: '/swiftui',
-    allowedTools: ['Read', 'Write', 'Bash'],
-    instructions: 'Expert in SwiftUI development with deep knowledge of view composition, state management with @State, @Binding, @Observable, and modern iOS development patterns.',
-    createdAt: '2024-01-08T09:00:00Z',
-    lastUsed: '2024-01-26T11:20:00Z',
-    usageCount: 72,
-  },
-  {
-    id: 'skill-4',
-    name: 'API Design',
-    description: 'Design RESTful and GraphQL APIs following industry standards',
-    category: 'development',
-    tags: ['api', 'backend'],
-    enabled: false,
-    sourcePath: '~/.claude/skills/api-design.md',
-    scope: 'user',
-    invocation: '/api-design',
-    allowedTools: ['Read', 'Write'],
-    instructions: 'Design clean, scalable APIs following REST principles or GraphQL best practices. Consider versioning, authentication, rate limiting, and documentation.',
-    createdAt: '2024-01-05T16:00:00Z',
-    lastUsed: '2024-01-20T14:30:00Z',
-    usageCount: 45,
-  },
-  {
-    id: 'skill-5',
-    name: 'Unit Testing',
-    description: 'Write comprehensive unit tests with Jest, Vitest, and Testing Library',
-    category: 'development',
-    tags: ['testing', 'frontend'],
-    enabled: true,
-    sourcePath: '~/.claude/skills/unit-testing.md',
-    scope: 'user',
-    invocation: '/test',
-    allowedTools: ['Read', 'Write', 'Bash'],
-    instructions: 'Write thorough unit tests focusing on behavior over implementation. Use Testing Library for React components, mock external dependencies appropriately.',
-    createdAt: '2024-01-03T11:00:00Z',
-    lastUsed: '2024-01-28T08:15:00Z',
-    usageCount: 128,
-  },
-  {
-    id: 'skill-6',
-    name: 'UI Design Review',
-    description: 'Review UI designs for accessibility, usability, and visual consistency',
-    category: 'design',
-    tags: ['ui', 'frontend'],
-    enabled: true,
-    sourcePath: '~/.claude/skills/ui-design-review.md',
-    scope: 'user',
-    invocation: '/ui-review',
-    allowedTools: ['Read'],
-    instructions: 'Review UI designs with focus on WCAG accessibility guidelines, visual hierarchy, consistent spacing, and responsive design principles.',
-    createdAt: '2024-01-02T13:00:00Z',
-    lastUsed: '2024-01-25T16:40:00Z',
-    usageCount: 34,
-  },
-  {
-    id: 'skill-7',
-    name: 'Algorithmic Art',
-    description: 'Create generative art using p5.js with seeded randomness and parameters',
-    category: 'design',
-    tags: ['frontend', 'ui'],
-    enabled: true,
-    sourcePath: '~/.claude/skills/algorithmic-art.md',
-    scope: 'user',
-    invocation: '/art',
-    allowedTools: ['Write'],
-    instructions: 'Create algorithmic and generative art using p5.js. Use seeded randomness for reproducibility, implement interactive parameter controls.',
-    createdAt: '2023-12-28T10:00:00Z',
-    lastUsed: '2024-01-22T19:30:00Z',
-    usageCount: 23,
-  },
-  {
-    id: 'skill-8',
-    name: 'Color System Design',
-    description: 'Design comprehensive color systems with accessibility considerations',
-    category: 'design',
-    tags: ['ui'],
-    enabled: false,
-    sourcePath: '~/.claude/skills/color-system.md',
-    scope: 'user',
-    invocation: '/colors',
-    allowedTools: ['Write'],
-    instructions: 'Design color systems with proper contrast ratios, semantic naming, dark mode support, and brand consistency.',
-    createdAt: '2023-12-25T14:00:00Z',
-    usageCount: 12,
-  },
-  {
-    id: 'skill-9',
-    name: 'Literature Review',
-    description: 'Conduct systematic academic literature searches and synthesis',
-    category: 'research',
-    tags: ['automation'],
-    enabled: true,
-    sourcePath: '~/.claude/skills/literature-review.md',
-    scope: 'user',
-    invocation: '/literature',
-    allowedTools: ['WebSearch', 'WebFetch'],
-    instructions: 'Conduct comprehensive literature reviews using academic databases. Synthesize findings, identify research gaps, and produce structured summaries.',
-    createdAt: '2023-12-20T09:00:00Z',
-    lastUsed: '2024-01-24T10:15:00Z',
-    usageCount: 67,
-  },
-  {
-    id: 'skill-10',
-    name: 'Data Analysis',
-    description: 'Analyze datasets using Python pandas and generate insights',
-    category: 'research',
-    tags: ['backend', 'automation'],
-    enabled: true,
-    sourcePath: '~/.claude/skills/data-analysis.md',
-    scope: 'project',
-    invocation: '/analyze',
-    allowedTools: ['Read', 'Write', 'Bash'],
-    instructions: 'Analyze data using pandas, numpy, and visualization libraries. Generate statistical summaries, identify patterns, and create clear visualizations.',
-    createdAt: '2023-12-18T15:00:00Z',
-    lastUsed: '2024-01-23T14:45:00Z',
-    usageCount: 89,
-  },
-  {
-    id: 'skill-11',
-    name: 'Commit Guidelines',
-    description: 'Write clear, conventional commit messages following best practices',
-    category: 'productivity',
-    tags: ['automation'],
-    enabled: true,
-    sourcePath: '~/.claude/skills/commit-guidelines.md',
-    scope: 'user',
-    invocation: '/commit',
-    allowedTools: ['Bash'],
-    instructions: 'Write commit messages following conventional commits format. Include scope, type, and clear description of changes.',
-    createdAt: '2023-12-15T11:00:00Z',
-    lastUsed: '2024-01-28T09:00:00Z',
-    usageCount: 234,
-  },
-  {
-    id: 'skill-12',
-    name: 'PR Review',
-    description: 'Review pull requests for code quality, security, and best practices',
-    category: 'productivity',
-    tags: ['testing', 'backend'],
-    enabled: true,
-    sourcePath: '~/.claude/skills/pr-review.md',
-    scope: 'user',
-    invocation: '/review-pr',
-    allowedTools: ['Read', 'Bash'],
-    instructions: 'Review PRs systematically: check for bugs, security issues, code style, test coverage, and documentation.',
-    createdAt: '2023-12-12T16:00:00Z',
-    lastUsed: '2024-01-27T17:30:00Z',
-    usageCount: 156,
-  },
-  {
-    id: 'skill-13',
-    name: 'Custom Template',
-    description: 'A custom skill template for specialized workflows',
-    category: 'other',
-    tags: [],
-    enabled: false,
-    sourcePath: '~/.claude/skills/custom-template.md',
-    scope: 'project',
-    invocation: '/custom',
-    allowedTools: [],
-    instructions: 'This is a template for creating custom skills. Replace this content with your specific instructions.',
-    createdAt: '2023-12-10T10:00:00Z',
-    usageCount: 0,
-  },
-];
 
 // ============================================================================
 // Store
@@ -283,24 +78,120 @@ const initialFilter: SkillsFilter = {
 
 export const useSkillsStore = create<SkillsState>((set, get) => ({
   // Initial state
-  skills: mockSkills,
-  categories: mockCategories,
-  tags: mockTags,
+  skills: [],
   selectedSkillId: null,
   filter: initialFilter,
   isLoading: false,
+  isClassifying: false,
+  error: null,
 
   // Actions
+  loadSkills: async () => {
+    const { skillSourceDir } = useSettingsStore.getState();
+    set({ isLoading: true, error: null });
+    try {
+      const skills = await invoke<Skill[]>('scan_skills', {
+        sourceDir: skillSourceDir,
+      });
+      set({ skills, isLoading: false });
+    } catch (error) {
+      const message = typeof error === 'string' ? error : String(error);
+      set({ error: message, isLoading: false });
+    }
+  },
+
   setSkills: (skills) => set({ skills }),
 
   selectSkill: (id) => set({ selectedSkillId: id }),
 
-  toggleSkill: (id) => {
-    const { skills } = get();
-    const updatedSkills = skills.map((skill) =>
-      skill.id === id ? { ...skill, enabled: !skill.enabled } : skill
-    );
-    set({ skills: updatedSkills });
+  toggleSkill: async (id) => {
+    const skill = get().skills.find((s) => s.id === id);
+    if (!skill) return;
+
+    const newEnabled = !skill.enabled;
+
+    // Optimistic update
+    set((state) => ({
+      skills: state.skills.map((s) =>
+        s.id === id ? { ...s, enabled: newEnabled } : s
+      ),
+    }));
+
+    try {
+      await invoke('update_skill_metadata', {
+        skillId: id,
+        enabled: newEnabled,
+      });
+    } catch (error) {
+      // Rollback on error
+      const message = typeof error === 'string' ? error : String(error);
+      set((state) => ({
+        skills: state.skills.map((s) =>
+          s.id === id ? { ...s, enabled: skill.enabled } : s
+        ),
+        error: message,
+      }));
+    }
+  },
+
+  updateSkillCategory: async (id, category) => {
+    const skill = get().skills.find((s) => s.id === id);
+    if (!skill) return;
+
+    const oldCategory = skill.category;
+
+    // Optimistic update
+    set((state) => ({
+      skills: state.skills.map((s) =>
+        s.id === id ? { ...s, category } : s
+      ),
+    }));
+
+    try {
+      await invoke('update_skill_metadata', {
+        skillId: id,
+        category,
+      });
+    } catch (error) {
+      // Rollback on error
+      const message = typeof error === 'string' ? error : String(error);
+      set((state) => ({
+        skills: state.skills.map((s) =>
+          s.id === id ? { ...s, category: oldCategory } : s
+        ),
+        error: message,
+      }));
+    }
+  },
+
+  updateSkillTags: async (id, tags) => {
+    const skill = get().skills.find((s) => s.id === id);
+    if (!skill) return;
+
+    const oldTags = skill.tags;
+
+    // Optimistic update
+    set((state) => ({
+      skills: state.skills.map((s) =>
+        s.id === id ? { ...s, tags } : s
+      ),
+    }));
+
+    try {
+      await invoke('update_skill_metadata', {
+        skillId: id,
+        tags,
+      });
+    } catch (error) {
+      // Rollback on error
+      const message = typeof error === 'string' ? error : String(error);
+      set((state) => ({
+        skills: state.skills.map((s) =>
+          s.id === id ? { ...s, tags: oldTags } : s
+        ),
+        error: message,
+      }));
+    }
   },
 
   setFilter: (filter) => {
@@ -309,6 +200,82 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
   },
 
   clearFilter: () => set({ filter: initialFilter }),
+
+  clearError: () => set({ error: null }),
+
+  autoClassify: async () => {
+    const { skills } = get();
+    const { anthropicApiKey } = useSettingsStore.getState();
+    const { categories, tags } = useAppStore.getState();
+
+    if (!anthropicApiKey) {
+      set({ error: 'API key is required for auto-classification. Please configure it in Settings.' });
+      return;
+    }
+
+    // Get skills that need classification (uncategorized or no tags)
+    const skillsToClassify = skills.filter(
+      (s) => !s.category || s.category === 'Uncategorized' || s.tags.length === 0
+    );
+
+    if (skillsToClassify.length === 0) {
+      set({ error: 'No skills need classification.' });
+      return;
+    }
+
+    set({ isClassifying: true, error: null });
+
+    try {
+      // Prepare items for classification
+      const items: ClassifyItem[] = skillsToClassify.map((s) => ({
+        id: s.id,
+        name: s.name,
+        description: s.description,
+        instructions: s.instructions,
+      }));
+
+      // Get existing categories and tags
+      const existingCategories = categories.map((c) => c.name);
+      const existingTags = tags.map((t) => t.name);
+
+      // Call the classification API
+      const results = await invoke<ClassifyResult[]>('auto_classify', {
+        items,
+        apiKey: anthropicApiKey,
+        existingCategories,
+        existingTags,
+      });
+
+      // Apply classification results
+      for (const result of results) {
+        const skill = skills.find((s) => s.id === result.id);
+        if (skill) {
+          // Update category
+          if (result.suggested_category && result.suggested_category !== skill.category) {
+            await invoke('update_skill_metadata', {
+              skillId: result.id,
+              category: result.suggested_category,
+            });
+          }
+          // Update tags
+          if (result.suggested_tags.length > 0) {
+            const newTags = [...new Set([...skill.tags, ...result.suggested_tags])];
+            await invoke('update_skill_metadata', {
+              skillId: result.id,
+              tags: newTags,
+            });
+          }
+        }
+      }
+
+      // Reload skills to get updated data
+      await get().loadSkills();
+      set({ isClassifying: false });
+    } catch (error) {
+      const message = typeof error === 'string' ? error : String(error);
+      set({ error: message, isClassifying: false });
+    }
+  },
 
   // Computed
   getFilteredSkills: () => {

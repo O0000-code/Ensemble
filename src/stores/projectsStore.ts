@@ -1,5 +1,8 @@
 import { create } from 'zustand';
+import { invoke } from '@tauri-apps/api/core';
 import type { Project, Scene } from '../types';
+import { useScenesStore } from './scenesStore';
+import { useSettingsStore } from './settingsStore';
 
 // ============================================================================
 // Types
@@ -20,7 +23,12 @@ interface ProjectsState {
   projects: Project[];
   selectedProjectId: string | null;
   isCreating: boolean;
+  isLoading: boolean;
   filter: ProjectsFilter;
+
+  // Error and sync state
+  error: string | null;
+  syncingProjectId: string | null;
 
   // New project form
   newProject: NewProjectForm;
@@ -32,54 +40,19 @@ interface ProjectsState {
   startCreating: () => void;
   cancelCreating: () => void;
   updateNewProject: (data: Partial<NewProjectForm>) => void;
-  createProject: () => void;
-  updateProject: (id: string, data: Partial<Project>) => void;
-  syncProject: (id: string) => void;
-  clearProjectConfig: (id: string) => void;
-  deleteProject: (id: string) => void;
+
+  // Tauri Actions
+  loadProjects: () => Promise<void>;
+  createProject: () => Promise<Project | undefined>;
+  updateProject: (id: string, data: Partial<Project>) => Promise<void>;
+  syncProject: (id: string) => Promise<void>;
+  clearProjectConfig: (id: string) => Promise<void>;
+  selectProjectFolder: () => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
+
+  // Getters
+  getAvailableScenes: () => Scene[];
 }
-
-// ============================================================================
-// Mock Data
-// ============================================================================
-
-const mockProjects: Project[] = [
-  {
-    id: '1',
-    name: 'ensemble-app',
-    path: '/Users/bo/Documents/Development/Ensemble/Ensemble2',
-    sceneId: '1',
-    lastSynced: '2024-01-20T10:30:00Z',
-  },
-  {
-    id: '2',
-    name: 'claude-mcp-server',
-    path: '/Users/bo/Projects/claude-mcp-server',
-    sceneId: '2',
-    lastSynced: '2024-01-19T15:45:00Z',
-  },
-  {
-    id: '3',
-    name: 'personal-website',
-    path: '/Users/bo/Projects/personal-website',
-    sceneId: '3',
-    lastSynced: '2024-01-18T09:20:00Z',
-  },
-  {
-    id: '4',
-    name: 'data-pipeline',
-    path: '/Users/bo/Work/data-pipeline',
-    sceneId: '4',
-    lastSynced: '2024-01-17T14:00:00Z',
-  },
-  {
-    id: '5',
-    name: 'mobile-app-ios',
-    path: '/Users/bo/Projects/mobile-app-ios',
-    sceneId: '',
-    lastSynced: undefined,
-  },
-];
 
 // ============================================================================
 // Store
@@ -87,12 +60,15 @@ const mockProjects: Project[] = [
 
 export const useProjectsStore = create<ProjectsState>((set, get) => ({
   // Initial state
-  projects: mockProjects,
+  projects: [],
   selectedProjectId: null,
   isCreating: false,
+  isLoading: false,
   filter: {
     search: '',
   },
+  error: null,
+  syncingProjectId: null,
   newProject: {
     name: '',
     path: '',
@@ -139,114 +115,148 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       newProject: { ...state.newProject, ...data },
     })),
 
-  createProject: () => {
-    const { newProject, projects } = get();
+  // Tauri Actions
+  loadProjects: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const projects = await invoke<Project[]>('get_projects');
+      set({ projects, isLoading: false });
+    } catch (error) {
+      set({ error: String(error), isLoading: false });
+    }
+  },
+
+  createProject: async () => {
+    const { newProject } = get();
     if (!newProject.name || !newProject.path) return;
 
-    const newProjectData: Project = {
-      id: String(Date.now()),
-      name: newProject.name,
-      path: newProject.path,
-      sceneId: newProject.sceneId,
-      lastSynced: undefined,
-    };
-
-    set({
-      projects: [...projects, newProjectData],
-      selectedProjectId: newProjectData.id,
-      isCreating: false,
-      newProject: {
-        name: '',
-        path: '',
-        sceneId: '',
-      },
-    });
+    try {
+      const project = await invoke<Project>('add_project', {
+        name: newProject.name,
+        path: newProject.path,
+        sceneId: newProject.sceneId,
+      });
+      set((state) => ({
+        projects: [...state.projects, project],
+        isCreating: false,
+        selectedProjectId: project.id,
+        newProject: {
+          name: '',
+          path: '',
+          sceneId: '',
+        },
+      }));
+      return project;
+    } catch (error) {
+      set({ error: String(error) });
+      throw error;
+    }
   },
 
-  updateProject: (id, data) =>
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === id ? { ...p, ...data } : p
-      ),
-    })),
+  updateProject: async (id, data) => {
+    try {
+      await invoke('update_project', { id, ...data });
+      set((state) => ({
+        projects: state.projects.map((p) =>
+          p.id === id ? { ...p, ...data } : p
+        ),
+      }));
+    } catch (error) {
+      set({ error: String(error) });
+      throw error;
+    }
+  },
 
-  syncProject: (id) =>
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === id ? { ...p, lastSynced: new Date().toISOString() } : p
-      ),
-    })),
+  syncProject: async (id) => {
+    const project = get().projects.find((p) => p.id === id);
+    if (!project) return;
 
-  clearProjectConfig: (id) =>
-    set((state) => ({
-      projects: state.projects.map((p) =>
-        p.id === id ? { ...p, sceneId: '', lastSynced: undefined } : p
-      ),
-    })),
+    const scene = useScenesStore.getState().scenes.find((s) => s.id === project.sceneId);
+    if (!scene) {
+      set({ error: 'Scene not found' });
+      return;
+    }
 
-  deleteProject: (id) =>
-    set((state) => ({
-      projects: state.projects.filter((p) => p.id !== id),
-      selectedProjectId:
-        state.selectedProjectId === id ? null : state.selectedProjectId,
-    })),
+    const { skillSourceDir, mcpSourceDir } = useSettingsStore.getState();
+
+    set({ syncingProjectId: id, error: null });
+    try {
+      await invoke('sync_project_config', {
+        projectPath: project.path,
+        skillIds: scene.skillIds,
+        mcpIds: scene.mcpIds,
+        sourceSkillDir: skillSourceDir,
+        sourceMcpDir: mcpSourceDir,
+      });
+
+      // Update lastSynced
+      const now = new Date().toISOString();
+      await invoke('update_project', { id, lastSynced: now });
+
+      set((state) => ({
+        projects: state.projects.map((p) =>
+          p.id === id ? { ...p, lastSynced: now } : p
+        ),
+        syncingProjectId: null,
+      }));
+    } catch (error) {
+      set({ error: String(error), syncingProjectId: null });
+      throw error;
+    }
+  },
+
+  clearProjectConfig: async (id) => {
+    const project = get().projects.find((p) => p.id === id);
+    if (!project) return;
+
+    try {
+      await invoke('clear_project_config', { projectPath: project.path });
+
+      // Clear lastSynced
+      await invoke('update_project', { id, lastSynced: null });
+
+      set((state) => ({
+        projects: state.projects.map((p) =>
+          p.id === id ? { ...p, lastSynced: undefined } : p
+        ),
+      }));
+    } catch (error) {
+      set({ error: String(error) });
+      throw error;
+    }
+  },
+
+  selectProjectFolder: async () => {
+    try {
+      const path = await invoke<string | null>('select_folder');
+      if (path) {
+        set((state) => ({
+          newProject: { ...state.newProject, path },
+        }));
+      }
+    } catch (error) {
+      set({ error: String(error) });
+    }
+  },
+
+  deleteProject: async (id) => {
+    try {
+      await invoke('delete_project', { id });
+      set((state) => ({
+        projects: state.projects.filter((p) => p.id !== id),
+        selectedProjectId:
+          state.selectedProjectId === id ? null : state.selectedProjectId,
+      }));
+    } catch (error) {
+      set({ error: String(error) });
+      throw error;
+    }
+  },
+
+  // Getters
+  getAvailableScenes: () => {
+    return useScenesStore.getState().scenes;
+  },
 }));
-
-// ============================================================================
-// Mock Scenes Data (for reference in components)
-// ============================================================================
-
-export const mockScenes: Scene[] = [
-  {
-    id: '1',
-    name: 'Web Development',
-    description: 'React, TypeScript, and frontend development tools',
-    icon: 'code',
-    skillIds: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
-    mcpIds: ['1', '2', '3'],
-    createdAt: '2024-01-01T00:00:00Z',
-    lastUsed: '2024-01-20T10:30:00Z',
-  },
-  {
-    id: '2',
-    name: 'Backend Development',
-    description: 'Node.js, Python, and server-side development',
-    icon: 'server',
-    skillIds: ['13', '14', '15', '16', '17', '18'],
-    mcpIds: ['4', '5'],
-    createdAt: '2024-01-02T00:00:00Z',
-    lastUsed: '2024-01-19T15:45:00Z',
-  },
-  {
-    id: '3',
-    name: 'Design System',
-    description: 'UI/UX design, prototyping, and style guides',
-    icon: 'palette',
-    skillIds: ['19', '20', '21', '22'],
-    mcpIds: ['6'],
-    createdAt: '2024-01-03T00:00:00Z',
-    lastUsed: '2024-01-18T09:20:00Z',
-  },
-  {
-    id: '4',
-    name: 'Data Science',
-    description: 'Machine learning, data analysis, and visualization',
-    icon: 'bar-chart',
-    skillIds: ['23', '24', '25', '26', '27', '28', '29', '30'],
-    mcpIds: ['7', '8', '9'],
-    createdAt: '2024-01-04T00:00:00Z',
-    lastUsed: '2024-01-17T14:00:00Z',
-  },
-  {
-    id: '5',
-    name: 'DevOps',
-    description: 'CI/CD, containerization, and infrastructure',
-    icon: 'cloud',
-    skillIds: ['31', '32', '33'],
-    mcpIds: ['10', '11'],
-    createdAt: '2024-01-05T00:00:00Z',
-    lastUsed: '2024-01-16T08:00:00Z',
-  },
-];
 
 export default useProjectsStore;
