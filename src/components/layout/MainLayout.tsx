@@ -8,8 +8,8 @@ import { useSkillsStore } from '@/stores/skillsStore';
 import { useMcpsStore } from '@/stores/mcpsStore';
 import { useScenesStore } from '@/stores/scenesStore';
 import { useProjectsStore } from '@/stores/projectsStore';
-import { Pencil, Trash2, Loader2, Monitor } from 'lucide-react';
-import { isTauri, BROWSER_MODE_MESSAGE } from '@/utils/tauri';
+import { Pencil, Trash2, Loader2 } from 'lucide-react';
+import { isTauri } from '@/utils/tauri';
 import type { Category } from '@/types';
 
 export default function MainLayout() {
@@ -17,7 +17,6 @@ export default function MainLayout() {
   const navigate = useNavigate();
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
-  const [isBrowserMode, setIsBrowserMode] = useState(false);
 
   const {
     activeCategory,
@@ -43,10 +42,9 @@ export default function MainLayout() {
         setIsInitializing(true);
         setInitError(null);
 
-        // Check if running in Tauri environment
+        // In browser mode, skip data loading but allow UI preview
         if (!isTauri()) {
-          console.warn('Running in browser mode - Tauri API not available');
-          setIsBrowserMode(true);
+          console.warn('Running in browser mode - Tauri API not available. Using empty data for UI preview.');
           setIsInitializing(false);
           return;
         }
@@ -125,27 +123,6 @@ export default function MainLayout() {
     );
   }
 
-  // Show browser mode notice
-  if (isBrowserMode) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-4 max-w-md text-center">
-          <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center">
-            <Monitor size={24} className="text-amber-500" />
-          </div>
-          <h2 className="text-lg font-semibold text-zinc-900">Browser Mode</h2>
-          <p className="text-sm text-zinc-500">{BROWSER_MODE_MESSAGE}</p>
-          <div className="mt-2 p-4 bg-zinc-50 rounded-lg">
-            <code className="text-sm text-zinc-700">npm run tauri dev</code>
-          </div>
-          <p className="text-xs text-zinc-400 mt-2">
-            Ensemble requires Tauri to access the native file system and manage configurations.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   // Show error state if initialization failed
   if (initError) {
     return (
@@ -168,24 +145,35 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-white">
-      <Sidebar
-        activeNav={getActiveNav()}
-        activeCategory={activeCategory}
-        activeTags={activeTags}
-        categories={categories}
-        tags={tags}
-        counts={counts}
-        onNavChange={handleNavChange}
-        onCategoryChange={setActiveCategory}
-        onTagToggle={toggleActiveTag}
-        onCategoryContextMenu={handleCategoryContextMenu}
-      />
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-white">
+      {/* Browser Preview Mode Banner */}
+      {!isTauri() && (
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center flex-shrink-0">
+          <p className="text-xs text-amber-700">
+            Browser Preview Mode — Run <code className="bg-amber-100 px-1 rounded">npm run tauri dev</code> for full functionality
+          </p>
+        </div>
+      )}
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-hidden flex flex-col">
-        <Outlet />
-      </main>
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar
+          activeNav={getActiveNav()}
+          activeCategory={activeCategory}
+          activeTags={activeTags}
+          categories={categories}
+          tags={tags}
+          counts={counts}
+          onNavChange={handleNavChange}
+          onCategoryChange={setActiveCategory}
+          onTagToggle={toggleActiveTag}
+          onCategoryContextMenu={handleCategoryContextMenu}
+        />
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-hidden flex flex-col">
+          <Outlet />
+        </main>
+      </div>
 
       {/* Category Context Menu */}
       {contextMenu && (
