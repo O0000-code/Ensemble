@@ -13,3 +13,4 @@ export { SearchInput } from './SearchInput';
 export { default as ErrorBoundary, ErrorBoundary as ErrorBoundaryComponent } from './ErrorBoundary';
 export { default as Dropdown, Dropdown as DropdownComponent } from './Dropdown';
 export type { DropdownProps, DropdownOption } from './Dropdown';
+export { FilteredEmptyState } from './FilteredEmptyState';

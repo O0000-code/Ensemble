@@ -52,8 +52,8 @@ export default function MainLayout() {
   } = useAppStore();
 
   const { loadSettings } = useSettingsStore();
-  const { loadSkills } = useSkillsStore();
-  const { loadMcps } = useMcpsStore();
+  const { loadSkills, setFilter: setSkillsFilter } = useSkillsStore();
+  const { loadMcps, setFilter: setMcpsFilter } = useMcpsStore();
   const { loadScenes } = useScenesStore();
   const { loadProjects } = useProjectsStore();
 
@@ -95,6 +95,12 @@ export default function MainLayout() {
 
     initialize();
   }, []);
+
+  // Sync Category/Tag filter state from appStore to skillsStore and mcpsStore
+  useEffect(() => {
+    setSkillsFilter({ category: activeCategory, tags: activeTags });
+    setMcpsFilter({ category: activeCategory, tags: activeTags });
+  }, [activeCategory, activeTags, setSkillsFilter, setMcpsFilter]);
 
   // Context menu state - Category
   const [contextMenu, setContextMenu] = useState<{

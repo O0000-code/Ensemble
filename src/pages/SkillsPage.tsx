@@ -4,6 +4,7 @@ import PageHeader from '../components/layout/PageHeader';
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
 import EmptyState from '../components/common/EmptyState';
+import { FilteredEmptyState } from '../components/common/FilteredEmptyState';
 import SkillItem from '../components/skills/SkillItem';
 import { useSkillsStore } from '../stores/skillsStore';
 
@@ -28,6 +29,12 @@ export function SkillsPage() {
   const filteredSkills = getFilteredSkills();
   const enabledCount = getEnabledCount();
 
+  // Calculate empty state related variables
+  const showEmptyState = filteredSkills.length === 0;
+  const isFilteredByCategory = !!filter.category;
+  const isFilteredByTag = filter.tags.length > 0;
+  const shouldHideBadge = showEmptyState && (isFilteredByCategory || isFilteredByTag);
+
   const handleSearchChange = (value: string) => {
     setFilter({ search: value });
   };
@@ -50,7 +57,7 @@ export function SkillsPage() {
       <PageHeader
         title="Skills"
         badge={
-          enabledCount > 0 && (
+          !shouldHideBadge && enabledCount > 0 && (
             <Badge variant="status">
               {enabledCount} enabled
             </Badge>
@@ -87,16 +94,24 @@ export function SkillsPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-7 py-6">
-        {filteredSkills.length === 0 ? (
-          <EmptyState
-            icon={<Sparkles className="h-12 w-12" />}
-            title="No skills"
-            description={
-              filter.search
-                ? 'No skills match your search. Try a different query.'
-                : 'Add your first skill to get started'
-            }
-          />
+        {showEmptyState ? (
+          isFilteredByCategory ? (
+            <FilteredEmptyState type="category" />
+          ) : isFilteredByTag ? (
+            <FilteredEmptyState type="tag" />
+          ) : filter.search ? (
+            <EmptyState
+              icon={<Sparkles className="h-12 w-12" />}
+              title="No skills"
+              description="No skills match your search. Try a different query."
+            />
+          ) : (
+            <EmptyState
+              icon={<Sparkles className="h-12 w-12" />}
+              title="No skills"
+              description="Add your first skill to get started"
+            />
+          )
         ) : (
           <div className="flex flex-col gap-3">
             {filteredSkills.map((skill) => (
