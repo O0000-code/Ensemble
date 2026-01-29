@@ -7,3 +7,5 @@ export { default as ScenesPage } from './ScenesPage';
 export { default as SceneDetailPage } from './SceneDetailPage';
 export { default as ProjectsPage } from './ProjectsPage';
 export { default as SettingsPage } from './SettingsPage';
+export { default as CategoryPage } from './CategoryPage';
+export { default as TagPage } from './TagPage';

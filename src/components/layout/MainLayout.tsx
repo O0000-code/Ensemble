@@ -114,9 +114,19 @@ export default function MainLayout() {
     position: { x: number; y: number };
   } | null>(null);
 
+  // Parse Category/Tag from URL path
+  const categoryMatch = location.pathname.match(/^\/category\/(.+)$/);
+  const tagMatch = location.pathname.match(/^\/tag\/(.+)$/);
+
+  const currentCategoryId = categoryMatch ? decodeURIComponent(categoryMatch[1]) : null;
+  const currentTagId = tagMatch ? decodeURIComponent(tagMatch[1]) : null;
+
   // Determine active nav from current route
-  const getActiveNav = (): 'skills' | 'mcp-servers' | 'scenes' | 'projects' | 'settings' => {
+  // Category/Tag pages don't highlight any main nav item (return null equivalent by using 'skills' but Sidebar won't highlight it)
+  const getActiveNav = (): 'skills' | 'mcp-servers' | 'scenes' | 'projects' | 'settings' | null => {
     const path = location.pathname;
+    // Category/Tag pages - don't highlight main nav
+    if (path.startsWith('/category/') || path.startsWith('/tag/')) return null;
     if (path.startsWith('/skills')) return 'skills';
     if (path.startsWith('/mcp-servers')) return 'mcp-servers';
     if (path.startsWith('/scenes')) return 'scenes';
@@ -280,8 +290,8 @@ export default function MainLayout() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
           activeNav={getActiveNav()}
-          activeCategory={activeCategory}
-          activeTags={activeTags}
+          activeCategory={currentCategoryId || activeCategory}
+          activeTags={currentTagId ? [currentTagId] : activeTags}
           categories={categories}
           tags={tags}
           counts={counts}

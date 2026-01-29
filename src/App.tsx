@@ -8,6 +8,8 @@ import ScenesPage from './pages/ScenesPage';
 import SceneDetailPage from './pages/SceneDetailPage';
 import ProjectsPage from './pages/ProjectsPage';
 import SettingsPage from './pages/SettingsPage';
+import CategoryPage from './pages/CategoryPage';
+import TagPage from './pages/TagPage';
 
 function App() {
   return (
@@ -23,6 +25,8 @@ function App() {
           <Route path="scenes/:id" element={<SceneDetailPage />} />
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="projects/:id" element={<ProjectsPage />} />
+          <Route path="category/:categoryId" element={<CategoryPage />} />
+          <Route path="tag/:tagId" element={<TagPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>

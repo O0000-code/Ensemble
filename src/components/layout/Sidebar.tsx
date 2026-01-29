@@ -33,7 +33,7 @@ const startDrag = async (e: React.MouseEvent) => {
 };
 
 export interface SidebarProps {
-  activeNav: 'skills' | 'mcp-servers' | 'scenes' | 'projects' | 'settings';
+  activeNav: 'skills' | 'mcp-servers' | 'scenes' | 'projects' | 'settings' | null;
   activeCategory?: string | null;
   activeTags?: string[];
   categories: Category[];
@@ -86,8 +86,8 @@ export function Sidebar({
   tags,
   counts,
   onNavChange,
-  onCategoryChange,
-  onTagToggle,
+  onCategoryChange: _onCategoryChange, // Kept for potential future use
+  onTagToggle: _onTagToggle, // Kept for potential future use
   onAddCategory,
   onAddTag,
   onCategoryContextMenu,
@@ -256,7 +256,13 @@ export function Sidebar({
                   return (
                     <button
                       key={category.id}
-                      onClick={() => onCategoryChange(isActive ? null : category.id)}
+                      onClick={() => {
+                        if (isActive) {
+                          navigate('/skills'); // 取消选择时回到 Skills 页面
+                        } else {
+                          navigate(`/category/${category.id}`);
+                        }
+                      }}
                       onDoubleClick={() => onCategoryDoubleClick?.(category.id)}
                       onContextMenu={(e) => handleCategoryContextMenu(e, category)}
                       className={`
@@ -359,7 +365,13 @@ export function Sidebar({
                   return (
                     <button
                       key={tag.id}
-                      onClick={() => onTagToggle(tag.id)}
+                      onClick={() => {
+                        if (isActive) {
+                          navigate('/skills'); // 取消选择时回到 Skills 页面
+                        } else {
+                          navigate(`/tag/${tag.id}`);
+                        }
+                      }}
                       onDoubleClick={() => onTagDoubleClick?.(tag.id)}
                       onContextMenu={(e) => {
                         e.preventDefault();
