@@ -261,7 +261,7 @@ export default function MainLayout() {
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-white">
+    <div className="relative flex flex-col h-screen w-screen overflow-hidden bg-white">
       {/* Browser Preview Mode Banner */}
       {!isTauri() && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center flex-shrink-0">

@@ -1,4 +1,15 @@
 import React from 'react';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+
+// Helper to start window dragging
+const startDrag = async (e: React.MouseEvent) => {
+  if (e.button !== 0) return; // Only left mouse button
+  try {
+    await getCurrentWindow().startDragging();
+  } catch (err) {
+    // Ignore errors in browser mode
+  }
+};
 
 // ============================================================================
 // ListDetailLayout Component
@@ -54,9 +65,15 @@ export function ListDetailLayout({
         className="flex h-full flex-shrink-0 flex-col border-r border-[#E5E5E5]"
         style={{ width: `${listWidth}px` }}
       >
-        {/* List Header */}
-        <div className="flex h-14 flex-shrink-0 items-center justify-between border-b border-[#E5E5E5] px-5">
-          {listHeader}
+        {/* List Header - draggable for window movement */}
+        <div
+          className="flex h-14 flex-shrink-0 items-center justify-between border-b border-[#E5E5E5] px-5"
+          onMouseDown={startDrag}
+        >
+          {/* Content with pointer-events control */}
+          <div className="pointer-events-none flex w-full items-center justify-between [&_button]:pointer-events-auto [&_input]:pointer-events-auto [&_a]:pointer-events-auto [&_[role='button']]:pointer-events-auto [&_[role='switch']]:pointer-events-auto">
+            {listHeader}
+          </div>
         </div>
 
         {/* List Content */}
@@ -69,10 +86,16 @@ export function ListDetailLayout({
       <div className="flex h-full flex-1 flex-col">
         {hasDetail ? (
           <>
-            {/* Detail Header */}
+            {/* Detail Header - draggable for window movement */}
             {detailHeader && (
-              <div className="flex h-14 flex-shrink-0 items-center justify-between border-b border-[#E5E5E5] px-7">
-                {detailHeader}
+              <div
+                className="flex h-14 flex-shrink-0 items-center justify-between border-b border-[#E5E5E5] px-7"
+                onMouseDown={startDrag}
+              >
+                {/* Content with pointer-events control */}
+                <div className="pointer-events-none flex w-full items-center justify-between [&_button]:pointer-events-auto [&_input]:pointer-events-auto [&_a]:pointer-events-auto [&_[role='button']]:pointer-events-auto [&_[role='switch']]:pointer-events-auto">
+                  {detailHeader}
+                </div>
               </div>
             )}
 
@@ -83,8 +106,12 @@ export function ListDetailLayout({
           </>
         ) : (
           // Empty state when no detail is selected
-          <div className="flex h-full flex-1 items-center justify-center">
-            {emptyDetail}
+          <div className="flex h-full flex-1 flex-col">
+            {/* Drag region for empty state */}
+            <div className="h-14 flex-shrink-0" onMouseDown={startDrag} />
+            <div className="flex flex-1 items-center justify-center">
+              {emptyDetail}
+            </div>
           </div>
         )}
       </div>
