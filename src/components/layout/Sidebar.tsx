@@ -181,10 +181,10 @@ export function Sidebar({
                   onClick={() => handleNavClick(item.id)}
                   className={`
                     h-9 px-2.5 flex items-center gap-2.5 rounded-[6px] cursor-pointer
-                    transition-colors duration-150
+                    transition-colors duration-150 border
                     ${isActive
-                      ? 'bg-white border border-[#E5E5E5]'
-                      : 'hover:bg-[#F4F4F5]'
+                      ? 'bg-white border-[#E5E5E5]'
+                      : 'border-transparent hover:bg-[#F4F4F5]'
                     }
                   `}
                 >

@@ -126,7 +126,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
         {/* Meta */}
         <div className="flex items-center gap-5">
           {/* Skills Count */}
-          <div className="flex flex-col items-end gap-1.5">
+          <div className="flex items-center gap-1.5">
             <span className="text-[11px] font-medium text-[#A1A1AA]">Skills</span>
             <span className="text-[11px] font-semibold text-[#52525B]">
               {scene.skillIds.length}
@@ -134,7 +134,7 @@ export const SceneCard: React.FC<SceneCardProps> = ({
           </div>
 
           {/* MCPs Count */}
-          <div className="flex flex-col items-end gap-1.5">
+          <div className="flex items-center gap-1.5">
             <span className="text-[11px] font-medium text-[#A1A1AA]">MCPs</span>
             <span className="text-[11px] font-semibold text-[#52525B]">
               {scene.mcpIds.length}
