@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { Plus, Folder, ArrowLeft } from 'lucide-react';
 import { ListDetailLayout } from '../components/layout/ListDetailLayout';
+import { PageHeader } from '../components/layout/PageHeader';
 import { SearchInput, Button, EmptyState, IconPicker } from '../components/common';
-import { ProjectItem, NewProjectItem, ProjectConfigPanel } from '../components/projects';
+import { ProjectItem, NewProjectItem, ProjectConfigPanel, ProjectCard } from '../components/projects';
 import { useProjectsStore } from '../stores/projectsStore';
 import { useScenesStore } from '../stores/scenesStore';
 import type { Scene } from '../types';
@@ -10,20 +11,19 @@ import type { Scene } from '../types';
 // ============================================================================
 // ProjectsPage Component
 // ============================================================================
-// Layout: ListDetailLayout with listWidth=400
-// Design reference: 06-projects-design.md
+// Layout: Depends on state
+// - Empty state: Two-column layout (Sidebar + Main Content)
+// - List state: Two-column layout (Sidebar + Main Content with cards)
+// - Detail/Create state: Three-column layout (ListDetailLayout)
+// Design reference: design-spec-projects.md
 
 /**
  * ProjectsPage displays the projects management interface.
  *
- * Structure:
- * - List Panel (400px): Projects list with search and add functionality
- * - Detail Panel (fill): Project configuration view or edit form
- *
- * States:
- * - Normal: List + selected project details
- * - Creating: List with new project item + create form
- * - Empty: Empty states for both panels
+ * States and Layouts:
+ * - Empty (projects.length === 0 && !isCreating): Two-column, empty state centered
+ * - List (projects.length > 0 && !selectedProjectId && !isCreating): Two-column, project cards
+ * - Detail/Create (selectedProjectId || isCreating): Three-column ListDetailLayout
  */
 export function ProjectsPage() {
   const {
@@ -96,9 +96,107 @@ export function ProjectsPage() {
   );
 
   // ============================================================================
-  // List Header
+  // State 1: Empty State Page (Two-Column Layout)
   // ============================================================================
+  // Condition: No projects and not in creating mode
+  // Layout: PageHeader + Centered Empty State
 
+  if (projects.length === 0 && !isCreating) {
+    return (
+      <>
+        {/* Header with "New Project" button */}
+        <PageHeader
+          title="Projects"
+          actions={
+            <Button
+              variant="primary"
+              size="small"
+              icon={<Plus />}
+              onClick={startCreating}
+            >
+              New Project
+            </Button>
+          }
+        />
+
+        {/* Empty State Content - Centered */}
+        <div className="flex flex-1 items-center justify-center">
+          <div className="flex flex-col items-center gap-5">
+            {/* Folder Icon */}
+            <Folder
+              className="h-8 w-8 text-[#D4D4D8]"
+              strokeWidth={1.5}
+            />
+            {/* Text Group */}
+            <div className="flex flex-col items-center gap-1.5">
+              <span className="text-sm font-medium tracking-[-0.2px] text-[#A1A1AA]">
+                No projects
+              </span>
+              <span className="text-[13px] text-[#D4D4D8] text-center">
+                Add a project folder to get started
+              </span>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ============================================================================
+  // State 2: List Page (Two-Column Layout)
+  // ============================================================================
+  // Condition: Has projects, no selection, not creating
+  // Layout: PageHeader with Search + Project Cards Grid
+
+  if (projects.length > 0 && !selectedProjectId && !isCreating) {
+    return (
+      <>
+        {/* Header with Search */}
+        <PageHeader
+          title="Projects"
+          searchValue={filter.search}
+          onSearchChange={(value) => setFilter({ search: value })}
+          searchPlaceholder="Search projects..."
+        />
+
+        {/* Content Area with Project Cards */}
+        <div className="flex-1 overflow-y-auto py-6 px-7">
+          {filteredProjects.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {filteredProjects.map((project) => {
+                const scene = scenes.find((s) => s.id === project.sceneId);
+                return (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    scene={scene}
+                    onClick={() => selectProject(project.id)}
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            // No results from search
+            <div className="flex h-full items-center justify-center">
+              <EmptyState
+                icon={<Folder className="h-8 w-8" strokeWidth={1.5} />}
+                title="No matching projects"
+                description="Try adjusting your search query"
+              />
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  // ============================================================================
+  // State 3: Detail/Create Page (Three-Column Layout)
+  // ============================================================================
+  // Condition: Has selected project or in creating mode
+  // Layout: ListDetailLayout (existing implementation)
+
+  // List Header
   const listHeader = (
     <>
       <h2 className="text-[16px] font-semibold text-[#18181B]">Projects</h2>
@@ -134,10 +232,7 @@ export function ProjectsPage() {
     </>
   );
 
-  // ============================================================================
   // List Content
-  // ============================================================================
-
   const listContent = (
     <div className="flex flex-col gap-3">
       {/* New Project Item (when creating) */}
@@ -176,10 +271,7 @@ export function ProjectsPage() {
     </div>
   );
 
-  // ============================================================================
   // Detail Header
-  // ============================================================================
-
   const detailHeader = isCreating ? (
     <>
       <h2 className="text-[16px] font-semibold text-[#18181B]">
@@ -218,10 +310,7 @@ export function ProjectsPage() {
     </>
   ) : null;
 
-  // ============================================================================
   // Detail Content
-  // ============================================================================
-
   const detailContent = isCreating ? (
     <ProjectConfigPanel
       project={null}
@@ -246,10 +335,7 @@ export function ProjectsPage() {
     />
   ) : null;
 
-  // ============================================================================
   // Empty Detail State
-  // ============================================================================
-
   const emptyDetail = (
     <div className="flex flex-col items-center justify-center gap-3.5">
       <ArrowLeft className="h-6 w-4 text-[#D4D4D8]" strokeWidth={1.5} />
@@ -259,10 +345,7 @@ export function ProjectsPage() {
     </div>
   );
 
-  // ============================================================================
-  // Render
-  // ============================================================================
-
+  // Render Three-Column Layout
   return (
     <>
       <ListDetailLayout

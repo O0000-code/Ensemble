@@ -156,7 +156,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       set((state) => ({
         projects: [...state.projects, project],
         isCreating: false,
-        selectedProjectId: project.id,
+        selectedProjectId: null,
         newProject: {
           name: '',
           path: '',
