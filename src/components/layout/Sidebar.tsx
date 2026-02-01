@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Plug, Layers, Folder, Plus, Settings } from 'lucide-react';
+import { Sparkles, Plug, Layers, Folder, Plus, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Category, Tag } from '@/types';
 import { CategoryInlineInput, TagInlineInput } from '@/components/sidebar';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -65,6 +65,10 @@ export interface SidebarProps {
   onTagContextMenu?: (tag: Tag, position: { x: number; y: number }) => void;
   onTagSave?: (id: string | null, name: string) => void;
   onTagEditCancel?: () => void;
+
+  // Collapse 相关 props
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 // Navigation items configuration
@@ -104,6 +108,9 @@ export function Sidebar({
   onTagContextMenu,
   onTagSave,
   onTagEditCancel,
+  // Collapse 相关 props
+  isCollapsed = false,
+  onToggleCollapse,
 }: SidebarProps) {
   const navigate = useNavigate();
 
@@ -140,28 +147,26 @@ export function Sidebar({
 
   return (
     <aside className="w-[260px] h-screen bg-white border-r border-[#E5E5E5] flex flex-col flex-shrink-0">
-      {/* Sidebar Header - with space for macOS traffic lights */}
+      {/* Sidebar Header - Traffic Lights 占位 + Collapse Button */}
       <header
-        className="h-14 pl-[76px] pr-5 flex items-center gap-2.5 border-b border-[#E5E5E5] flex-shrink-0"
+        className="h-14 flex items-center justify-between pl-5 pr-3 border-b border-[#E5E5E5] flex-shrink-0"
         onMouseDown={startDrag}
       >
-        {/* Logo */}
-        <div className="w-6 h-6 bg-[#18181B] rounded-[6px] flex items-center justify-center">
-          {/* Simple "E" logo or geometric pattern */}
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path
-              d="M3 3L7 7L3 11M7 3L11 7L7 11"
-              stroke="white"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-        {/* App Name */}
-        <span className="text-sm font-semibold text-[#18181B] tracking-[-0.3px]">
-          Ensemble
-        </span>
+        {/* Traffic Lights 占位区 - 为系统原生红绿灯预留空间，不绘制任何内容 */}
+        <div className="w-[52px]" aria-hidden="true" />
+
+        {/* Collapse Button */}
+        <button
+          onClick={onToggleCollapse}
+          className="w-6 h-6 flex items-center justify-center rounded-[6px] hover:bg-[#F4F4F5] transition-colors"
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {isCollapsed ? (
+            <ChevronRight size={16} className="text-[#D4D4D8]" />
+          ) : (
+            <ChevronLeft size={16} className="text-[#D4D4D8]" />
+          )}
+        </button>
       </header>
 
       {/* Sidebar Content */}

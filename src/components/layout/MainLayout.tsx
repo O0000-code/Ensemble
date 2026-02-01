@@ -49,6 +49,9 @@ export default function MainLayout() {
     addTag,
     updateTag,
     deleteTag,
+    // Sidebar collapse state
+    sidebarCollapsed,
+    toggleSidebar,
   } = useAppStore();
 
   const { loadSettings } = useSettingsStore();
@@ -313,6 +316,9 @@ export default function MainLayout() {
           onTagContextMenu={handleTagContextMenu}
           onTagSave={handleTagSave}
           onTagEditCancel={handleTagEditCancel}
+          // Collapse state
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={toggleSidebar}
         />
 
         {/* Main Content */}
