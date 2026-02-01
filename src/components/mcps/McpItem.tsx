@@ -44,12 +44,13 @@ const formatUsageCount = (count: number): string => {
 
 interface McpItemProps {
   mcp: McpServer;
+  selected?: boolean;
   onToggle: (id: string) => void;
   onClick?: (id: string) => void;
   onIconClick?: (triggerRef: React.RefObject<HTMLDivElement>) => void;
 }
 
-export const McpItem: React.FC<McpItemProps> = ({ mcp, onToggle, onClick, onIconClick }) => {
+export const McpItem: React.FC<McpItemProps> = ({ mcp, selected = false, onToggle, onClick, onIconClick }) => {
   const iconRef = useRef<HTMLDivElement>(null);
   const IconComponent = getMcpIcon(mcp);
 
@@ -83,11 +84,12 @@ export const McpItem: React.FC<McpItemProps> = ({ mcp, onToggle, onClick, onIcon
         rounded-lg
         border
         border-[#E5E5E5]
-        bg-white
         px-5
         py-4
         transition-colors
-        ${onClick ? 'cursor-pointer hover:bg-[#FAFAFA]' : ''}
+        ${selected ? 'bg-[#FAFAFA]' : 'bg-white'}
+        ${onClick && !selected ? 'cursor-pointer hover:bg-[#FAFAFA]' : ''}
+        ${onClick ? 'cursor-pointer' : ''}
       `}
     >
       {/* Left Section */}
@@ -99,16 +101,18 @@ export const McpItem: React.FC<McpItemProps> = ({ mcp, onToggle, onClick, onIcon
             e.stopPropagation();
             onIconClick?.(iconRef as React.RefObject<HTMLDivElement>);
           }}
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FAFAFA] ${
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+            selected ? 'bg-[#F4F4F5]' : 'bg-[#FAFAFA]'
+          } ${
             onIconClick ? 'cursor-pointer hover:ring-2 hover:ring-[#18181B]/10 transition-shadow' : ''
           }`}
         >
-          <IconComponent className="h-5 w-5 text-[#52525B]" />
+          <IconComponent className={`h-5 w-5 ${selected ? 'text-[#18181B]' : 'text-[#52525B]'}`} />
         </div>
 
         {/* Info */}
         <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-[#18181B]">{mcp.name}</span>
+          <span className={`text-sm text-[#18181B] ${selected ? 'font-semibold' : 'font-medium'}`}>{mcp.name}</span>
           <span className="text-xs font-normal text-[#71717A] line-clamp-1 max-w-[400px]">
             {mcp.description}
           </span>

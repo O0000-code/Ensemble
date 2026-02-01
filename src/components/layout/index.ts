@@ -6,3 +6,5 @@ export { default as ListDetailLayout, ListDetailLayout as ListDetailLayoutCompon
 export type { ListDetailLayoutProps } from './ListDetailLayout';
 export { default as PageHeader, PageHeader as PageHeaderComponent } from './PageHeader';
 export type { PageHeaderProps } from './PageHeader';
+export { default as SlidePanel, SlidePanel as SlidePanelComponent } from './SlidePanel';
+export type { SlidePanelProps } from './SlidePanel';

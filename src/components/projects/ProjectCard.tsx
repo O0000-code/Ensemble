@@ -9,6 +9,7 @@ import type { Project, Scene } from '../../types';
 export interface ProjectCardProps {
   project: Project;
   scene?: Scene;
+  selected?: boolean;
   onClick: () => void;
   onMoreClick?: (e: React.MouseEvent) => void;
 }
@@ -43,6 +44,7 @@ export interface ProjectCardProps {
 export const ProjectCard: React.FC<ProjectCardProps> = ({
   project,
   scene,
+  selected = false,
   onClick,
   onMoreClick,
 }) => {
@@ -59,7 +61,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className="
+      className={`
         flex
         w-full
         cursor-pointer
@@ -68,23 +70,22 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         rounded-lg
         border
         border-[#E5E5E5]
-        bg-white
         px-5
         py-4
         transition-colors
-        hover:bg-[#FAFAFA]
-      "
+        ${selected ? 'bg-[#FAFAFA]' : 'bg-white hover:bg-[#FAFAFA]'}
+      `}
     >
       {/* Left Section */}
       <div className="flex items-center gap-3.5">
         {/* Icon Wrap */}
-        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#FAFAFA]">
-          <Folder className="h-5 w-5 text-[#52525B]" />
+        <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${selected ? 'bg-[#F4F4F5]' : 'bg-[#FAFAFA]'}`}>
+          <Folder className={`h-5 w-5 ${selected ? 'text-[#18181B]' : 'text-[#52525B]'}`} />
         </div>
 
         {/* Info */}
         <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-[#18181B]">
+          <span className={`text-sm text-[#18181B] ${selected ? 'font-semibold' : 'font-medium'}`}>
             {project.name}
           </span>
           <span className="text-xs font-normal text-[#71717A]">
