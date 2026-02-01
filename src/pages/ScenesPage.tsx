@@ -26,8 +26,7 @@ import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
 import { EmptyState } from '@/components/common/EmptyState';
 import { IconPicker } from '@/components/common';
-import { SceneCard } from '@/components/scenes/SceneCard';
-import { SceneItem } from '@/components/scenes/SceneItem';
+import { SceneListItem } from '@/components/scenes/SceneListItem';
 import { CreateSceneModal } from '@/components/scenes/CreateSceneModal';
 import { useScenesStore } from '@/stores/scenesStore';
 import { useSkillsStore } from '@/stores/skillsStore';
@@ -302,29 +301,24 @@ export const ScenesPage: React.FC = () => {
         `}
       >
         {filteredScenes.length > 0 ? (
-          /* Scene List - Use compact items when detail panel is open */
-          <div className={`flex flex-col ${selectedSceneId ? 'gap-1' : 'gap-3'}`}>
-            {filteredScenes.map((scene) =>
-              selectedSceneId ? (
-                // Compact version when detail panel is open
-                <SceneItem
-                  key={scene.id}
-                  scene={scene}
-                  selected={scene.id === selectedSceneId}
-                  onClick={() => handleSceneClick(scene.id)}
-                  onIconClick={(ref) => handleIconClick(scene.id, ref)}
-                />
-              ) : (
-                // Full version when no detail panel
-                <SceneCard
-                  key={scene.id}
-                  scene={scene}
-                  selected={scene.id === selectedSceneId}
-                  onClick={() => handleSceneClick(scene.id)}
-                  onIconClick={(ref) => handleIconClick(scene.id, ref)}
-                />
-              )
-            )}
+          /* Scene List - Unified SceneListItem with animated compact mode */
+          <div
+            className="flex flex-col"
+            style={{
+              gap: selectedSceneId ? '4px' : '12px',
+              transition: 'gap 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          >
+            {filteredScenes.map((scene) => (
+              <SceneListItem
+                key={scene.id}
+                scene={scene}
+                compact={!!selectedSceneId}
+                selected={scene.id === selectedSceneId}
+                onClick={() => handleSceneClick(scene.id)}
+                onIconClick={(ref) => handleIconClick(scene.id, ref)}
+              />
+            ))}
           </div>
         ) : scenes.length === 0 ? (
           <div className="flex h-full items-center justify-center">
