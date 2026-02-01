@@ -46,16 +46,17 @@ pub fn get_skill(source_dir: String, skill_id: String) -> Result<Option<Skill>, 
     Ok(skills.into_iter().find(|s| s.id == skill_id))
 }
 
-/// Update skill metadata (category, tags, enabled status)
+/// Update skill metadata (category, tags, enabled status, icon)
 #[tauri::command]
 pub fn update_skill_metadata(
     skill_id: String,
     category: Option<String>,
     tags: Option<Vec<String>>,
     enabled: Option<bool>,
+    icon: Option<String>,
 ) -> Result<(), String> {
     let data_path = get_data_file_path();
-    
+
     let mut app_data: crate::types::AppData = if data_path.exists() {
         let content = fs::read_to_string(&data_path).map_err(|e| e.to_string())?;
         serde_json::from_str(&content).unwrap_or_default()
@@ -76,6 +77,9 @@ pub fn update_skill_metadata(
     }
     if let Some(e) = enabled {
         metadata.enabled = e;
+    }
+    if let Some(i) = icon {
+        metadata.icon = Some(i);
     }
 
     // Ensure directory exists
@@ -129,6 +133,7 @@ fn parse_skill_file(
         created_at: chrono::Utc::now().to_rfc3339(),
         last_used: metadata.and_then(|m| m.last_used.clone()),
         usage_count: metadata.map(|m| m.usage_count).unwrap_or(0),
+        icon: metadata.and_then(|m| m.icon.clone()),
     };
 
     Ok(skill)

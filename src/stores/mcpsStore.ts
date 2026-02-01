@@ -24,6 +24,7 @@ interface McpsState {
   loadMcps: () => Promise<void>;
   updateMcpCategory: (id: string, category: string) => Promise<void>;
   updateMcpTags: (id: string, tags: string[]) => Promise<void>;
+  updateMcpIcon: (id: string, icon: string) => Promise<void>;
 
   // Computed getters (via selectors)
   getFilteredMcps: () => McpServer[];
@@ -136,6 +137,34 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
       set((state) => ({
         mcpServers: state.mcpServers.map((m) =>
           m.id === id ? { ...m, tags } : m
+        ),
+      }));
+    } catch (error) {
+      set({ error: String(error) });
+    }
+  },
+
+  updateMcpIcon: async (id, icon) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('McpsStore: Cannot update MCP icon in browser mode');
+      // Still update local state for development/testing
+      set((state) => ({
+        mcpServers: state.mcpServers.map((m) =>
+          m.id === id ? { ...m, icon } : m
+        ),
+      }));
+      return;
+    }
+
+    try {
+      await safeInvoke('update_mcp_metadata', {
+        mcpId: id,
+        icon,
+      });
+      set((state) => ({
+        mcpServers: state.mcpServers.map((m) =>
+          m.id === id ? { ...m, icon } : m
         ),
       }));
     } catch (error) {

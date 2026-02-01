@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Server } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Badge, EmptyState } from '@/components/common';
+import { Badge, EmptyState, IconPicker } from '@/components/common';
 import { McpItem } from '@/components/mcps/McpItem';
 import { useMcpsStore } from '@/stores/mcpsStore';
 
@@ -18,15 +18,24 @@ import { useMcpsStore } from '@/stores/mcpsStore';
 export const McpServersPage: React.FC = () => {
   const navigate = useNavigate();
   const {
+    mcpServers,
     filter,
     setFilter,
     toggleMcp,
+    updateMcpIcon,
     getFilteredMcps,
     getEnabledCount,
   } = useMcpsStore();
 
   const filteredMcps = getFilteredMcps();
   const enabledCount = getEnabledCount();
+
+  // Icon Picker state
+  const [iconPickerState, setIconPickerState] = useState<{
+    isOpen: boolean;
+    mcpId: string | null;
+    triggerRef: React.RefObject<HTMLDivElement> | null;
+  }>({ isOpen: false, mcpId: null, triggerRef: null });
 
   const handleSearchChange = (value: string) => {
     setFilter({ search: value });
@@ -38,6 +47,24 @@ export const McpServersPage: React.FC = () => {
 
   const handleToggle = (id: string) => {
     toggleMcp(id);
+  };
+
+  // Handle icon click
+  const handleIconClick = (mcpId: string, ref: React.RefObject<HTMLDivElement>) => {
+    setIconPickerState({ isOpen: true, mcpId, triggerRef: ref });
+  };
+
+  // Handle icon change
+  const handleIconChange = (iconName: string) => {
+    if (iconPickerState.mcpId) {
+      updateMcpIcon(iconPickerState.mcpId, iconName);
+    }
+    setIconPickerState({ isOpen: false, mcpId: null, triggerRef: null });
+  };
+
+  // Handle icon picker close
+  const handleIconPickerClose = () => {
+    setIconPickerState({ isOpen: false, mcpId: null, triggerRef: null });
   };
 
   // Empty state when no MCPs exist
@@ -101,11 +128,22 @@ export const McpServersPage: React.FC = () => {
                 mcp={mcp}
                 onToggle={handleToggle}
                 onClick={handleMcpClick}
+                onIconClick={(ref) => handleIconClick(mcp.id, ref)}
               />
             ))}
           </div>
         )}
       </div>
+      {/* Icon Picker */}
+      {iconPickerState.triggerRef && (
+        <IconPicker
+          value={mcpServers.find((m) => m.id === iconPickerState.mcpId)?.icon || 'database'}
+          onChange={handleIconChange}
+          triggerRef={iconPickerState.triggerRef}
+          isOpen={iconPickerState.isOpen}
+          onClose={handleIconPickerClose}
+        />
+      )}
     </div>
   );
 };

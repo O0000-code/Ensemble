@@ -1,15 +1,7 @@
-import React from 'react';
-import {
-  Layers,
-  Code,
-  Server,
-  BarChart,
-  Cloud,
-  FileText,
-  BookOpen,
-  Smartphone,
-} from 'lucide-react';
+import React, { useRef } from 'react';
+import { Layers, BarChart, FileText } from 'lucide-react';
 import { Scene } from '@/types';
+import { ICON_MAP } from '@/components/common';
 
 // ============================================================================
 // Types
@@ -19,6 +11,7 @@ interface SceneItemProps {
   scene: Scene;
   selected?: boolean;
   onClick?: () => void;
+  onIconClick?: (triggerRef: React.RefObject<HTMLDivElement>) => void;
 }
 
 // ============================================================================
@@ -26,18 +19,13 @@ interface SceneItemProps {
 // ============================================================================
 
 const iconMap: Record<string, React.FC<{ className?: string }>> = {
-  layers: Layers,
-  code: Code,
-  server: Server,
-  'bar-chart': BarChart,
-  cloud: Cloud,
+  ...ICON_MAP,
+  'bar-chart': ICON_MAP['bar-chart'] || BarChart,
   'file-text': FileText,
-  'book-open': BookOpen,
-  smartphone: Smartphone,
 };
 
 const getIcon = (iconName: string) => {
-  return iconMap[iconName] || Layers;
+  return iconMap[iconName] || ICON_MAP['layers'] || Layers;
 };
 
 // ============================================================================
@@ -60,7 +48,9 @@ export const SceneItem: React.FC<SceneItemProps> = ({
   scene,
   selected = false,
   onClick,
+  onIconClick,
 }) => {
+  const iconRef = useRef<HTMLDivElement>(null);
   const IconComponent = getIcon(scene.icon);
 
   return (
@@ -80,6 +70,11 @@ export const SceneItem: React.FC<SceneItemProps> = ({
     >
       {/* Icon Container */}
       <div
+        ref={iconRef}
+        onClick={(e) => {
+          e.stopPropagation();
+          onIconClick?.(iconRef as React.RefObject<HTMLDivElement>);
+        }}
         className={`
           flex
           h-9
@@ -89,6 +84,7 @@ export const SceneItem: React.FC<SceneItemProps> = ({
           justify-center
           rounded-lg
           ${selected ? 'bg-white' : 'bg-[#F4F4F5]'}
+          ${onIconClick ? 'cursor-pointer hover:ring-2 hover:ring-[#18181B]/10 transition-shadow' : ''}
         `}
       >
         <IconComponent className="h-4 w-4 text-[#52525B]" />

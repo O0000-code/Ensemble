@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Database, FolderOpen, MessageSquare, Code, Globe, FileText, Zap } from 'lucide-react';
 import Toggle from '../common/Toggle';
+import { ICON_MAP } from '@/components/common';
 import { McpServer } from '@/types';
 
 // Icon mapping for MCP servers
@@ -16,6 +17,16 @@ const iconMap: Record<string, React.ElementType> = {
 // Get icon component based on category
 const getIcon = (category: string): React.ElementType => {
   return iconMap[category] || iconMap.default;
+};
+
+// Get icon for MCP server - prioritizes custom icon over category-based icon
+const getMcpIcon = (mcp: McpServer): React.ElementType => {
+  // 优先使用自定义图标
+  if (mcp.icon && ICON_MAP[mcp.icon]) {
+    return ICON_MAP[mcp.icon];
+  }
+  // 回退到原有逻辑（根据 category 或默认图标）
+  return getIcon(mcp.category);
 };
 
 // Format usage count for display (e.g., 1847 -> "1.8k")
@@ -35,10 +46,12 @@ interface McpItemProps {
   mcp: McpServer;
   onToggle: (id: string) => void;
   onClick?: (id: string) => void;
+  onIconClick?: (triggerRef: React.RefObject<HTMLDivElement>) => void;
 }
 
-export const McpItem: React.FC<McpItemProps> = ({ mcp, onToggle, onClick }) => {
-  const IconComponent = getIcon(mcp.category);
+export const McpItem: React.FC<McpItemProps> = ({ mcp, onToggle, onClick, onIconClick }) => {
+  const iconRef = useRef<HTMLDivElement>(null);
+  const IconComponent = getMcpIcon(mcp);
 
   const handleClick = () => {
     onClick?.(mcp.id);
@@ -80,7 +93,16 @@ export const McpItem: React.FC<McpItemProps> = ({ mcp, onToggle, onClick }) => {
       {/* Left Section */}
       <div className="flex items-center gap-3.5">
         {/* Icon Container */}
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FAFAFA]">
+        <div
+          ref={iconRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            onIconClick?.(iconRef as React.RefObject<HTMLDivElement>);
+          }}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#FAFAFA] ${
+            onIconClick ? 'cursor-pointer hover:ring-2 hover:ring-[#18181B]/10 transition-shadow' : ''
+          }`}
+        >
           <IconComponent className="h-5 w-5 text-[#52525B]" />
         </div>
 
@@ -145,6 +167,7 @@ interface McpItemCompactProps {
   selected?: boolean;
   onToggle: (id: string) => void;
   onClick?: (id: string) => void;
+  onIconClick?: (triggerRef: React.RefObject<HTMLDivElement>) => void;
 }
 
 export const McpItemCompact: React.FC<McpItemCompactProps> = ({
@@ -152,8 +175,10 @@ export const McpItemCompact: React.FC<McpItemCompactProps> = ({
   selected = false,
   onToggle,
   onClick,
+  onIconClick,
 }) => {
-  const IconComponent = getIcon(mcp.category);
+  const iconRef = useRef<HTMLDivElement>(null);
+  const IconComponent = getMcpIcon(mcp);
 
   const handleClick = () => {
     onClick?.(mcp.id);
@@ -192,6 +217,11 @@ export const McpItemCompact: React.FC<McpItemCompactProps> = ({
     >
       {/* Icon Container */}
       <div
+        ref={iconRef}
+        onClick={(e) => {
+          e.stopPropagation();
+          onIconClick?.(iconRef as React.RefObject<HTMLDivElement>);
+        }}
         className={`
           flex
           h-8
@@ -201,6 +231,7 @@ export const McpItemCompact: React.FC<McpItemCompactProps> = ({
           justify-center
           rounded-md
           ${selected ? 'bg-[#F4F4F5]' : 'bg-[#FAFAFA]'}
+          ${onIconClick ? 'cursor-pointer hover:ring-2 hover:ring-[#18181B]/10 transition-shadow' : ''}
         `}
       >
         <IconComponent

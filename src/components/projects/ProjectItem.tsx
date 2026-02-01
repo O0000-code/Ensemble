@@ -1,5 +1,7 @@
-import { FolderPlus } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Folder, FolderPlus } from 'lucide-react';
 import type { Project, Scene } from '../../types';
+import { ICON_MAP } from '@/components/common';
 
 // ============================================================================
 // ProjectItem Component
@@ -12,6 +14,7 @@ export interface ProjectItemProps {
   scene?: Scene;
   selected?: boolean;
   onClick?: () => void;
+  onIconClick?: (triggerRef: React.RefObject<HTMLDivElement>) => void;
 }
 
 /**
@@ -32,7 +35,10 @@ export function ProjectItem({
   scene,
   selected = false,
   onClick,
+  onIconClick,
 }: ProjectItemProps) {
+  const iconRef = useRef<HTMLDivElement>(null);
+
   // Format path for display (show last 2-3 segments)
   const formatPath = (path: string) => {
     const segments = path.split('/').filter(Boolean);
@@ -40,24 +46,45 @@ export function ProjectItem({
     return '~/' + segments.slice(-2).join('/');
   };
 
+  // Get icon component - use custom icon if set, otherwise default to Folder
+  const Icon = project.icon && ICON_MAP[project.icon] ? ICON_MAP[project.icon] : Folder;
+
+  const handleIconClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onIconClick?.(iconRef as React.RefObject<HTMLDivElement>);
+  };
+
   return (
     <button
       type="button"
       onClick={onClick}
       className={`
-        flex w-full items-center justify-between
-        rounded-md px-3.5 py-3
+        flex w-full items-center gap-3.5
+        rounded-lg border border-[#E5E5E5] bg-white
+        px-5 py-4
         text-left
         transition-colors duration-150
-        ${selected ? 'bg-[#FAFAFA]' : 'hover:bg-[#FAFAFA]'}
+        ${selected ? 'border-[#18181B] bg-[#FAFAFA]' : 'hover:bg-[#FAFAFA]'}
       `}
     >
-      {/* Left Content: Name + Path */}
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="truncate text-[13px] font-medium text-[#18181B]">
+      {/* Icon Container */}
+      <div
+        ref={iconRef}
+        onClick={handleIconClick}
+        className={`
+          flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#FAFAFA]
+          ${onIconClick ? 'cursor-pointer hover:ring-2 hover:ring-[#18181B]/10 transition-shadow' : ''}
+        `}
+      >
+        <Icon className="h-5 w-5 text-[#52525B]" />
+      </div>
+
+      {/* Center Content: Name + Path */}
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="truncate text-sm font-medium text-[#18181B]">
           {project.name}
         </span>
-        <span className="truncate text-[11px] font-normal text-[#71717A]">
+        <span className="truncate text-xs font-normal text-[#71717A]">
           {formatPath(project.path)}
         </span>
       </div>
@@ -114,25 +141,27 @@ export function NewProjectItem({
       type="button"
       onClick={onClick}
       className="
-        flex w-full items-center justify-between
-        rounded-md border-2 border-[#18181B] bg-[#FAFAFA]
-        px-3.5 py-3
+        flex w-full items-center gap-3.5
+        rounded-lg border-2 border-[#18181B] bg-[#FAFAFA]
+        px-5 py-4
         text-left
         transition-colors duration-150
       "
     >
+      {/* Icon Container */}
+      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#F4F4F5]">
+        <FolderPlus className="h-5 w-5 text-[#52525B]" />
+      </div>
+
       {/* Left Content */}
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="truncate text-[13px] font-medium text-[#18181B]">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <span className="truncate text-sm font-medium text-[#18181B]">
           {name || 'New Project'}
         </span>
-        <span className="truncate text-[11px] font-normal text-[#71717A]">
+        <span className="truncate text-xs font-normal text-[#71717A]">
           {path || 'Click to configure path...'}
         </span>
       </div>
-
-      {/* Right Icon */}
-      <FolderPlus className="ml-3 h-[18px] w-[18px] flex-shrink-0 text-[#71717A]" />
     </button>
   );
 }

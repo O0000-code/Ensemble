@@ -4,6 +4,7 @@ import { Plus, Layers } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/common/Button';
 import { EmptyState } from '@/components/common/EmptyState';
+import { IconPicker } from '@/components/common';
 import { SceneCard } from '@/components/scenes/SceneCard';
 import { CreateSceneModal } from '@/components/scenes/CreateSceneModal';
 import { useScenesStore } from '@/stores/scenesStore';
@@ -37,6 +38,13 @@ export const ScenesPage: React.FC = () => {
 
   // Modal state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // Icon Picker state
+  const [iconPickerState, setIconPickerState] = useState<{
+    isOpen: boolean;
+    sceneId: string | null;
+    triggerRef: React.RefObject<HTMLDivElement> | null;
+  }>({ isOpen: false, sceneId: null, triggerRef: null });
 
   // Filter scenes based on search
   const filteredScenes = useMemo(() => {
@@ -77,6 +85,30 @@ export const ScenesPage: React.FC = () => {
     navigate(`/scenes/${newScene.id}`);
   };
 
+  // Handle icon click
+  const handleIconClick = (sceneId: string, ref: React.RefObject<HTMLDivElement>) => {
+    setIconPickerState({ isOpen: true, sceneId, triggerRef: ref });
+  };
+
+  // Handle icon change
+  const handleIconChange = (iconName: string) => {
+    if (iconPickerState.sceneId) {
+      const scene = scenes.find(s => s.id === iconPickerState.sceneId);
+      if (scene) {
+        const updatedScenes = scenes.map(s =>
+          s.id === iconPickerState.sceneId ? { ...s, icon: iconName } : s
+        );
+        useScenesStore.getState().setScenes(updatedScenes);
+      }
+    }
+    setIconPickerState({ isOpen: false, sceneId: null, triggerRef: null });
+  };
+
+  // Handle icon picker close
+  const handleIconPickerClose = () => {
+    setIconPickerState({ isOpen: false, sceneId: null, triggerRef: null });
+  };
+
   return (
     <>
       {/* Page Header */}
@@ -98,16 +130,16 @@ export const ScenesPage: React.FC = () => {
       />
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-7">
+      <div className="flex-1 overflow-y-auto p-6 px-7">
         {filteredScenes.length > 0 ? (
           <div className="flex flex-col gap-3">
-            {filteredScenes.map((scene, index) => (
+            {filteredScenes.map((scene) => (
               <SceneCard
                 key={scene.id}
                 scene={scene}
-                index={index}
                 selected={scene.id === selectedId}
                 onClick={() => handleSceneClick(scene.id)}
+                onIconClick={(ref) => handleIconClick(scene.id, ref)}
               />
             ))}
           </div>
@@ -148,6 +180,17 @@ export const ScenesPage: React.FC = () => {
         skills={skills}
         mcpServers={mcpServers}
       />
+
+      {/* Icon Picker */}
+      {iconPickerState.triggerRef && (
+        <IconPicker
+          value={scenes.find(s => s.id === iconPickerState.sceneId)?.icon || 'layers'}
+          onChange={handleIconChange}
+          triggerRef={iconPickerState.triggerRef}
+          isOpen={iconPickerState.isOpen}
+          onClose={handleIconPickerClose}
+        />
+      )}
     </>
   );
 };

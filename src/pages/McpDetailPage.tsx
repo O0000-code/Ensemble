@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Database,
@@ -12,7 +12,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { ListDetailLayout } from '@/components/layout/ListDetailLayout';
-import { SearchInput, Badge, Toggle, EmptyState } from '@/components/common';
+import { SearchInput, Badge, Toggle, EmptyState, IconPicker, ICON_MAP } from '@/components/common';
 import { McpItemCompact } from '@/components/mcps/McpItem';
 import { useMcpsStore } from '@/stores/mcpsStore';
 import { Tool } from '@/types';
@@ -29,6 +29,16 @@ const iconMap: Record<string, React.ElementType> = {
 
 const getIcon = (category: string): React.ElementType => {
   return iconMap[category] || iconMap.default;
+};
+
+// Get icon for MCP server - prioritizes custom icon over category-based icon
+const getMcpIcon = (mcp: { icon?: string; category: string }): React.ElementType => {
+  // 优先使用自定义图标
+  if (mcp.icon && ICON_MAP[mcp.icon]) {
+    return ICON_MAP[mcp.icon];
+  }
+  // 回退到原有逻辑（根据 category 或默认图标）
+  return getIcon(mcp.category);
 };
 
 // Tool icon mapping based on tool name patterns
@@ -69,10 +79,12 @@ export const McpDetailPage: React.FC = () => {
   const { id: encodedId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const {
+    mcpServers,
     filter,
     setFilter,
     selectMcp,
     toggleMcp,
+    updateMcpIcon,
     getFilteredMcps,
     getEnabledCount,
     getSelectedMcp,
@@ -104,6 +116,34 @@ export const McpDetailPage: React.FC = () => {
     toggleMcp(mcpId);
   };
 
+  // Icon Picker state
+  const [iconPickerState, setIconPickerState] = useState<{
+    isOpen: boolean;
+    mcpId: string | null;
+    triggerRef: React.RefObject<HTMLDivElement> | null;
+  }>({ isOpen: false, mcpId: null, triggerRef: null });
+
+  // Ref for detail header icon
+  const detailIconRef = useRef<HTMLDivElement>(null);
+
+  // Handle icon click
+  const handleIconClick = (mcpId: string, ref: React.RefObject<HTMLDivElement>) => {
+    setIconPickerState({ isOpen: true, mcpId, triggerRef: ref });
+  };
+
+  // Handle icon change
+  const handleIconChange = (iconName: string) => {
+    if (iconPickerState.mcpId) {
+      updateMcpIcon(iconPickerState.mcpId, iconName);
+    }
+    setIconPickerState({ isOpen: false, mcpId: null, triggerRef: null });
+  };
+
+  // Handle icon picker close
+  const handleIconPickerClose = () => {
+    setIconPickerState({ isOpen: false, mcpId: null, triggerRef: null });
+  };
+
   // List Panel Header
   const listHeader = (
     <>
@@ -130,6 +170,7 @@ export const McpDetailPage: React.FC = () => {
           selected={mcp.id === id}
           onToggle={handleToggle}
           onClick={handleMcpClick}
+          onIconClick={(ref) => handleIconClick(mcp.id, ref)}
         />
       ))}
       {filteredMcps.length === 0 && (
@@ -140,15 +181,20 @@ export const McpDetailPage: React.FC = () => {
     </div>
   );
 
+  // Get the appropriate icon for the selected MCP
+  const SelectedMcpIcon = selectedMcp ? getMcpIcon(selectedMcp) : Database;
+
   // Detail Panel Header (when MCP is selected)
   const detailHeader = selectedMcp && (
     <>
       <div className="flex items-center gap-3">
         {/* Icon */}
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F4F4F5]">
-          {React.createElement(getIcon(selectedMcp.category), {
-            className: 'h-5 w-5 text-[#52525B]',
-          })}
+        <div
+          ref={detailIconRef}
+          onClick={() => handleIconClick(selectedMcp.id, detailIconRef as React.RefObject<HTMLDivElement>)}
+          className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F4F4F5] cursor-pointer hover:ring-2 hover:ring-[#18181B]/10 transition-shadow"
+        >
+          <SelectedMcpIcon className="h-5 w-5 text-[#52525B]" />
         </div>
         {/* Title Info */}
         <div className="flex flex-col gap-0.5">
@@ -289,14 +335,27 @@ export const McpDetailPage: React.FC = () => {
   );
 
   return (
-    <ListDetailLayout
-      listWidth={380}
-      listHeader={listHeader}
-      listContent={listContent}
-      detailHeader={detailHeader}
-      detailContent={detailContent}
-      emptyDetail={emptyDetail}
-    />
+    <>
+      <ListDetailLayout
+        listWidth={380}
+        listHeader={listHeader}
+        listContent={listContent}
+        detailHeader={detailHeader}
+        detailContent={detailContent}
+        emptyDetail={emptyDetail}
+      />
+
+      {/* Icon Picker */}
+      {iconPickerState.triggerRef && (
+        <IconPicker
+          value={mcpServers.find((m) => m.id === iconPickerState.mcpId)?.icon || 'database'}
+          onChange={handleIconChange}
+          triggerRef={iconPickerState.triggerRef}
+          isOpen={iconPickerState.isOpen}
+          onClose={handleIconPickerClose}
+        />
+      )}
+    </>
   );
 };
 

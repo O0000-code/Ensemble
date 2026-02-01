@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Code,
@@ -27,6 +27,7 @@ import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
 import Toggle from '../components/common/Toggle';
 import EmptyState from '../components/common/EmptyState';
+import { IconPicker, ICON_MAP } from '@/components/common';
 import SkillItem from '../components/skills/SkillItem';
 import { useSkillsStore } from '../stores/skillsStore';
 import type { Skill } from '../types';
@@ -60,13 +61,23 @@ const categoryIconMap: Record<string, React.ComponentType<{ className?: string }
 };
 
 function getSkillIcon(skill: Skill): React.ComponentType<{ className?: string }> {
+  // Priority 1: Use custom icon if set and exists in ICON_MAP
+  if (skill.icon && ICON_MAP[skill.icon]) {
+    return ICON_MAP[skill.icon];
+  }
+
+  // Priority 2: Try to match by skill ID (converted to kebab-case)
   const skillKey = skill.name.toLowerCase().replace(/\s+/g, '-');
   if (skillIconMap[skillKey]) {
     return skillIconMap[skillKey];
   }
+
+  // Priority 3: Fall back to category icon
   if (categoryIconMap[skill.category]) {
     return categoryIconMap[skill.category];
   }
+
+  // Default icon
   return Sparkles;
 }
 
@@ -124,11 +135,13 @@ export function SkillDetailPage() {
   const { skillId: encodedSkillId } = useParams<{ skillId: string }>();
   const navigate = useNavigate();
   const {
+    skills,
     filter,
     setFilter,
     selectSkill,
     selectedSkillId,
     toggleSkill,
+    updateSkillIcon,
     getFilteredSkills,
     getEnabledCount,
     getSelectedSkill,
@@ -140,6 +153,16 @@ export function SkillDetailPage() {
   const filteredSkills = getFilteredSkills();
   const enabledCount = getEnabledCount();
   const selectedSkill = getSelectedSkill();
+
+  // Detail header icon ref
+  const detailIconRef = useRef<HTMLDivElement>(null);
+
+  // Icon Picker state
+  const [iconPickerState, setIconPickerState] = useState<{
+    isOpen: boolean;
+    skillId: string | null;
+    triggerRef: React.RefObject<HTMLDivElement> | null;
+  }>({ isOpen: false, skillId: null, triggerRef: null });
 
   // Sync URL param with store selection (useEffect is the correct place for side effects)
   useEffect(() => {
@@ -172,6 +195,24 @@ export function SkillDetailPage() {
     console.log('Open in Finder:', selectedSkill?.sourcePath);
   };
 
+  // Handle icon click
+  const handleIconClick = (skillId: string, ref: React.RefObject<HTMLDivElement>) => {
+    setIconPickerState({ isOpen: true, skillId, triggerRef: ref });
+  };
+
+  // Handle icon change
+  const handleIconChange = (iconName: string) => {
+    if (iconPickerState.skillId) {
+      updateSkillIcon(iconPickerState.skillId, iconName);
+    }
+    setIconPickerState({ isOpen: false, skillId: null, triggerRef: null });
+  };
+
+  // Handle icon picker close
+  const handleIconPickerClose = () => {
+    setIconPickerState({ isOpen: false, skillId: null, triggerRef: null });
+  };
+
   // List Header
   const listHeader = (
     <>
@@ -201,6 +242,7 @@ export function SkillDetailPage() {
           selected={skill.id === selectedSkillId}
           onClick={() => handleSkillClick(skill.id)}
           onToggle={() => handleToggle(skill.id)}
+          onIconClick={(ref) => handleIconClick(skill.id, ref)}
         />
       ))}
       {filteredSkills.length === 0 && (
@@ -215,8 +257,12 @@ export function SkillDetailPage() {
   const detailHeader = selectedSkill && (
     <>
       <div className="flex items-center gap-3">
-        {/* Icon */}
-        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#F4F4F5]">
+        {/* Icon - Clickable for IconPicker */}
+        <div
+          ref={detailIconRef}
+          onClick={() => handleIconClick(selectedSkill.id, detailIconRef)}
+          className="flex h-9 w-9 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg bg-[#F4F4F5] transition-shadow hover:ring-2 hover:ring-[#18181B]/10"
+        >
           {React.createElement(getSkillIcon(selectedSkill), {
             className: 'h-[18px] w-[18px] text-[#18181B]',
           })}
@@ -420,14 +466,27 @@ export function SkillDetailPage() {
   );
 
   return (
-    <ListDetailLayout
-      listWidth={380}
-      listHeader={listHeader}
-      listContent={listContent}
-      detailHeader={detailHeader}
-      detailContent={detailContent}
-      emptyDetail={emptyDetail}
-    />
+    <>
+      <ListDetailLayout
+        listWidth={380}
+        listHeader={listHeader}
+        listContent={listContent}
+        detailHeader={detailHeader}
+        detailContent={detailContent}
+        emptyDetail={emptyDetail}
+      />
+
+      {/* Icon Picker */}
+      {iconPickerState.triggerRef && (
+        <IconPicker
+          value={skills.find((s) => s.id === iconPickerState.skillId)?.icon || 'sparkles'}
+          onChange={handleIconChange}
+          triggerRef={iconPickerState.triggerRef}
+          isOpen={iconPickerState.isOpen}
+          onClose={handleIconPickerClose}
+        />
+      )}
+    </>
   );
 }
 

@@ -13,6 +13,7 @@ export interface Skill {
   createdAt: string;
   lastUsed?: string;
   usageCount: number;
+  icon?: string;  // 自定义图标名称
 }
 
 export interface McpServer {
@@ -30,6 +31,7 @@ export interface McpServer {
   createdAt: string;
   lastUsed?: string;
   usageCount: number;
+  icon?: string;  // 自定义图标名称
 }
 
 export interface Tool {
@@ -54,6 +56,7 @@ export interface Project {
   path: string;
   sceneId: string;
   lastSynced?: string;
+  icon?: string;  // 自定义图标名称
 }
 
 export interface Category {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   Layers,
   Code,
@@ -18,11 +18,11 @@ import { Scene } from '@/types';
 
 interface SceneCardProps {
   scene: Scene;
-  index: number;
   selected?: boolean;
   active?: boolean;
   onClick?: () => void;
   onMoreClick?: (e: React.MouseEvent) => void;
+  onIconClick?: (triggerRef: React.RefObject<HTMLDivElement>) => void;
 }
 
 // ============================================================================
@@ -64,14 +64,14 @@ const getIcon = (iconName: string) => {
  */
 export const SceneCard: React.FC<SceneCardProps> = ({
   scene,
-  index,
   selected = false,
   active = false,
   onClick,
   onMoreClick,
+  onIconClick,
 }) => {
+  const iconRef = useRef<HTMLDivElement>(null);
   const IconComponent = getIcon(scene.icon);
-  const indexStr = String(index + 1).padStart(2, '0');
 
   return (
     <div
@@ -84,8 +84,8 @@ export const SceneCard: React.FC<SceneCardProps> = ({
         justify-between
         rounded-lg
         border
-        px-6
-        py-5
+        px-5
+        py-4
         transition-colors
         ${selected
           ? 'border-[#18181B] bg-[#FAFAFA]'
@@ -94,14 +94,19 @@ export const SceneCard: React.FC<SceneCardProps> = ({
       `}
     >
       {/* Left Section */}
-      <div className="flex items-center gap-5">
-        {/* Scene Index */}
-        <span className="text-[11px] font-semibold tracking-[0.5px] text-[#A1A1AA]">
-          {indexStr}
-        </span>
-
+      <div className="flex items-center gap-3.5">
         {/* Icon Container */}
-        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#F4F4F5]">
+        <div
+          ref={iconRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            onIconClick?.(iconRef as React.RefObject<HTMLDivElement>);
+          }}
+          className={`
+            flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#FAFAFA]
+            ${onIconClick ? 'cursor-pointer hover:ring-2 hover:ring-[#18181B]/10 transition-shadow' : ''}
+          `}
+        >
           <IconComponent className="h-5 w-5 text-[#52525B]" />
         </div>
 

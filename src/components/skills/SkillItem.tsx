@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   Code,
   Github,
@@ -17,6 +17,7 @@ import {
 import type { Skill } from '../../types';
 import Toggle from '../common/Toggle';
 import Badge from '../common/Badge';
+import { ICON_MAP } from '@/components/common';
 
 // ============================================================================
 // Types
@@ -28,6 +29,7 @@ export interface SkillItemProps {
   selected?: boolean;
   onClick?: () => void;
   onToggle?: (enabled: boolean) => void;
+  onIconClick?: (triggerRef: React.RefObject<HTMLDivElement>) => void;
 }
 
 // ============================================================================
@@ -59,13 +61,18 @@ const categoryIconMap: Record<string, React.ComponentType<{ className?: string }
 };
 
 function getSkillIcon(skill: Skill): React.ComponentType<{ className?: string }> {
-  // Try to match by skill ID (converted to kebab-case)
+  // Priority 1: Use custom icon if set and exists in ICON_MAP
+  if (skill.icon && ICON_MAP[skill.icon]) {
+    return ICON_MAP[skill.icon];
+  }
+
+  // Priority 2: Try to match by skill ID (converted to kebab-case)
   const skillKey = skill.name.toLowerCase().replace(/\s+/g, '-');
   if (skillIconMap[skillKey]) {
     return skillIconMap[skillKey];
   }
 
-  // Fall back to category icon
+  // Priority 3: Fall back to category icon
   if (categoryIconMap[skill.category]) {
     return categoryIconMap[skill.category];
   }
@@ -96,7 +103,9 @@ export function SkillItem({
   selected = false,
   onClick,
   onToggle,
+  onIconClick,
 }: SkillItemProps) {
+  const iconRef = useRef<HTMLDivElement>(null);
   const Icon = getSkillIcon(skill);
   const categoryColor = categoryColors[skill.category] || '#71717A';
 
@@ -117,19 +126,26 @@ export function SkillItem({
           flex items-center gap-3.5
           rounded-lg border border-[#E5E5E5]
           bg-white
-          px-4 py-3.5
+          px-5 py-4
           transition-colors
           ${onClick ? 'cursor-pointer hover:bg-[#FAFAFA]' : ''}
         `}
       >
         {/* Icon Container */}
-        <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-[#FAFAFA]">
-          <Icon className="h-[18px] w-[18px] text-[#52525B]" />
+        <div
+          ref={iconRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            onIconClick?.(iconRef as React.RefObject<HTMLDivElement>);
+          }}
+          className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#FAFAFA] ${onIconClick ? 'cursor-pointer hover:ring-2 hover:ring-[#18181B]/10 transition-shadow' : ''}`}
+        >
+          <Icon className="h-5 w-5 text-[#52525B]" />
         </div>
 
         {/* Info */}
-        <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
-          <span className="text-[13px] font-medium text-[#18181B]">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="text-sm font-medium text-[#18181B]">
             {skill.name}
           </span>
           <span className="max-w-[500px] truncate text-xs font-normal text-[#71717A]">
@@ -179,9 +195,15 @@ export function SkillItem({
     >
       {/* Icon Container */}
       <div
+        ref={iconRef}
+        onClick={(e) => {
+          e.stopPropagation();
+          onIconClick?.(iconRef as React.RefObject<HTMLDivElement>);
+        }}
         className={`
           flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md
           ${selected ? 'bg-[#F4F4F5]' : 'bg-[#FAFAFA]'}
+          ${onIconClick ? 'cursor-pointer hover:ring-2 hover:ring-[#18181B]/10 transition-shadow' : ''}
         `}
       >
         <Icon

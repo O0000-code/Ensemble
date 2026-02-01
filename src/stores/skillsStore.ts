@@ -55,6 +55,7 @@ interface SkillsState {
   toggleSkill: (id: string) => Promise<void>;
   updateSkillCategory: (id: string, category: string) => Promise<void>;
   updateSkillTags: (id: string, tags: string[]) => Promise<void>;
+  updateSkillIcon: (id: string, icon: string) => Promise<void>;
   setFilter: (filter: Partial<SkillsFilter>) => void;
   clearFilter: () => void;
   clearError: () => void;
@@ -213,6 +214,42 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
       set((state) => ({
         skills: state.skills.map((s) =>
           s.id === id ? { ...s, tags: oldTags } : s
+        ),
+        error: message,
+      }));
+    }
+  },
+
+  updateSkillIcon: async (id, icon) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('SkillsStore: Cannot update skill icon in browser mode');
+      return;
+    }
+
+    const skill = get().skills.find((s) => s.id === id);
+    if (!skill) return;
+
+    const oldIcon = skill.icon;
+
+    // Optimistic update
+    set((state) => ({
+      skills: state.skills.map((s) =>
+        s.id === id ? { ...s, icon } : s
+      ),
+    }));
+
+    try {
+      await safeInvoke('update_skill_metadata', {
+        skillId: id,
+        icon,
+      });
+    } catch (error) {
+      // Rollback on error
+      const message = typeof error === 'string' ? error : String(error);
+      set((state) => ({
+        skills: state.skills.map((s) =>
+          s.id === id ? { ...s, icon: oldIcon } : s
         ),
         error: message,
       }));

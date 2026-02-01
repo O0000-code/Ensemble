@@ -83,3 +83,23 @@ body {
 .modal-dialog-animate {
   animation: modal-dialog-zoom-in 200ms ease-out;
 }
+
+/* Icon Picker Scrollbar */
+.icon-picker-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.icon-picker-scroll::-webkit-scrollbar-track {
+  background: #F4F4F5;
+  border-radius: 2px;
+  margin: 4px 0;
+}
+
+.icon-picker-scroll::-webkit-scrollbar-thumb {
+  background: #D4D4D8;
+  border-radius: 2px;
+}
+
+.icon-picker-scroll::-webkit-scrollbar-thumb:hover {
+  background: #A1A1AA;
+}

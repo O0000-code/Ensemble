@@ -18,6 +18,7 @@ pub struct Skill {
     pub created_at: String,
     pub last_used: Option<String>,
     pub usage_count: u32,
+    pub icon: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -105,6 +106,7 @@ pub struct SkillMetadata {
     pub enabled: bool,
     pub usage_count: u32,
     pub last_used: Option<String>,
+    pub icon: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

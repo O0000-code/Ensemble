@@ -1,9 +1,11 @@
+import React, { useState } from 'react';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../components/layout/PageHeader';
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
 import EmptyState from '../components/common/EmptyState';
+import { IconPicker } from '@/components/common';
 import SkillItem from '../components/skills/SkillItem';
 import { useSkillsStore } from '../stores/skillsStore';
 
@@ -14,9 +16,11 @@ import { useSkillsStore } from '../stores/skillsStore';
 export function SkillsPage() {
   const navigate = useNavigate();
   const {
+    skills,
     filter,
     setFilter,
     toggleSkill,
+    updateSkillIcon,
     getFilteredSkills,
     getEnabledCount,
     autoClassify,
@@ -27,6 +31,13 @@ export function SkillsPage() {
 
   const filteredSkills = getFilteredSkills();
   const enabledCount = getEnabledCount();
+
+  // Icon Picker state
+  const [iconPickerState, setIconPickerState] = useState<{
+    isOpen: boolean;
+    skillId: string | null;
+    triggerRef: React.RefObject<HTMLDivElement> | null;
+  }>({ isOpen: false, skillId: null, triggerRef: null });
 
   const handleSearchChange = (value: string) => {
     setFilter({ search: value });
@@ -42,6 +53,24 @@ export function SkillsPage() {
 
   const handleAutoClassify = async () => {
     await autoClassify();
+  };
+
+  // Handle icon click
+  const handleIconClick = (skillId: string, ref: React.RefObject<HTMLDivElement>) => {
+    setIconPickerState({ isOpen: true, skillId, triggerRef: ref });
+  };
+
+  // Handle icon change
+  const handleIconChange = (iconName: string) => {
+    if (iconPickerState.skillId) {
+      updateSkillIcon(iconPickerState.skillId, iconName);
+    }
+    setIconPickerState({ isOpen: false, skillId: null, triggerRef: null });
+  };
+
+  // Handle icon picker close
+  const handleIconPickerClose = () => {
+    setIconPickerState({ isOpen: false, skillId: null, triggerRef: null });
   };
 
   return (
@@ -106,11 +135,23 @@ export function SkillsPage() {
                 variant="full"
                 onClick={() => handleSkillClick(skill.id)}
                 onToggle={(enabled) => handleToggle(skill.id, enabled)}
+                onIconClick={(ref) => handleIconClick(skill.id, ref)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Icon Picker */}
+      {iconPickerState.triggerRef && (
+        <IconPicker
+          value={skills.find((s) => s.id === iconPickerState.skillId)?.icon || 'sparkles'}
+          onChange={handleIconChange}
+          triggerRef={iconPickerState.triggerRef}
+          isOpen={iconPickerState.isOpen}
+          onClose={handleIconPickerClose}
+        />
+      )}
     </div>
   );
 }

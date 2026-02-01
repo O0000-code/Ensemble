@@ -14,3 +14,5 @@ export { default as ErrorBoundary, ErrorBoundary as ErrorBoundaryComponent } fro
 export { default as Dropdown, Dropdown as DropdownComponent } from './Dropdown';
 export type { DropdownProps, DropdownOption } from './Dropdown';
 export { FilteredEmptyState } from './FilteredEmptyState';
+export { IconPicker, ICON_MAP } from './IconPicker';
+export type { IconPickerProps } from './IconPicker';

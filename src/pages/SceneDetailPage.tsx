@@ -25,6 +25,7 @@ import { SearchInput } from '@/components/common/SearchInput';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
 import { EmptyState } from '@/components/common/EmptyState';
+import { IconPicker } from '@/components/common';
 import { SceneItem } from '@/components/scenes/SceneItem';
 import { CreateSceneModal } from '@/components/scenes/CreateSceneModal';
 import { useScenesStore } from '@/stores/scenesStore';
@@ -125,12 +126,20 @@ export const SceneDetailPage: React.FC = () => {
   // Store state
   const scenes = useScenesStore((state) => state.scenes);
   const deleteScene = useScenesStore((state) => state.deleteScene);
+  const updateScene = useScenesStore((state) => state.updateScene);
   const allSkills = useSkillsStore((state) => state.skills);
   const allMcpServers = useMcpsStore((state) => state.mcpServers);
 
   // Local state
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+  // Icon Picker state
+  const [iconPickerState, setIconPickerState] = useState<{
+    isOpen: boolean;
+    sceneId: string | null;
+    triggerRef: React.RefObject<HTMLDivElement> | null;
+  }>({ isOpen: false, sceneId: null, triggerRef: null });
 
   // Get selected scene
   const selectedScene = useMemo(
@@ -211,6 +220,24 @@ export const SceneDetailPage: React.FC = () => {
     });
   };
 
+  // Handle icon click
+  const handleIconClick = (sceneId: string, ref: React.RefObject<HTMLDivElement>) => {
+    setIconPickerState({ isOpen: true, sceneId, triggerRef: ref });
+  };
+
+  // Handle icon change
+  const handleIconChange = (iconName: string) => {
+    if (iconPickerState.sceneId) {
+      updateScene(iconPickerState.sceneId, { icon: iconName });
+    }
+    setIconPickerState({ isOpen: false, sceneId: null, triggerRef: null });
+  };
+
+  // Handle icon picker close
+  const handleIconPickerClose = () => {
+    setIconPickerState({ isOpen: false, sceneId: null, triggerRef: null });
+  };
+
   // Get scene icon component
   const SceneIconComponent = selectedScene ? getSceneIcon(selectedScene.icon) : Layers;
 
@@ -248,6 +275,7 @@ export const SceneDetailPage: React.FC = () => {
                 scene={scene}
                 selected={scene.id === sceneId}
                 onClick={() => navigate(`/scenes/${scene.id}`)}
+                onIconClick={(ref) => handleIconClick(scene.id, ref)}
               />
             ))}
             {filteredScenes.length === 0 && (
@@ -439,6 +467,17 @@ export const SceneDetailPage: React.FC = () => {
         skills={allSkills}
         mcpServers={allMcpServers}
       />
+
+      {/* Icon Picker */}
+      {iconPickerState.triggerRef && (
+        <IconPicker
+          value={scenes.find((s) => s.id === iconPickerState.sceneId)?.icon || 'layers'}
+          onChange={handleIconChange}
+          triggerRef={iconPickerState.triggerRef}
+          isOpen={iconPickerState.isOpen}
+          onClose={handleIconPickerClose}
+        />
+      )}
     </>
   );
 };

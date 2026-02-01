@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Plus, Folder, ArrowLeft } from 'lucide-react';
 import { ListDetailLayout } from '../components/layout/ListDetailLayout';
-import { SearchInput, Button, EmptyState } from '../components/common';
+import { SearchInput, Button, EmptyState, IconPicker } from '../components/common';
 import { ProjectItem, NewProjectItem, ProjectConfigPanel } from '../components/projects';
 import { useProjectsStore } from '../stores/projectsStore';
 import { useScenesStore } from '../stores/scenesStore';
@@ -46,6 +46,31 @@ export function ProjectsPage() {
 
   // Get scenes from scenesStore
   const scenes = useScenesStore((state) => state.scenes);
+
+  // Icon Picker state
+  const [iconPickerState, setIconPickerState] = useState<{
+    isOpen: boolean;
+    projectId: string | null;
+    triggerRef: React.RefObject<HTMLDivElement> | null;
+  }>({ isOpen: false, projectId: null, triggerRef: null });
+
+  // Handle icon click
+  const handleIconClick = (projectId: string, ref: React.RefObject<HTMLDivElement>) => {
+    setIconPickerState({ isOpen: true, projectId, triggerRef: ref });
+  };
+
+  // Handle icon change
+  const handleIconChange = (iconName: string) => {
+    if (iconPickerState.projectId) {
+      updateProject(iconPickerState.projectId, { icon: iconName });
+    }
+    setIconPickerState({ isOpen: false, projectId: null, triggerRef: null });
+  };
+
+  // Handle icon picker close
+  const handleIconPickerClose = () => {
+    setIconPickerState({ isOpen: false, projectId: null, triggerRef: null });
+  };
 
   // Filter projects based on search
   const filteredProjects = useMemo(() => {
@@ -114,7 +139,7 @@ export function ProjectsPage() {
   // ============================================================================
 
   const listContent = (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-3">
       {/* New Project Item (when creating) */}
       {isCreating && (
         <NewProjectItem
@@ -134,6 +159,7 @@ export function ProjectsPage() {
               scene={scene}
               selected={selectedProjectId === project.id && !isCreating}
               onClick={() => selectProject(project.id)}
+              onIconClick={(ref) => handleIconClick(project.id, ref)}
             />
           );
         })
@@ -216,6 +242,7 @@ export function ProjectsPage() {
       onChangeScene={(sceneId) => updateProject(selectedProject.id, { sceneId })}
       onSync={() => syncProject(selectedProject.id)}
       onClearConfig={() => clearProjectConfig(selectedProject.id)}
+      onIconClick={(ref) => handleIconClick(selectedProject.id, ref)}
     />
   ) : null;
 
@@ -237,14 +264,27 @@ export function ProjectsPage() {
   // ============================================================================
 
   return (
-    <ListDetailLayout
-      listWidth={400}
-      listHeader={listHeader}
-      listContent={listContent}
-      detailHeader={detailHeader}
-      detailContent={detailContent}
-      emptyDetail={emptyDetail}
-    />
+    <>
+      <ListDetailLayout
+        listWidth={400}
+        listHeader={listHeader}
+        listContent={listContent}
+        detailHeader={detailHeader}
+        detailContent={detailContent}
+        emptyDetail={emptyDetail}
+      />
+
+      {/* Icon Picker */}
+      {iconPickerState.triggerRef && (
+        <IconPicker
+          value={projects.find((p) => p.id === iconPickerState.projectId)?.icon || 'folder'}
+          onChange={handleIconChange}
+          triggerRef={iconPickerState.triggerRef}
+          isOpen={iconPickerState.isOpen}
+          onClose={handleIconPickerClose}
+        />
+      )}
+    </>
   );
 }
 

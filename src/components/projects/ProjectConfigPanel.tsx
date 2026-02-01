@@ -1,3 +1,4 @@
+import React, { useRef } from 'react';
 import {
   Folder,
   FolderOpen,
@@ -8,7 +9,7 @@ import {
   Minus,
   Layers,
 } from 'lucide-react';
-import { Button, Input, Dropdown } from '../common';
+import { Button, Input, Dropdown, ICON_MAP } from '../common';
 import type { DropdownOption } from '../common/Dropdown';
 import type { Project, Scene } from '../../types';
 
@@ -26,6 +27,7 @@ export interface ProjectConfigPanelProps {
   onChangeScene?: (sceneId: string) => void;
   onSync?: () => void;
   onClearConfig?: () => void;
+  onIconClick?: (triggerRef: React.RefObject<HTMLDivElement>) => void;
   // Edit mode form state
   formData?: {
     name: string;
@@ -49,7 +51,10 @@ function ViewModePanel({
   onChangeScene,
   onSync,
   onClearConfig,
+  onIconClick,
 }: Omit<ProjectConfigPanelProps, 'isEditing' | 'formData' | 'onFormChange' | 'onSave' | 'onCancel' | 'onBrowse'>) {
+  const iconRef = useRef<HTMLDivElement>(null);
+
   if (!project) return null;
 
   // Calculate stats from scene
@@ -63,13 +68,27 @@ function ViewModePanel({
     label: s.name,
   }));
 
+  // Get icon component - use custom icon if set, otherwise default to Folder
+  const Icon = project.icon && ICON_MAP[project.icon] ? ICON_MAP[project.icon] : Folder;
+
+  const handleIconClick = () => {
+    onIconClick?.(iconRef as React.RefObject<HTMLDivElement>);
+  };
+
   return (
     <div className="flex flex-col gap-7">
       {/* Project Info Section */}
       <div className="flex items-start gap-4">
         {/* Project Icon */}
-        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[10px] bg-[#FAFAFA]">
-          <Folder className="h-6 w-6 text-[#52525B]" />
+        <div
+          ref={iconRef}
+          onClick={handleIconClick}
+          className={`
+            flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[10px] bg-[#FAFAFA]
+            ${onIconClick ? 'cursor-pointer hover:ring-2 hover:ring-[#18181B]/10 transition-shadow' : ''}
+          `}
+        >
+          <Icon className="h-6 w-6 text-[#52525B]" />
         </div>
 
         {/* Project Details */}
