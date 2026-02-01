@@ -60,15 +60,17 @@ export const SceneItem: React.FC<SceneItemProps> = ({
         flex
         cursor-pointer
         items-center
-        gap-3
-        rounded-md
-        px-3.5
-        py-3
+        gap-3.5
+        rounded-lg
+        border
+        border-[#E5E5E5]
+        px-5
+        py-4
         transition-colors
-        ${selected ? 'bg-[#FAFAFA]' : 'hover:bg-[#FAFAFA]'}
+        ${selected ? 'bg-[#FAFAFA]' : 'bg-white hover:bg-[#FAFAFA]'}
       `}
     >
-      {/* Icon Container */}
+      {/* Icon Container - 40x40 per design spec */}
       <div
         ref={iconRef}
         onClick={(e) => {
@@ -77,35 +79,30 @@ export const SceneItem: React.FC<SceneItemProps> = ({
         }}
         className={`
           flex
-          h-9
-          w-9
+          h-10
+          w-10
           flex-shrink-0
           items-center
           justify-center
           rounded-lg
-          ${selected ? 'bg-white' : 'bg-[#F4F4F5]'}
+          ${selected ? 'bg-[#F4F4F5]' : 'bg-[#FAFAFA]'}
           ${onIconClick ? 'cursor-pointer hover:ring-2 hover:ring-[#18181B]/10 transition-shadow' : ''}
         `}
       >
-        <IconComponent className="h-4 w-4 text-[#52525B]" />
+        <IconComponent className={`h-5 w-5 ${selected ? 'text-[#18181B]' : 'text-[#52525B]'}`} />
       </div>
 
-      {/* Info */}
-      <div className="flex min-w-0 flex-col gap-0.5">
+      {/* Info - Updated font sizes per design spec */}
+      <div className="flex min-w-0 flex-col gap-1">
         <span
           className={`
-            truncate text-[13px]
-            ${selected ? 'font-semibold text-[#18181B]' : 'font-medium text-[#71717A]'}
+            truncate text-sm
+            ${selected ? 'font-semibold' : 'font-medium'} text-[#18181B]
           `}
         >
           {scene.name}
         </span>
-        <span
-          className={`
-            text-[11px] font-normal
-            ${selected ? 'text-[#71717A]' : 'text-[#A1A1AA]'}
-          `}
-        >
+        <span className="text-xs font-normal text-[#71717A]">
           {scene.skillIds.length} Skills · {scene.mcpIds.length} MCPs
         </span>
       </div>

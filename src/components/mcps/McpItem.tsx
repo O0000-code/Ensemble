@@ -210,16 +210,18 @@ export const McpItemCompact: React.FC<McpItemCompactProps> = ({
         flex
         w-full
         items-center
-        gap-3
-        rounded-md
-        px-3.5
-        py-3
+        gap-3.5
+        rounded-lg
+        border
+        border-[#E5E5E5]
+        px-5
+        py-4
         transition-colors
-        ${selected ? 'bg-[#FAFAFA]' : 'hover:bg-[#FAFAFA]'}
+        ${selected ? 'bg-[#FAFAFA]' : 'bg-white hover:bg-[#FAFAFA]'}
         ${onClick ? 'cursor-pointer' : ''}
       `}
     >
-      {/* Icon Container */}
+      {/* Icon Container - 40x40 per design spec */}
       <div
         ref={iconRef}
         onClick={(e) => {
@@ -228,31 +230,31 @@ export const McpItemCompact: React.FC<McpItemCompactProps> = ({
         }}
         className={`
           flex
-          h-8
-          w-8
+          h-10
+          w-10
           shrink-0
           items-center
           justify-center
-          rounded-md
+          rounded-lg
           ${selected ? 'bg-[#F4F4F5]' : 'bg-[#FAFAFA]'}
           ${onIconClick ? 'cursor-pointer hover:ring-2 hover:ring-[#18181B]/10 transition-shadow' : ''}
         `}
       >
         <IconComponent
-          className={`h-4 w-4 ${selected ? 'text-[#18181B]' : 'text-[#52525B]'}`}
+          className={`h-5 w-5 ${selected ? 'text-[#18181B]' : 'text-[#52525B]'}`}
         />
       </div>
 
-      {/* Info */}
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+      {/* Info - Updated font sizes per design spec */}
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span
-          className={`text-[13px] text-[#18181B] truncate ${
+          className={`text-sm text-[#18181B] truncate ${
             selected ? 'font-semibold' : 'font-medium'
           }`}
         >
           {mcp.name}
         </span>
-        <span className="text-[11px] font-normal text-[#71717A] truncate">
+        <span className="text-xs font-normal text-[#71717A] truncate">
           {mcp.description}
         </span>
       </div>

@@ -27,6 +27,7 @@ import { Badge } from '@/components/common/Badge';
 import { EmptyState } from '@/components/common/EmptyState';
 import { IconPicker } from '@/components/common';
 import { SceneCard } from '@/components/scenes/SceneCard';
+import { SceneItem } from '@/components/scenes/SceneItem';
 import { CreateSceneModal } from '@/components/scenes/CreateSceneModal';
 import { useScenesStore } from '@/stores/scenesStore';
 import { useSkillsStore } from '@/stores/skillsStore';
@@ -301,16 +302,29 @@ export const ScenesPage: React.FC = () => {
         `}
       >
         {filteredScenes.length > 0 ? (
-          <div className="flex flex-col gap-3">
-            {filteredScenes.map((scene) => (
-              <SceneCard
-                key={scene.id}
-                scene={scene}
-                selected={scene.id === selectedSceneId}
-                onClick={() => handleSceneClick(scene.id)}
-                onIconClick={(ref) => handleIconClick(scene.id, ref)}
-              />
-            ))}
+          /* Scene List - Use compact items when detail panel is open */
+          <div className={`flex flex-col ${selectedSceneId ? 'gap-1' : 'gap-3'}`}>
+            {filteredScenes.map((scene) =>
+              selectedSceneId ? (
+                // Compact version when detail panel is open
+                <SceneItem
+                  key={scene.id}
+                  scene={scene}
+                  selected={scene.id === selectedSceneId}
+                  onClick={() => handleSceneClick(scene.id)}
+                  onIconClick={(ref) => handleIconClick(scene.id, ref)}
+                />
+              ) : (
+                // Full version when no detail panel
+                <SceneCard
+                  key={scene.id}
+                  scene={scene}
+                  selected={scene.id === selectedSceneId}
+                  onClick={() => handleSceneClick(scene.id)}
+                  onIconClick={(ref) => handleIconClick(scene.id, ref)}
+                />
+              )
+            )}
           </div>
         ) : scenes.length === 0 ? (
           <div className="flex h-full items-center justify-center">
