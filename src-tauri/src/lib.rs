@@ -21,29 +21,17 @@ pub fn run() {
             Ok(())
         })
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
-            println!("[Single Instance] Received args: {:?}", args);
-
             // 检查是否有 --launch 参数
             if let Some(launch_index) = args.iter().position(|a| a == "--launch") {
                 if let Some(path) = args.get(launch_index + 1) {
-                    println!("[Single Instance] Launch path: {}", path);
-
-                    // 尝试获取主窗口
+                    // 尝试获取主窗口并发送事件
+                    // 注意：不调用 set_focus()，让前端决定是否需要显示窗口
                     if let Some(window) = app.get_webview_window("main") {
-                        println!("[Single Instance] Found main window, emitting event");
-                        let emit_result = window.emit("second-instance-launch", path.clone());
-                        println!("[Single Instance] Emit result: {:?}", emit_result);
-                        let _ = window.set_focus();
+                        let _ = window.emit("second-instance-launch", path.clone());
                     } else {
-                        // 如果找不到 "main"，尝试获取所有窗口
-                        println!("[Single Instance] Main window not found, trying all windows");
                         let windows = app.webview_windows();
-                        println!("[Single Instance] Available windows: {:?}", windows.keys().collect::<Vec<_>>());
-
                         if let Some((_, window)) = windows.into_iter().next() {
-                            println!("[Single Instance] Using first available window");
                             let _ = window.emit("second-instance-launch", path.clone());
-                            let _ = window.set_focus();
                         }
                     }
                 }

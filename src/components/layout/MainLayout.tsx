@@ -107,10 +107,10 @@ export default function MainLayout() {
     const hasScene = existingProject && existingProject.sceneId && existingProject.sceneId.trim() !== '';
 
     if (hasScene) {
-      // Project exists and has scene - sync config and launch terminal directly
+      // Project exists and has scene - sync config and launch terminal directly (no UI needed)
       try {
         // Get terminal settings
-        const { terminalApp, claudeCommand } = useSettingsStore.getState();
+        const { terminalApp, claudeCommand, warpOpenMode } = useSettingsStore.getState();
 
         // Sync project configuration first
         await useProjectsStore.getState().syncProject(existingProject.id);
@@ -120,17 +120,32 @@ export default function MainLayout() {
           folderPath: normalizedPath,
           terminalApp: terminalApp || 'Terminal',
           claudeCommand: claudeCommand || 'claude',
+          warpOpenMode: warpOpenMode || 'window',
         });
       } catch (error) {
         console.error('[handleLaunchPath] Error:', error);
-        // Fall back to opening launcher on error
+        // Fall back to opening launcher on error - need to show window
+        await focusWindow();
         useLauncherStore.getState().openLauncher(normalizedPath);
       }
     } else {
-      // Project doesn't exist or has no scene - open launcher modal
+      // Project doesn't exist or has no scene - need to show launcher modal
+      await focusWindow();
       useLauncherStore.getState().openLauncher(normalizedPath);
     }
   }, []);
+
+  // Helper to focus the main window when UI needs to be shown
+  const focusWindow = async () => {
+    if (!isTauri()) return;
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const win = getCurrentWindow();
+      await win.setFocus();
+    } catch (e) {
+      console.error('Failed to focus window:', e);
+    }
+  };
 
   // Initialize app data on mount
   useEffect(() => {

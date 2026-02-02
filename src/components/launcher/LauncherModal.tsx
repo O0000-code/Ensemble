@@ -16,7 +16,7 @@ interface LauncherModalProps {
 export function LauncherModal({ isOpen, folderPath, onClose }: LauncherModalProps) {
   const { scenes } = useScenesStore();
   const { projects, syncProject, updateProject } = useProjectsStore();
-  const { terminalApp, claudeCommand } = useSettingsStore();
+  const { terminalApp, claudeCommand, warpOpenMode } = useSettingsStore();
 
   const [selectedSceneId, setSelectedSceneId] = useState<string>('');
   const [isLaunching, setIsLaunching] = useState(false);
@@ -75,6 +75,7 @@ export function LauncherModal({ isOpen, folderPath, onClose }: LauncherModalProp
         folderPath,
         terminalApp,
         claudeCommand,
+        warpOpenMode: warpOpenMode || 'window',
       });
 
       onClose();

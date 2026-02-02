@@ -30,6 +30,7 @@ export interface SettingsState {
   // Terminal and launch settings
   terminalApp: string;
   claudeCommand: string;
+  warpOpenMode: 'tab' | 'window';
 
   // Import state
   hasCompletedImport: boolean;
@@ -49,6 +50,7 @@ export interface SettingsState {
   setAutoClassifyNewItems: (enabled: boolean) => void;
   setTerminalApp: (app: string) => void;
   setClaudeCommand: (command: string) => void;
+  setWarpOpenMode: (mode: 'tab' | 'window') => void;
   setHasCompletedImport: (completed: boolean) => void;
   setStats: (stats: Partial<SettingsStats>) => void;
 
@@ -71,6 +73,7 @@ const defaultSettings = {
   autoClassifyNewItems: false,
   terminalApp: 'Terminal',
   claudeCommand: 'claude',
+  warpOpenMode: 'window' as const,
   hasCompletedImport: false,
   stats: {
     skillsCount: 0,
@@ -122,6 +125,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     get().saveSettings();
   },
 
+  setWarpOpenMode: (mode: 'tab' | 'window') => {
+    set({ warpOpenMode: mode });
+    get().saveSettings();
+  },
+
   setHasCompletedImport: (completed: boolean) => {
     set({ hasCompletedImport: completed });
     get().saveSettings();
@@ -153,6 +161,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
           autoClassifyNewItems: settings.autoClassifyNewItems,
           terminalApp: settings.terminalApp || 'Terminal',
           claudeCommand: settings.claudeCommand || 'claude',
+          warpOpenMode: settings.warpOpenMode || 'window',
           hasCompletedImport: settings.hasCompletedImport || false,
           isLoading: false,
         });
@@ -184,6 +193,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
           autoClassifyNewItems: state.autoClassifyNewItems,
           terminalApp: state.terminalApp,
           claudeCommand: state.claudeCommand,
+          warpOpenMode: state.warpOpenMode,
           hasCompletedImport: state.hasCompletedImport,
         },
       });

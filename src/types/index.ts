@@ -82,6 +82,7 @@ export interface AppSettings {
   terminalApp: string;          // 终端应用 (Terminal/iTerm/Warp/custom)
   claudeCommand: string;        // 启动 Claude Code 的命令
   hasCompletedImport: boolean;  // 是否已完成首次导入
+  warpOpenMode: 'tab' | 'window';  // Warp 打开模式：新 Tab 或新窗口
 }
 
 export interface ConfigStatus {

@@ -166,11 +166,13 @@ export function SettingsPage() {
     autoClassifyNewItems,
     terminalApp,
     claudeCommand,
+    warpOpenMode,
     stats,
     setAnthropicApiKey,
     setAutoClassifyNewItems,
     setTerminalApp,
     setClaudeCommand,
+    setWarpOpenMode,
     getMaskedApiKey,
     hasApiKey,
     selectDirectory,
@@ -383,6 +385,28 @@ export function SettingsPage() {
                   <option value="Alacritty">Alacritty</option>
                 </select>
               </Row>
+
+              {/* Warp Open Mode - Only shown when Warp is selected */}
+              {terminalApp === 'Warp' && (
+                <Row>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[13px] font-medium text-[#18181B]">
+                      Open Mode
+                    </span>
+                    <span className="text-xs text-[#71717A]">
+                      How Warp opens when launching Claude Code
+                    </span>
+                  </div>
+                  <select
+                    value={warpOpenMode}
+                    onChange={(e) => setWarpOpenMode(e.target.value as 'tab' | 'window')}
+                    className="rounded-md border border-[#E5E5E5] px-3 py-1.5 text-sm text-[#18181B] focus:border-[#18181B] focus:outline-none"
+                  >
+                    <option value="tab">New Tab</option>
+                    <option value="window">New Window</option>
+                  </select>
+                </Row>
+              )}
 
               {/* Claude Command */}
               <Row>

@@ -882,6 +882,7 @@ pub async fn launch_claude_for_folder(
     folder_path: String,
     terminal_app: String,
     claude_command: String,
+    warp_open_mode: String,
 ) -> Result<(), String> {
     let folder = expand_tilde(&folder_path);
 
@@ -912,29 +913,69 @@ end tell"#,
                 .map_err(|e| format!("Failed to launch iTerm2: {}", e))?;
         }
         "Warp" => {
-            use std::time::{SystemTime, UNIX_EPOCH};
+            if warp_open_mode == "tab" {
+                // Use new_tab URI to open in a new tab
+                let encoded_path = urlencoding::encode(&folder_path_str);
+                std::process::Command::new("open")
+                    .arg(format!("warp://action/new_tab?path={}", encoded_path))
+                    .spawn()
+                    .map_err(|e| format!("Failed to open Warp tab: {}", e))?;
 
-            // Generate unique filename based on timestamp
-            let timestamp = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map(|d| d.as_millis())
-                .unwrap_or(0);
-            let config_name = format!("ensemble-launch-{}", timestamp);
+                // Use AppleScript to type the command after a delay
+                // We use clipboard + paste to avoid input method issues
+                let cmd = claude_command.clone();
+                std::thread::spawn(move || {
+                    // Wait for the tab to open
+                    std::thread::sleep(std::time::Duration::from_millis(800));
 
-            // Get Warp launch configurations directory
-            let home = dirs::home_dir().ok_or("Cannot find home directory")?;
-            let warp_config_dir = home.join(".warp").join("launch_configurations");
+                    // Use pbcopy to set clipboard, then paste with Cmd+V, then press Enter
+                    let applescript = format!(
+                        r#"
+                        -- Set clipboard to the command
+                        set the clipboard to "{}"
 
-            // Ensure directory exists
-            fs::create_dir_all(&warp_config_dir)
-                .map_err(|e| format!("Failed to create Warp config directory: {}", e))?;
+                        -- Activate Warp and paste
+                        tell application "Warp" to activate
+                        delay 0.2
+                        tell application "System Events"
+                            keystroke "v" using command down
+                            delay 0.1
+                            key code 36
+                        end tell
+                        "#,
+                        cmd.replace('"', "\\\"")
+                    );
 
-            let config_path = warp_config_dir.join(format!("{}.yaml", config_name));
+                    let _ = std::process::Command::new("osascript")
+                        .arg("-e")
+                        .arg(&applescript)
+                        .output();
+                });
+            } else {
+                // Use Launch Configuration (supports executing commands, but opens new window)
+                use std::time::{SystemTime, UNIX_EPOCH};
 
-            // Create YAML content with proper formatting and quoting
-            // Note: cwd must be an absolute path, properly quoted
-            let yaml_content = format!(
-                r#"name: {}
+                // Generate unique filename based on timestamp
+                let timestamp = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_millis())
+                    .unwrap_or(0);
+                let config_name = format!("ensemble-launch-{}", timestamp);
+
+                // Get Warp launch configurations directory
+                let home = dirs::home_dir().ok_or("Cannot find home directory")?;
+                let warp_config_dir = home.join(".warp").join("launch_configurations");
+
+                // Ensure directory exists
+                fs::create_dir_all(&warp_config_dir)
+                    .map_err(|e| format!("Failed to create Warp config directory: {}", e))?;
+
+                let config_path = warp_config_dir.join(format!("{}.yaml", config_name));
+
+                // Create YAML content with proper formatting and quoting
+                // Note: cwd must be an absolute path, properly quoted
+                let yaml_content = format!(
+                    r#"name: {}
 windows:
   - tabs:
       - title: Claude Code
@@ -943,26 +984,27 @@ windows:
           commands:
             - exec: "{}"
 "#,
-                config_name,
-                folder_path_str.replace('"', "\\\""),
-                claude_command.replace('"', "\\\"")
-            );
+                    config_name,
+                    folder_path_str.replace('"', "\\\""),
+                    claude_command.replace('"', "\\\"")
+                );
 
-            fs::write(&config_path, &yaml_content)
-                .map_err(|e| format!("Failed to create Warp launch config: {}", e))?;
+                fs::write(&config_path, &yaml_content)
+                    .map_err(|e| format!("Failed to create Warp launch config: {}", e))?;
 
-            // Launch via URI scheme using config name (NOT file path)
-            std::process::Command::new("open")
-                .arg(format!("warp://launch/{}", config_name))
-                .spawn()
-                .map_err(|e| format!("Failed to launch Warp: {}", e))?;
+                // Launch via URI scheme using config name (NOT file path)
+                std::process::Command::new("open")
+                    .arg(format!("warp://launch/{}", config_name))
+                    .spawn()
+                    .map_err(|e| format!("Failed to launch Warp: {}", e))?;
 
-            // Spawn background thread to clean up config file after a delay
-            let config_path_clone = config_path.clone();
-            std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_secs(10));
-                let _ = fs::remove_file(config_path_clone);
-            });
+                // Spawn background thread to clean up config file after a delay
+                let config_path_clone = config_path.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(10));
+                    let _ = fs::remove_file(config_path_clone);
+                });
+            }
         }
         "Alacritty" => {
             // Alacritty uses CLI arguments directly (no AppleScript needed)
