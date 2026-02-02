@@ -913,70 +913,56 @@ end tell"#,
                 .map_err(|e| format!("Failed to launch iTerm2: {}", e))?;
         }
         "Warp" => {
+            use std::time::{SystemTime, UNIX_EPOCH};
+
+            let timestamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_millis())
+                .unwrap_or(0);
+
             if warp_open_mode == "tab" {
-                // Use new_tab URI to open in a new tab
-                let encoded_path = urlencoding::encode(&folder_path_str);
-                std::process::Command::new("open")
-                    .arg(format!("warp://action/new_tab?path={}", encoded_path))
-                    .spawn()
-                    .map_err(|e| format!("Failed to open Warp tab: {}", e))?;
-
-                // Use AppleScript to type the command after a delay
-                // We use clipboard + paste to avoid input method issues
-                let cmd = claude_command.clone();
-
-                // Wait for the tab to open
-                std::thread::sleep(std::time::Duration::from_millis(1000));
-
-                // Use pbcopy to set clipboard, then paste with Cmd+V, then press Enter
-                let applescript = format!(
-                    r#"
-                    -- Set clipboard to the command
-                    set the clipboard to "{}"
-
-                    -- Activate Warp and paste
-                    tell application "Warp" to activate
-                    delay 0.3
-                    tell application "System Events"
-                        keystroke "v" using command down
-                        delay 0.1
-                        key code 36
-                    end tell
-                    "#,
-                    cmd.replace('"', "\\\"")
+                // New Tab mode: Use temporary script approach
+                // This opens a new tab in existing Warp window and executes the command
+                // No Accessibility permissions required
+                let script_path = format!("/tmp/ensemble_warp_{}.sh", timestamp);
+                let script_content = format!(
+                    r#"#!/bin/zsh
+cd "{}"
+{}
+# Keep shell interactive after command
+exec zsh
+"#,
+                    folder_path_str.replace('"', "\\\""),
+                    claude_command
                 );
 
-                let output = std::process::Command::new("osascript")
-                    .arg("-e")
-                    .arg(&applescript)
+                fs::write(&script_path, &script_content)
+                    .map_err(|e| format!("Failed to create temp script: {}", e))?;
+
+                // Make script executable
+                std::process::Command::new("chmod")
+                    .arg("+x")
+                    .arg(&script_path)
                     .output()
-                    .map_err(|e| format!("Failed to execute AppleScript: {}", e))?;
+                    .map_err(|e| format!("Failed to make script executable: {}", e))?;
 
-                // Check if AppleScript failed due to accessibility permissions
-                if !output.status.success() {
-                    let stderr = String::from_utf8_lossy(&output.stderr);
-                    if stderr.contains("not allowed") || stderr.contains("1002") {
-                        return Err(
-                            "ACCESSIBILITY_PERMISSION_REQUIRED: To auto-type commands in Warp's New Tab mode, \
-                            please grant Accessibility permission to Ensemble.app.\n\n\
-                            Steps:\n\
-                            1. Open System Settings → Privacy & Security → Accessibility\n\
-                            2. Click '+' button\n\
-                            3. Navigate to /Applications and select Ensemble.app\n\
-                            4. Enable the checkbox for Ensemble".to_string()
-                        );
-                    }
-                    return Err(format!("AppleScript failed: {}", stderr));
-                }
+                // Open script with Warp - this opens a new tab and executes the script
+                std::process::Command::new("open")
+                    .arg("-a")
+                    .arg("Warp")
+                    .arg(&script_path)
+                    .spawn()
+                    .map_err(|e| format!("Failed to launch Warp: {}", e))?;
+
+                // Clean up script after a delay
+                let script_path_clone = script_path.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    let _ = fs::remove_file(script_path_clone);
+                });
             } else {
-                // Use Launch Configuration (supports executing commands, but opens new window)
-                use std::time::{SystemTime, UNIX_EPOCH};
-
-                // Generate unique filename based on timestamp
-                let timestamp = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .map(|d| d.as_millis())
-                    .unwrap_or(0);
+                // New Window mode: Use Launch Configuration YAML
+                // This opens a new Warp window and executes the command
                 let config_name = format!("ensemble-launch-{}", timestamp);
 
                 // Get Warp launch configurations directory
@@ -989,8 +975,7 @@ end tell"#,
 
                 let config_path = warp_config_dir.join(format!("{}.yaml", config_name));
 
-                // Create YAML content with proper formatting
-                // Note: cwd must be an absolute path, commands are plain strings (not exec: prefix)
+                // Create YAML content - commands are plain strings (not exec: prefix)
                 let yaml_content = format!(
                     r#"name: {}
 windows:
@@ -1009,13 +994,13 @@ windows:
                 fs::write(&config_path, &yaml_content)
                     .map_err(|e| format!("Failed to create Warp launch config: {}", e))?;
 
-                // Launch via URI scheme using config name (NOT file path)
+                // Launch via URI scheme using config name
                 std::process::Command::new("open")
                     .arg(format!("warp://launch/{}", config_name))
                     .spawn()
                     .map_err(|e| format!("Failed to launch Warp: {}", e))?;
 
-                // Spawn background thread to clean up config file after a delay
+                // Clean up config file after a delay
                 let config_path_clone = config_path.clone();
                 std::thread::spawn(move || {
                     std::thread::sleep(std::time::Duration::from_secs(10));
