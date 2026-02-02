@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, SlidePanel } from '@/components/layout';
 import { Badge, EmptyState, IconPicker, ICON_MAP, Toggle } from '@/components/common';
-import { McpItem, McpItemCompact } from '@/components/mcps/McpItem';
+import { McpListItem } from '@/components/mcps/McpListItem';
 import { useMcpsStore } from '@/stores/mcpsStore';
 import type { Tool } from '@/types';
 
@@ -394,31 +394,19 @@ export const McpServersPage: React.FC = () => {
             />
           </div>
         ) : (
-          /* MCP Server List - Use compact items when detail panel is open */
-          <div className={`flex flex-col ${selectedMcpId ? 'gap-1' : 'gap-3'}`}>
-            {filteredMcps.map((mcp) =>
-              selectedMcpId ? (
-                // Compact version when detail panel is open
-                <McpItemCompact
-                  key={mcp.id}
-                  mcp={mcp}
-                  selected={mcp.id === selectedMcpId}
-                  onToggle={handleToggle}
-                  onClick={handleMcpClick}
-                  onIconClick={(ref) => handleIconClick(mcp.id, ref)}
-                />
-              ) : (
-                // Full version when no detail panel
-                <McpItem
-                  key={mcp.id}
-                  mcp={mcp}
-                  selected={mcp.id === selectedMcpId}
-                  onToggle={handleToggle}
-                  onClick={handleMcpClick}
-                  onIconClick={(ref) => handleIconClick(mcp.id, ref)}
-                />
-              )
-            )}
+          /* MCP Server List - Unified component with smooth transitions */
+          <div className="flex flex-col gap-3">
+            {filteredMcps.map((mcp) => (
+              <McpListItem
+                key={mcp.id}
+                mcp={mcp}
+                compact={!!selectedMcpId}
+                selected={mcp.id === selectedMcpId}
+                onToggle={handleToggle}
+                onClick={handleMcpClick}
+                onIconClick={(ref) => handleIconClick(mcp.id, ref)}
+              />
+            ))}
           </div>
         )}
       </div>

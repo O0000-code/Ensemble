@@ -107,8 +107,8 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
         transition: `background-color ${TRANSITION_BASE}, border-color ${TRANSITION_BASE}`,
       }}
     >
-      {/* Left Section */}
-      <div className="flex items-center gap-3.5">
+      {/* Left Section - align to start in compact mode */}
+      <div className={`flex gap-3.5 ${compact ? 'items-start' : 'items-center'}`}>
         {/* Icon Container */}
         <div
           ref={iconRef}
@@ -130,8 +130,14 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
           />
         </div>
 
-        {/* Info */}
-        <div className="flex flex-col gap-1">
+        {/* Info - with smooth vertical position transition */}
+        <div
+          className="flex flex-col gap-1"
+          style={{
+            marginTop: compact ? 0 : '3px',
+            transition: `margin-top ${TRANSITION_BASE}`,
+          }}
+        >
           {/* Name */}
           <span
             className={`
@@ -143,30 +149,27 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
             {scene.name}
           </span>
 
-          {/* Description - visible in full mode */}
-          <div
-            className="overflow-hidden"
-            style={{
-              opacity: compact ? 0 : 1,
-              maxHeight: compact ? 0 : '20px',
-              transition: `opacity ${TRANSITION_BASE}, max-height ${TRANSITION_BASE}`,
-            }}
-          >
-            <span className="block max-w-[400px] truncate text-xs font-normal text-[#71717A]">
+          {/* Secondary Text - overlapping layout */}
+          <div className="relative">
+            {/* Description - always in flow, controls height */}
+            <span
+              className="block max-w-[400px] truncate text-xs font-normal text-[#71717A]"
+              style={{
+                opacity: compact ? 0 : 1,
+                transition: `opacity ${TRANSITION_BASE}`,
+              }}
+            >
               {scene.description}
             </span>
-          </div>
 
-          {/* Inline Stats - visible in compact mode */}
-          <div
-            className="overflow-hidden"
-            style={{
-              opacity: compact ? 1 : 0,
-              maxHeight: compact ? '20px' : 0,
-              transition: `opacity ${TRANSITION_BASE}, max-height ${TRANSITION_BASE}`,
-            }}
-          >
-            <span className="block text-xs font-normal text-[#71717A]">
+            {/* Stats - absolute positioned, overlays description */}
+            <span
+              className="absolute top-0 left-0 whitespace-nowrap text-xs font-normal text-[#71717A]"
+              style={{
+                opacity: compact ? 1 : 0,
+                transition: `opacity ${TRANSITION_BASE}`,
+              }}
+            >
               {statsText}
             </span>
           </div>
