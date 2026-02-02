@@ -25,6 +25,7 @@ interface McpsState {
   updateMcpCategory: (id: string, category: string) => Promise<void>;
   updateMcpTags: (id: string, tags: string[]) => Promise<void>;
   updateMcpIcon: (id: string, icon: string) => Promise<void>;
+  updateMcpScope: (id: string, scope: 'global' | 'project') => Promise<void>;
 
   // Computed getters (via selectors)
   getFilteredMcps: () => McpServer[];
@@ -169,6 +170,45 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
       }));
     } catch (error) {
       set({ error: String(error) });
+    }
+  },
+
+  updateMcpScope: async (id, scope) => {
+    if (!isTauri()) {
+      console.warn('McpsStore: Cannot update MCP scope in browser mode');
+      return;
+    }
+
+    const mcp = get().mcpServers.find((m) => m.id === id);
+    if (!mcp) return;
+
+    const oldScope = mcp.scope;
+
+    // Optimistic update
+    set((state) => ({
+      mcpServers: state.mcpServers.map((m) =>
+        m.id === id ? { ...m, scope } : m
+      ),
+    }));
+
+    const { mcpSourceDir, claudeConfigDir } = useSettingsStore.getState();
+
+    try {
+      await safeInvoke('update_mcp_scope', {
+        mcpId: id,
+        scope,
+        ensembleDir: mcpSourceDir.replace('/mcps', ''),
+        claudeConfigDir,
+      });
+    } catch (error) {
+      // Rollback on error
+      const message = typeof error === 'string' ? error : String(error);
+      set((state) => ({
+        mcpServers: state.mcpServers.map((m) =>
+          m.id === id ? { ...m, scope: oldScope } : m
+        ),
+        error: message,
+      }));
     }
   },
 

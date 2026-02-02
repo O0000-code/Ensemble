@@ -27,6 +27,13 @@ export interface SettingsState {
   // Auto classify settings
   autoClassifyNewItems: boolean;
 
+  // Terminal and launch settings
+  terminalApp: string;
+  claudeCommand: string;
+
+  // Import state
+  hasCompletedImport: boolean;
+
   // Stats (computed from other stores or fetched)
   stats: SettingsStats;
 
@@ -40,6 +47,9 @@ export interface SettingsState {
   setClaudeConfigDir: (dir: string) => void;
   setAnthropicApiKey: (key: string) => void;
   setAutoClassifyNewItems: (enabled: boolean) => void;
+  setTerminalApp: (app: string) => void;
+  setClaudeCommand: (command: string) => void;
+  setHasCompletedImport: (completed: boolean) => void;
   setStats: (stats: Partial<SettingsStats>) => void;
 
   // Actions - Tauri integration
@@ -59,6 +69,9 @@ const defaultSettings = {
   claudeConfigDir: '~/.claude',
   anthropicApiKey: '',
   autoClassifyNewItems: false,
+  terminalApp: 'Terminal',
+  claudeCommand: 'claude',
+  hasCompletedImport: false,
   stats: {
     skillsCount: 0,
     mcpsCount: 0,
@@ -99,6 +112,21 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     get().saveSettings();
   },
 
+  setTerminalApp: (app: string) => {
+    set({ terminalApp: app });
+    get().saveSettings();
+  },
+
+  setClaudeCommand: (command: string) => {
+    set({ claudeCommand: command });
+    get().saveSettings();
+  },
+
+  setHasCompletedImport: (completed: boolean) => {
+    set({ hasCompletedImport: completed });
+    get().saveSettings();
+  },
+
   setStats: (stats: Partial<SettingsStats>) =>
     set((state) => ({
       stats: { ...state.stats, ...stats },
@@ -123,6 +151,9 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
           claudeConfigDir: settings.claudeConfigDir,
           anthropicApiKey: settings.anthropicApiKey || '',
           autoClassifyNewItems: settings.autoClassifyNewItems,
+          terminalApp: settings.terminalApp || 'Terminal',
+          claudeCommand: settings.claudeCommand || 'claude',
+          hasCompletedImport: settings.hasCompletedImport || false,
           isLoading: false,
         });
       } else {
@@ -151,6 +182,9 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
           claudeConfigDir: state.claudeConfigDir,
           anthropicApiKey: state.anthropicApiKey,
           autoClassifyNewItems: state.autoClassifyNewItems,
+          terminalApp: state.terminalApp,
+          claudeCommand: state.claudeCommand,
+          hasCompletedImport: state.hasCompletedImport,
         },
       });
     } catch (error) {

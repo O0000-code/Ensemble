@@ -23,7 +23,7 @@ import { PageHeader, SlidePanel } from '@/components/layout';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
-import { IconPicker, ICON_MAP, Dropdown } from '@/components/common';
+import { IconPicker, ICON_MAP, Dropdown, ScopeSelector } from '@/components/common';
 import { SkillListItem } from '@/components/skills/SkillListItem';
 import { useSkillsStore } from '@/stores/skillsStore';
 import { useAppStore } from '@/stores/appStore';
@@ -177,6 +177,7 @@ export function SkillsPage() {
     updateSkillIcon,
     updateSkillCategory,
     updateSkillTags,
+    updateSkillScope,
     getFilteredSkills,
     getEnabledCount,
     autoClassify,
@@ -557,15 +558,12 @@ export function SkillsPage() {
           <ConfigItem
             label="Scope"
             value={
-              <span
-                className={`rounded px-2 py-0.5 text-[11px] font-medium ${
-                  selectedSkill.scope === 'user'
-                    ? 'bg-[#DCFCE7] text-[#16A34A]'
-                    : 'bg-[#FEF3C7] text-[#D97706]'
-                }`}
-              >
-                {selectedSkill.scope === 'user' ? 'User' : 'Project'}
-              </span>
+              <ScopeSelector
+                value={selectedSkill.scope as 'global' | 'project'}
+                onChange={async (scope) => {
+                  await updateSkillScope(selectedSkill.id, scope);
+                }}
+              />
             }
             isLast
           />

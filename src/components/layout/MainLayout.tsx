@@ -2,14 +2,18 @@ import { useState, useEffect, useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import ContextMenu from '../common/ContextMenu';
+import { ImportDialog } from '../common/ImportDialog';
+import { LauncherModal } from '../launcher';
 import { useAppStore } from '@/stores/appStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useSkillsStore } from '@/stores/skillsStore';
 import { useMcpsStore } from '@/stores/mcpsStore';
 import { useScenesStore } from '@/stores/scenesStore';
 import { useProjectsStore } from '@/stores/projectsStore';
+import { useImportStore } from '@/stores/importStore';
+import { useLauncherStore } from '@/stores/launcherStore';
 import { Pencil, Trash2, Loader2 } from 'lucide-react';
-import { isTauri } from '@/utils/tauri';
+import { isTauri, safeInvoke } from '@/utils/tauri';
 import { ErrorBoundary } from '../common/ErrorBoundary';
 import type { Category, Tag } from '@/types';
 
@@ -53,11 +57,13 @@ export default function MainLayout() {
     toggleSidebar,
   } = useAppStore();
 
-  const { loadSettings } = useSettingsStore();
+  const { loadSettings, hasCompletedImport } = useSettingsStore();
   const { skills, loadSkills, setFilter: setSkillsFilter } = useSkillsStore();
   const { mcpServers, loadMcps, setFilter: setMcpsFilter } = useMcpsStore();
   const { scenes, loadScenes } = useScenesStore();
   const { projects, loadProjects } = useProjectsStore();
+  const { detectExistingConfig } = useImportStore();
+  const { isOpen: isLauncherOpen, folderPath: launcherFolderPath, closeLauncher } = useLauncherStore();
 
   // Dynamically calculate navigation counts
   const navCounts = useMemo(() => ({
@@ -129,6 +135,40 @@ export default function MainLayout() {
     setSkillsFilter({ category: activeCategory, tags: activeTags });
     setMcpsFilter({ category: activeCategory, tags: activeTags });
   }, [activeCategory, activeTags, setSkillsFilter, setMcpsFilter]);
+
+  // First-time import detection - only run after initialization is complete
+  useEffect(() => {
+    // Skip in non-Tauri environment or if still initializing
+    if (!isTauri() || isInitializing) return;
+
+    // If import has not been completed, detect existing config
+    if (!hasCompletedImport) {
+      detectExistingConfig();
+    }
+  }, [hasCompletedImport, isInitializing, detectExistingConfig]);
+
+  // Check for launch arguments (from Finder Quick Action)
+  useEffect(() => {
+    if (!isTauri() || isInitializing) return;
+
+    const checkLaunchArgs = async () => {
+      try {
+        const args = await safeInvoke<string[]>('get_launch_args');
+
+        if (args && args.length > 0) {
+          const launchIndex = args.indexOf('--launch');
+          if (launchIndex !== -1 && args[launchIndex + 1]) {
+            const path = args[launchIndex + 1];
+            useLauncherStore.getState().openLauncher(path);
+          }
+        }
+      } catch (e) {
+        console.log('No launch args or error checking:', e);
+      }
+    };
+
+    checkLaunchArgs();
+  }, [isInitializing]);
 
   // Context menu state - Category
   const [contextMenu, setContextMenu] = useState<{
@@ -395,6 +435,16 @@ export default function MainLayout() {
           onClose={() => setTagContextMenu(null)}
         />
       )}
+
+      {/* Import Dialog for first-time config import */}
+      <ImportDialog />
+
+      {/* Launcher Modal for Finder Quick Action */}
+      <LauncherModal
+        isOpen={isLauncherOpen}
+        folderPath={launcherFolderPath}
+        onClose={closeLauncher}
+      />
     </div>
   );
 }

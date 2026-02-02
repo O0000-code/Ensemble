@@ -31,6 +31,7 @@ pub struct McpServer {
     pub tags: Vec<String>,
     pub enabled: bool,
     pub source_path: String,
+    pub scope: String, // "global" | "project"
     pub command: String,
     pub args: Vec<String>,
     pub env: Option<HashMap<String, String>>,
@@ -107,6 +108,7 @@ pub struct SkillMetadata {
     pub usage_count: u32,
     pub last_used: Option<String>,
     pub icon: Option<String>,
+    pub scope: String, // "global" | "project"
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -117,6 +119,7 @@ pub struct McpMetadata {
     pub enabled: bool,
     pub usage_count: u32,
     pub last_used: Option<String>,
+    pub scope: String, // "global" | "project"
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -127,6 +130,9 @@ pub struct AppSettings {
     pub claude_config_dir: String,
     pub anthropic_api_key: Option<String>,
     pub auto_classify_new_items: bool,
+    pub terminal_app: String,
+    pub claude_command: String,
+    pub has_completed_import: bool,
 }
 
 impl Default for AppSettings {
@@ -137,6 +143,9 @@ impl Default for AppSettings {
             claude_config_dir: "~/.claude".to_string(),
             anthropic_api_key: None,
             auto_classify_new_items: false,
+            terminal_app: "Terminal".to_string(),
+            claude_command: "claude".to_string(),
+            has_completed_import: false,
         }
     }
 }
@@ -180,4 +189,70 @@ pub struct ProjectConfigStatus {
     pub has_commands_md: bool,
     pub skill_count: u32,
     pub mcp_count: u32,
+}
+
+// ============================================================================
+// Import-related types
+// ============================================================================
+
+/// Detected existing configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExistingConfig {
+    pub skills: Vec<DetectedSkill>,
+    pub mcps: Vec<DetectedMcp>,
+    pub has_config: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DetectedSkill {
+    pub name: String,
+    pub path: String,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DetectedMcp {
+    pub name: String,
+    pub command: String,
+    pub args: Vec<String>,
+    pub env: Option<HashMap<String, String>>,
+}
+
+/// Import item
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportItem {
+    #[serde(rename = "type")]
+    pub item_type: String, // "skill" | "mcp"
+    pub name: String,
+    pub source_path: String,
+}
+
+/// Import result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportResult {
+    pub success: bool,
+    pub imported: ImportedCounts,
+    pub errors: Vec<String>,
+    pub backup_path: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportedCounts {
+    pub skills: u32,
+    pub mcps: u32,
+}
+
+/// Backup information
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BackupInfo {
+    pub path: String,
+    pub timestamp: String,
+    pub items_count: ImportedCounts,
 }

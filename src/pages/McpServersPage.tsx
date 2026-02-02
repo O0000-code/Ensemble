@@ -14,7 +14,7 @@ import {
   Plus,
 } from 'lucide-react';
 import { PageHeader, SlidePanel } from '@/components/layout';
-import { Badge, EmptyState, IconPicker, ICON_MAP, Dropdown } from '@/components/common';
+import { Badge, EmptyState, IconPicker, ICON_MAP, Dropdown, ScopeSelector } from '@/components/common';
 import { McpListItem } from '@/components/mcps/McpListItem';
 import { useMcpsStore } from '@/stores/mcpsStore';
 import { useAppStore } from '@/stores/appStore';
@@ -126,6 +126,7 @@ export const McpServersPage: React.FC = () => {
     updateMcpIcon,
     updateMcpCategory,
     updateMcpTags,
+    updateMcpScope,
     getFilteredMcps,
     getEnabledCount,
   } = useMcpsStore();
@@ -477,9 +478,12 @@ export const McpServersPage: React.FC = () => {
             <span className="text-xs font-medium text-[#71717A]">
               Install Scope
             </span>
-            <span className="rounded bg-[#EEF2FF] px-2 py-1 text-[10px] font-semibold text-[#4F46E5]">
-              User
-            </span>
+            <ScopeSelector
+              value={selectedMcp.scope as 'global' | 'project'}
+              onChange={async (scope) => {
+                await updateMcpScope(selectedMcp.id, scope);
+              }}
+            />
           </div>
         </div>
       </section>

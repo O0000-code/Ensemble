@@ -56,6 +56,7 @@ interface SkillsState {
   updateSkillCategory: (id: string, category: string) => Promise<void>;
   updateSkillTags: (id: string, tags: string[]) => Promise<void>;
   updateSkillIcon: (id: string, icon: string) => Promise<void>;
+  updateSkillScope: (id: string, scope: 'global' | 'project') => Promise<void>;
   setFilter: (filter: Partial<SkillsFilter>) => void;
   clearFilter: () => void;
   clearError: () => void;
@@ -250,6 +251,45 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
       set((state) => ({
         skills: state.skills.map((s) =>
           s.id === id ? { ...s, icon: oldIcon } : s
+        ),
+        error: message,
+      }));
+    }
+  },
+
+  updateSkillScope: async (id, scope) => {
+    if (!isTauri()) {
+      console.warn('SkillsStore: Cannot update skill scope in browser mode');
+      return;
+    }
+
+    const skill = get().skills.find((s) => s.id === id);
+    if (!skill) return;
+
+    const oldScope = skill.scope;
+
+    // Optimistic update
+    set((state) => ({
+      skills: state.skills.map((s) =>
+        s.id === id ? { ...s, scope } : s
+      ),
+    }));
+
+    const { skillSourceDir, claudeConfigDir } = useSettingsStore.getState();
+
+    try {
+      await safeInvoke('update_skill_scope', {
+        skillId: id,
+        scope,
+        ensembleDir: skillSourceDir.replace('/skills', ''),
+        claudeConfigDir,
+      });
+    } catch (error) {
+      // Rollback on error
+      const message = typeof error === 'string' ? error : String(error);
+      set((state) => ({
+        skills: state.skills.map((s) =>
+          s.id === id ? { ...s, scope: oldScope } : s
         ),
         error: message,
       }));

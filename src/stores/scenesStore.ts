@@ -130,6 +130,7 @@ export const useScenesStore = create<ScenesState>((set, get) => ({
     }
 
     try {
+      // Tauri command parameters use camelCase
       const scene = await safeInvoke<Scene>('add_scene', {
         name: createModal.name.trim(),
         description: createModal.description.trim(),

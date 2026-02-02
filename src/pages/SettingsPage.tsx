@@ -5,7 +5,8 @@ import Toggle from '@/components/common/Toggle';
 import Modal from '@/components/common/Modal';
 import { Input } from '@/components/common/Input';
 import Button from '@/components/common/Button';
-import { useSettingsStore } from '@/stores/settingsStore';
+import { useSettingsStore, useImportStore } from '@/stores';
+import { safeInvoke } from '@/utils/tauri';
 
 // ============================================================================
 // Settings Page
@@ -154,6 +155,8 @@ function ApiKeyModal({ isOpen, onClose, currentKey, onSave }: ApiKeyModalProps) 
 
 export function SettingsPage() {
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [quickActionStatus, setQuickActionStatus] = useState<'idle' | 'installing' | 'success' | 'error'>('idle');
+  const [quickActionMessage, setQuickActionMessage] = useState('');
 
   const {
     skillSourceDir,
@@ -161,13 +164,19 @@ export function SettingsPage() {
     claudeConfigDir,
     anthropicApiKey,
     autoClassifyNewItems,
+    terminalApp,
+    claudeCommand,
     stats,
     setAnthropicApiKey,
     setAutoClassifyNewItems,
+    setTerminalApp,
+    setClaudeCommand,
     getMaskedApiKey,
     hasApiKey,
     selectDirectory,
   } = useSettingsStore();
+
+  const { detectExistingConfig, isDetecting } = useImportStore();
 
   const handleChangeDir = (type: 'skills' | 'mcp' | 'claude') => {
     // Map from page type names to store type names
@@ -177,6 +186,35 @@ export function SettingsPage() {
       claude: 'claude',
     };
     selectDirectory(typeMap[type]);
+  };
+
+  const handleInstallQuickAction = async () => {
+    setQuickActionStatus('installing');
+    setQuickActionMessage('');
+
+    try {
+      const result = await safeInvoke<string>('install_quick_action');
+
+      if (result === null) {
+        // safeInvoke returns null when not in Tauri environment
+        setQuickActionStatus('error');
+        setQuickActionMessage('Please run this app using "npm run tauri dev" for full functionality');
+        return;
+      }
+
+      setQuickActionStatus('success');
+      setQuickActionMessage(`Installed at: ${result}`);
+
+      // Reset after 5 seconds
+      setTimeout(() => {
+        setQuickActionStatus('idle');
+        setQuickActionMessage('');
+      }, 5000);
+    } catch (error) {
+      setQuickActionStatus('error');
+      setQuickActionMessage(typeof error === 'string' ? error : String(error));
+      console.error('Failed to install Quick Action:', error);
+    }
   };
 
   return (
@@ -234,7 +272,7 @@ export function SettingsPage() {
               </Row>
 
               {/* Stats Row */}
-              <Row noBorder>
+              <Row>
                 <div className="flex items-center gap-2 text-[11px] text-[#71717A]">
                   <span>Skills {stats.skillsCount}</span>
                   <span className="text-[#A1A1AA]">·</span>
@@ -244,6 +282,26 @@ export function SettingsPage() {
                   <span className="text-[#A1A1AA]">·</span>
                   <span>Size {stats.totalSize}</span>
                 </div>
+              </Row>
+
+              {/* Sync Configurations */}
+              <Row noBorder>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[13px] font-medium text-[#18181B]">
+                    Sync Configurations
+                  </span>
+                  <span className="text-xs text-[#71717A]">
+                    Import new Skills and MCPs from Claude Code
+                  </span>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="small"
+                  onClick={() => detectExistingConfig()}
+                  disabled={isDetecting}
+                >
+                  {isDetecting ? 'Detecting...' : 'Detect & Import'}
+                </Button>
               </Row>
             </Card>
           </section>
@@ -294,6 +352,87 @@ export function SettingsPage() {
                   Your API key is stored locally and never shared.
                 </span>
               </div>
+            </Card>
+          </section>
+
+          {/* Launch Configuration Section */}
+          <section>
+            <SectionHeader
+              title="Launch Configuration"
+              description="Configure how Claude Code is launched from Finder"
+            />
+            <Card>
+              {/* Terminal App */}
+              <Row>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[13px] font-medium text-[#18181B]">
+                    Terminal Application
+                  </span>
+                  <span className="text-xs text-[#71717A]">
+                    The terminal app to use when launching Claude Code
+                  </span>
+                </div>
+                <select
+                  value={terminalApp}
+                  onChange={(e) => setTerminalApp(e.target.value)}
+                  className="rounded-md border border-[#E5E5E5] px-3 py-1.5 text-sm text-[#18181B] focus:border-[#18181B] focus:outline-none"
+                >
+                  <option value="Terminal">Terminal</option>
+                  <option value="iTerm">iTerm</option>
+                  <option value="Warp">Warp</option>
+                  <option value="Alacritty">Alacritty</option>
+                </select>
+              </Row>
+
+              {/* Claude Command */}
+              <Row>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[13px] font-medium text-[#18181B]">
+                    Launch Command
+                  </span>
+                  <span className="text-xs text-[#71717A]">
+                    The command to run when launching Claude Code
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={claudeCommand}
+                  onChange={(e) => setClaudeCommand(e.target.value)}
+                  placeholder="claude"
+                  className="w-48 rounded-md border border-[#E5E5E5] px-3 py-1.5 text-sm text-[#18181B] focus:border-[#18181B] focus:outline-none"
+                />
+              </Row>
+
+              {/* Quick Action Install */}
+              <Row noBorder>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[13px] font-medium text-[#18181B]">
+                    Finder Integration
+                  </span>
+                  <span className="text-xs text-[#71717A]">
+                    Install Quick Action for right-click menu in Finder
+                  </span>
+                  {quickActionStatus === 'success' && (
+                    <span className="text-xs text-green-600 mt-1">
+                      ✓ {quickActionMessage}
+                    </span>
+                  )}
+                  {quickActionStatus === 'error' && (
+                    <span className="text-xs text-red-600 mt-1">
+                      ✗ {quickActionMessage}
+                    </span>
+                  )}
+                </div>
+                <Button
+                  variant="secondary"
+                  size="small"
+                  onClick={handleInstallQuickAction}
+                  disabled={quickActionStatus === 'installing'}
+                  loading={quickActionStatus === 'installing'}
+                >
+                  {quickActionStatus === 'installing' ? 'Installing...' : 'Install Quick Action'}
+                </Button>
+              </Row>
             </Card>
           </section>
 

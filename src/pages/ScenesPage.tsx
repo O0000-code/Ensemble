@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react';
+import { safeInvoke } from '@/utils/tauri';
+import type { Scene } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus,
@@ -210,27 +212,39 @@ export const ScenesPage: React.FC = () => {
     setSelectedSceneId(null);
   };
 
-  // Handle create scene
-  const handleCreateScene = (sceneData: {
+  // Handle create scene - calls backend to persist
+  const handleCreateScene = async (sceneData: {
     name: string;
     description: string;
     skillIds: string[];
     mcpIds: string[];
   }) => {
-    const newScene = {
-      id: `scene-${Date.now()}`,
-      name: sceneData.name,
-      description: sceneData.description,
-      icon: 'layers' as const,
-      skillIds: sceneData.skillIds,
-      mcpIds: sceneData.mcpIds,
-      createdAt: new Date().toISOString(),
-    };
+    console.log('handleCreateScene called with:', sceneData);
 
-    useScenesStore.getState().setScenes([...scenes, newScene]);
+    try {
+      // Directly call Tauri backend with snake_case parameters
+      console.log('Calling safeInvoke add_scene...');
+      const newScene = await safeInvoke<Scene>('add_scene', {
+        name: sceneData.name.trim(),
+        description: sceneData.description.trim(),
+        icon: 'layers',
+        skillIds: sceneData.skillIds,
+        mcpIds: sceneData.mcpIds,
+      });
+      console.log('safeInvoke result:', newScene);
+
+      if (newScene) {
+        // Update local state with the new scene from backend
+        useScenesStore.getState().setScenes([...scenes, newScene]);
+        setSelectedSceneId(newScene.id);
+      } else {
+        console.warn('newScene is null or undefined');
+      }
+    } catch (error) {
+      console.error('Failed to create scene:', error);
+    }
+
     setIsCreateModalOpen(false);
-    // Optionally select the newly created scene
-    setSelectedSceneId(newScene.id);
   };
 
   // Handle delete

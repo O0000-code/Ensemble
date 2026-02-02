@@ -2,7 +2,7 @@ mod commands;
 pub mod types;
 mod utils;
 
-use commands::{classify, config, data, dialog, mcps, skills, symlink};
+use commands::{classify, config, data, dialog, import, mcps, skills, symlink};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -72,6 +72,15 @@ pub fn run() {
             // Classify (Anthropic API)
             classify::auto_classify,
             classify::validate_api_key,
+            // Import commands
+            import::detect_existing_config,
+            import::backup_before_import,
+            import::import_existing_config,
+            import::update_skill_scope,
+            import::update_mcp_scope,
+            import::install_quick_action,
+            import::launch_claude_for_folder,
+            import::get_launch_args,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
