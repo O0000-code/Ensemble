@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import ContextMenu from '../common/ContextMenu';
@@ -15,6 +15,7 @@ import { useLauncherStore } from '@/stores/launcherStore';
 import { Pencil, Trash2, Loader2 } from 'lucide-react';
 import { isTauri, safeInvoke } from '@/utils/tauri';
 import { ErrorBoundary } from '../common/ErrorBoundary';
+import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import type { Category, Tag } from '@/types';
 
 export default function MainLayout() {
@@ -91,6 +92,46 @@ export default function MainLayout() {
     }));
   }, [tags, skills, mcpServers]);
 
+  // Smart launch path handler - checks if project exists and has scene
+  const handleLaunchPath = useCallback(async (path: string) => {
+    // Normalize path by removing trailing slash
+    const normalizedPath = path.replace(/\/$/, '');
+
+    // Get current projects from store
+    const currentProjects = useProjectsStore.getState().projects;
+    const existingProject = currentProjects.find(
+      (p) => p.path.replace(/\/$/, '') === normalizedPath
+    );
+
+    // Check if project exists AND has a non-empty sceneId
+    const hasScene = existingProject && existingProject.sceneId && existingProject.sceneId.trim() !== '';
+
+    if (hasScene) {
+      // Project exists and has scene - sync config and launch terminal directly
+      try {
+        // Get terminal settings
+        const { terminalApp, claudeCommand } = useSettingsStore.getState();
+
+        // Sync project configuration first
+        await useProjectsStore.getState().syncProject(existingProject.id);
+
+        // Launch terminal with Claude
+        await safeInvoke('launch_claude_for_folder', {
+          folderPath: normalizedPath,
+          terminalApp: terminalApp || 'Terminal',
+          claudeCommand: claudeCommand || 'claude',
+        });
+      } catch (error) {
+        console.error('[handleLaunchPath] Error:', error);
+        // Fall back to opening launcher on error
+        useLauncherStore.getState().openLauncher(normalizedPath);
+      }
+    } else {
+      // Project doesn't exist or has no scene - open launcher modal
+      useLauncherStore.getState().openLauncher(normalizedPath);
+    }
+  }, []);
+
   // Initialize app data on mount
   useEffect(() => {
     const initialize = async () => {
@@ -159,7 +200,8 @@ export default function MainLayout() {
           const launchIndex = args.indexOf('--launch');
           if (launchIndex !== -1 && args[launchIndex + 1]) {
             const path = args[launchIndex + 1];
-            useLauncherStore.getState().openLauncher(path);
+            // Use smart launch handler instead of directly opening launcher
+            await handleLaunchPath(path);
           }
         }
       } catch (e) {
@@ -168,7 +210,28 @@ export default function MainLayout() {
     };
 
     checkLaunchArgs();
-  }, [isInitializing]);
+  }, [isInitializing, handleLaunchPath]);
+
+  // Listen for second instance launch events (when app is already running)
+  useEffect(() => {
+    if (!isTauri()) return;
+
+    let unlisten: UnlistenFn | undefined;
+
+    const setupListener = async () => {
+      unlisten = await listen<string>('second-instance-launch', async (event) => {
+        const path = event.payload;
+        console.log('[MainLayout] Received second-instance-launch event with path:', path);
+        await handleLaunchPath(path);
+      });
+    };
+
+    setupListener();
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, [handleLaunchPath]);
 
   // Context menu state - Category
   const [contextMenu, setContextMenu] = useState<{

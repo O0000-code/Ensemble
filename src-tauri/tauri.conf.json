@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Ensemble",
         "width": 1440,
         "height": 900,

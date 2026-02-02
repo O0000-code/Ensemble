@@ -601,11 +601,27 @@ pub fn install_quick_action() -> Result<String, String> {
     // Create workflow directory structure
     fs::create_dir_all(&contents_dir).map_err(|e| e.to_string())?;
 
-    // Create Info.plist - minimal version for Quick Action
+    // Create Info.plist with NSServices configuration (required for Finder right-click menu)
     let info_plist = r#"<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>NSServices</key>
+    <array>
+        <dict>
+            <key>NSMenuItem</key>
+            <dict>
+                <key>default</key>
+                <string>Open with Ensemble</string>
+            </dict>
+            <key>NSMessage</key>
+            <string>runWorkflowAsService</string>
+            <key>NSSendFileTypes</key>
+            <array>
+                <string>public.folder</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>"#;
 
@@ -686,7 +702,7 @@ pub fn install_quick_action() -> Result<String, String> {
 					<key>COMMAND_STRING</key>
 					<string>for f in "$@"
 do
-    open -a "Ensemble" --args "--launch" "$f"
+    "/Applications/Ensemble.app/Contents/MacOS/Ensemble" --launch "$f"
 done</string>
 					<key>CheckedForUserDefaultShell</key>
 					<true/>
