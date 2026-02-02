@@ -99,6 +99,7 @@ pub fn run() {
             import::install_quick_action,
             import::launch_claude_for_folder,
             import::get_launch_args,
+            import::open_accessibility_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

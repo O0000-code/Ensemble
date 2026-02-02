@@ -123,10 +123,30 @@ export default function MainLayout() {
           warpOpenMode: warpOpenMode || 'window',
         });
       } catch (error) {
-        console.error('[handleLaunchPath] Error:', error);
-        // Fall back to opening launcher on error - need to show window
-        await focusWindow();
-        useLauncherStore.getState().openLauncher(normalizedPath);
+        const errorStr = String(error);
+        console.error('[handleLaunchPath] Error:', errorStr);
+
+        // Check if it's an accessibility permission error
+        if (errorStr.includes('ACCESSIBILITY_PERMISSION_REQUIRED')) {
+          await focusWindow();
+          // Show permission alert and open System Settings
+          const shouldOpen = window.confirm(
+            'To auto-type commands in Warp\'s New Tab mode, please grant Accessibility permission to Ensemble.\n\n' +
+            'Steps:\n' +
+            '1. Click OK to open System Settings → Accessibility\n' +
+            '2. Click the "+" button\n' +
+            '3. Navigate to /Applications and select Ensemble.app\n' +
+            '4. Enable the checkbox for Ensemble\n\n' +
+            'Alternatively, you can use "New Window" mode which doesn\'t require this permission.'
+          );
+          if (shouldOpen) {
+            await safeInvoke('open_accessibility_settings', {});
+          }
+        } else {
+          // Fall back to opening launcher on error - need to show window
+          await focusWindow();
+          useLauncherStore.getState().openLauncher(normalizedPath);
+        }
       }
     } else {
       // Project doesn't exist or has no scene - need to show launcher modal

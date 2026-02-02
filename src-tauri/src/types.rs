@@ -132,7 +132,13 @@ pub struct AppSettings {
     pub auto_classify_new_items: bool,
     pub terminal_app: String,
     pub claude_command: String,
+    #[serde(default = "default_warp_open_mode")]
+    pub warp_open_mode: String,
     pub has_completed_import: bool,
+}
+
+fn default_warp_open_mode() -> String {
+    "window".to_string()
 }
 
 impl Default for AppSettings {
@@ -145,6 +151,7 @@ impl Default for AppSettings {
             auto_classify_new_items: false,
             terminal_app: "Terminal".to_string(),
             claude_command: "claude".to_string(),
+            warp_open_mode: "window".to_string(),
             has_completed_import: false,
         }
     }

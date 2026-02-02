@@ -924,33 +924,50 @@ end tell"#,
                 // Use AppleScript to type the command after a delay
                 // We use clipboard + paste to avoid input method issues
                 let cmd = claude_command.clone();
-                std::thread::spawn(move || {
-                    // Wait for the tab to open
-                    std::thread::sleep(std::time::Duration::from_millis(800));
 
-                    // Use pbcopy to set clipboard, then paste with Cmd+V, then press Enter
-                    let applescript = format!(
-                        r#"
-                        -- Set clipboard to the command
-                        set the clipboard to "{}"
+                // Wait for the tab to open
+                std::thread::sleep(std::time::Duration::from_millis(1000));
 
-                        -- Activate Warp and paste
-                        tell application "Warp" to activate
-                        delay 0.2
-                        tell application "System Events"
-                            keystroke "v" using command down
-                            delay 0.1
-                            key code 36
-                        end tell
-                        "#,
-                        cmd.replace('"', "\\\"")
-                    );
+                // Use pbcopy to set clipboard, then paste with Cmd+V, then press Enter
+                let applescript = format!(
+                    r#"
+                    -- Set clipboard to the command
+                    set the clipboard to "{}"
 
-                    let _ = std::process::Command::new("osascript")
-                        .arg("-e")
-                        .arg(&applescript)
-                        .output();
-                });
+                    -- Activate Warp and paste
+                    tell application "Warp" to activate
+                    delay 0.3
+                    tell application "System Events"
+                        keystroke "v" using command down
+                        delay 0.1
+                        key code 36
+                    end tell
+                    "#,
+                    cmd.replace('"', "\\\"")
+                );
+
+                let output = std::process::Command::new("osascript")
+                    .arg("-e")
+                    .arg(&applescript)
+                    .output()
+                    .map_err(|e| format!("Failed to execute AppleScript: {}", e))?;
+
+                // Check if AppleScript failed due to accessibility permissions
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    if stderr.contains("not allowed") || stderr.contains("1002") {
+                        return Err(
+                            "ACCESSIBILITY_PERMISSION_REQUIRED: To auto-type commands in Warp's New Tab mode, \
+                            please grant Accessibility permission to Ensemble.app.\n\n\
+                            Steps:\n\
+                            1. Open System Settings → Privacy & Security → Accessibility\n\
+                            2. Click '+' button\n\
+                            3. Navigate to /Applications and select Ensemble.app\n\
+                            4. Enable the checkbox for Ensemble".to_string()
+                        );
+                    }
+                    return Err(format!("AppleScript failed: {}", stderr));
+                }
             } else {
                 // Use Launch Configuration (supports executing commands, but opens new window)
                 use std::time::{SystemTime, UNIX_EPOCH};
@@ -972,8 +989,8 @@ end tell"#,
 
                 let config_path = warp_config_dir.join(format!("{}.yaml", config_name));
 
-                // Create YAML content with proper formatting and quoting
-                // Note: cwd must be an absolute path, properly quoted
+                // Create YAML content with proper formatting
+                // Note: cwd must be an absolute path, commands are plain strings (not exec: prefix)
                 let yaml_content = format!(
                     r#"name: {}
 windows:
@@ -982,7 +999,7 @@ windows:
         layout:
           cwd: "{}"
           commands:
-            - exec: "{}"
+            - "{}"
 "#,
                     config_name,
                     folder_path_str.replace('"', "\\\""),
@@ -1041,5 +1058,15 @@ end tell"#,
         }
     }
 
+    Ok(())
+}
+
+/// Open System Settings to Accessibility page
+#[tauri::command]
+pub fn open_accessibility_settings() -> Result<(), String> {
+    std::process::Command::new("open")
+        .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+        .spawn()
+        .map_err(|e| format!("Failed to open System Settings: {}", e))?;
     Ok(())
 }
