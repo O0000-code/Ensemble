@@ -1,16 +1,21 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import ContextMenu from '../common/ContextMenu';
+import { ImportDialog } from '../common/ImportDialog';
+import { LauncherModal } from '../launcher';
 import { useAppStore } from '@/stores/appStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useSkillsStore } from '@/stores/skillsStore';
 import { useMcpsStore } from '@/stores/mcpsStore';
 import { useScenesStore } from '@/stores/scenesStore';
 import { useProjectsStore } from '@/stores/projectsStore';
+import { useImportStore } from '@/stores/importStore';
+import { useLauncherStore } from '@/stores/launcherStore';
 import { Pencil, Trash2, Loader2 } from 'lucide-react';
-import { isTauri } from '@/utils/tauri';
+import { isTauri, safeInvoke } from '@/utils/tauri';
 import { ErrorBoundary } from '../common/ErrorBoundary';
+import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import type { Category, Tag } from '@/types';
 
 export default function MainLayout() {
@@ -53,11 +58,13 @@ export default function MainLayout() {
     toggleSidebar,
   } = useAppStore();
 
-  const { loadSettings } = useSettingsStore();
+  const { loadSettings, hasCompletedImport } = useSettingsStore();
   const { skills, loadSkills, setFilter: setSkillsFilter } = useSkillsStore();
   const { mcpServers, loadMcps, setFilter: setMcpsFilter } = useMcpsStore();
   const { scenes, loadScenes } = useScenesStore();
   const { projects, loadProjects } = useProjectsStore();
+  const { detectExistingConfig } = useImportStore();
+  const { isOpen: isLauncherOpen, folderPath: launcherFolderPath, closeLauncher } = useLauncherStore();
 
   // Dynamically calculate navigation counts
   const navCounts = useMemo(() => ({
@@ -84,6 +91,81 @@ export default function MainLayout() {
              mcpServers.filter(m => m.tags?.includes(tag.name)).length
     }));
   }, [tags, skills, mcpServers]);
+
+  // Smart launch path handler - checks if project exists and has scene
+  const handleLaunchPath = useCallback(async (path: string) => {
+    // Normalize path by removing trailing slash
+    const normalizedPath = path.replace(/\/$/, '');
+
+    // Get current projects from store
+    const currentProjects = useProjectsStore.getState().projects;
+    const existingProject = currentProjects.find(
+      (p) => p.path.replace(/\/$/, '') === normalizedPath
+    );
+
+    // Check if project exists AND has a non-empty sceneId
+    const hasScene = existingProject && existingProject.sceneId && existingProject.sceneId.trim() !== '';
+
+    if (hasScene) {
+      // Project exists and has scene - sync config and launch terminal directly (no UI needed)
+      try {
+        // Get terminal settings
+        const { terminalApp, claudeCommand, warpOpenMode } = useSettingsStore.getState();
+
+        // Sync project configuration first
+        await useProjectsStore.getState().syncProject(existingProject.id);
+
+        // Launch terminal with Claude
+        await safeInvoke('launch_claude_for_folder', {
+          folderPath: normalizedPath,
+          terminalApp: terminalApp || 'Terminal',
+          claudeCommand: claudeCommand || 'claude',
+          warpOpenMode: warpOpenMode || 'window',
+        });
+      } catch (error) {
+        const errorStr = String(error);
+        console.error('[handleLaunchPath] Error:', errorStr);
+
+        // Check if it's an accessibility permission error
+        if (errorStr.includes('ACCESSIBILITY_PERMISSION_REQUIRED')) {
+          await focusWindow();
+          // Show permission alert and open System Settings
+          const shouldOpen = window.confirm(
+            'To auto-type commands in Warp\'s New Tab mode, please grant Accessibility permission to Ensemble.\n\n' +
+            'Steps:\n' +
+            '1. Click OK to open System Settings → Accessibility\n' +
+            '2. Click the "+" button\n' +
+            '3. Navigate to /Applications and select Ensemble.app\n' +
+            '4. Enable the checkbox for Ensemble\n\n' +
+            'Alternatively, you can use "New Window" mode which doesn\'t require this permission.'
+          );
+          if (shouldOpen) {
+            await safeInvoke('open_accessibility_settings', {});
+          }
+        } else {
+          // Fall back to opening launcher on error - need to show window
+          await focusWindow();
+          useLauncherStore.getState().openLauncher(normalizedPath);
+        }
+      }
+    } else {
+      // Project doesn't exist or has no scene - need to show launcher modal
+      await focusWindow();
+      useLauncherStore.getState().openLauncher(normalizedPath);
+    }
+  }, []);
+
+  // Helper to focus the main window when UI needs to be shown
+  const focusWindow = async () => {
+    if (!isTauri()) return;
+    try {
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const win = getCurrentWindow();
+      await win.setFocus();
+    } catch (e) {
+      console.error('Failed to focus window:', e);
+    }
+  };
 
   // Initialize app data on mount
   useEffect(() => {
@@ -129,6 +211,62 @@ export default function MainLayout() {
     setSkillsFilter({ category: activeCategory, tags: activeTags });
     setMcpsFilter({ category: activeCategory, tags: activeTags });
   }, [activeCategory, activeTags, setSkillsFilter, setMcpsFilter]);
+
+  // First-time import detection - only run after initialization is complete
+  useEffect(() => {
+    // Skip in non-Tauri environment or if still initializing
+    if (!isTauri() || isInitializing) return;
+
+    // If import has not been completed, detect existing config
+    if (!hasCompletedImport) {
+      detectExistingConfig();
+    }
+  }, [hasCompletedImport, isInitializing, detectExistingConfig]);
+
+  // Check for launch arguments (from Finder Quick Action)
+  useEffect(() => {
+    if (!isTauri() || isInitializing) return;
+
+    const checkLaunchArgs = async () => {
+      try {
+        const args = await safeInvoke<string[]>('get_launch_args');
+
+        if (args && args.length > 0) {
+          const launchIndex = args.indexOf('--launch');
+          if (launchIndex !== -1 && args[launchIndex + 1]) {
+            const path = args[launchIndex + 1];
+            // Use smart launch handler instead of directly opening launcher
+            await handleLaunchPath(path);
+          }
+        }
+      } catch (e) {
+        console.log('No launch args or error checking:', e);
+      }
+    };
+
+    checkLaunchArgs();
+  }, [isInitializing, handleLaunchPath]);
+
+  // Listen for second instance launch events (when app is already running)
+  useEffect(() => {
+    if (!isTauri()) return;
+
+    let unlisten: UnlistenFn | undefined;
+
+    const setupListener = async () => {
+      unlisten = await listen<string>('second-instance-launch', async (event) => {
+        const path = event.payload;
+        console.log('[MainLayout] Received second-instance-launch event with path:', path);
+        await handleLaunchPath(path);
+      });
+    };
+
+    setupListener();
+
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, [handleLaunchPath]);
 
   // Context menu state - Category
   const [contextMenu, setContextMenu] = useState<{
@@ -395,6 +533,16 @@ export default function MainLayout() {
           onClose={() => setTagContextMenu(null)}
         />
       )}
+
+      {/* Import Dialog for first-time config import */}
+      <ImportDialog />
+
+      {/* Launcher Modal for Finder Quick Action */}
+      <LauncherModal
+        isOpen={isLauncherOpen}
+        folderPath={launcherFolderPath}
+        onClose={closeLauncher}
+      />
     </div>
   );
 }

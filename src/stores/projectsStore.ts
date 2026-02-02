@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import type { Project, Scene } from '../types';
 import { useScenesStore } from './scenesStore';
-import { useSettingsStore } from './settingsStore';
+import { useSkillsStore } from './skillsStore';
+import { useMcpsStore } from './mcpsStore';
 import { isTauri, safeInvoke } from '@/utils/tauri';
 
 // ============================================================================
@@ -147,7 +148,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       const project = await safeInvoke<Project>('add_project', {
         name: newProject.name,
         path: newProject.path,
-        sceneId: newProject.sceneId,
+        sceneId: newProject.sceneId || null,
       });
       if (!project) {
         set({ error: 'Failed to create project' });
@@ -206,16 +207,27 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       return;
     }
 
-    const { skillSourceDir, mcpSourceDir } = useSettingsStore.getState();
+    // Get skills and mcps data
+    const allSkills = useSkillsStore.getState().skills;
+    const allMcps = useMcpsStore.getState().mcpServers;
+
+    // Convert skill IDs to skill paths
+    const skillPaths = scene.skillIds
+      .map((skillId) => allSkills.find((s) => s.id === skillId))
+      .filter((s): s is NonNullable<typeof s> => s !== undefined)
+      .map((s) => s.sourcePath);
+
+    // Convert MCP IDs to full MCP server objects (backend expects complete McpServer)
+    const mcpServers = scene.mcpIds
+      .map((mcpId) => allMcps.find((m) => m.id === mcpId))
+      .filter((m): m is NonNullable<typeof m> => m !== undefined);
 
     set({ syncingProjectId: id, error: null });
     try {
       await safeInvoke('sync_project_config', {
         projectPath: project.path,
-        skillIds: scene.skillIds,
-        mcpIds: scene.mcpIds,
-        sourceSkillDir: skillSourceDir,
-        sourceMcpDir: mcpSourceDir,
+        skillPaths: skillPaths,
+        mcpServers: mcpServers,
       });
 
       // Update lastSynced

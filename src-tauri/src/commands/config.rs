@@ -49,12 +49,13 @@ pub fn write_mcp_config(project_path: String, mcp_servers: Vec<McpServer>) -> Re
 
 /// Sync project configuration - creates symlinks for skills and writes MCP config
 #[tauri::command]
+#[allow(non_snake_case)]
 pub fn sync_project_config(
-    project_path: String,
-    skill_paths: Vec<String>,
-    mcp_servers: Vec<McpServer>,
+    projectPath: String,
+    skillPaths: Vec<String>,
+    mcpServers: Vec<McpServer>,
 ) -> Result<(), String> {
-    let project_dir = expand_path(&project_path);
+    let project_dir = expand_path(&projectPath);
     let claude_dir = project_dir.join(".claude");
     let skills_dir = claude_dir.join("skills");
 
@@ -73,7 +74,7 @@ pub fn sync_project_config(
     }
 
     // Create symlinks for skills
-    for skill_path in skill_paths {
+    for skill_path in skillPaths {
         let source = expand_path(&skill_path);
         if let Some(skill_name) = source.file_name() {
             let target = skills_dir.join(skill_name);
@@ -87,15 +88,16 @@ pub fn sync_project_config(
     }
 
     // Write MCP configuration
-    write_mcp_config(project_path, mcp_servers)?;
+    write_mcp_config(projectPath, mcpServers)?;
 
     Ok(())
 }
 
 /// Clear project configuration
 #[tauri::command]
-pub fn clear_project_config(project_path: String) -> Result<(), String> {
-    let project_dir = expand_path(&project_path);
+#[allow(non_snake_case)]
+pub fn clear_project_config(projectPath: String) -> Result<(), String> {
+    let project_dir = expand_path(&projectPath);
     let claude_dir = project_dir.join(".claude");
     let skills_dir = claude_dir.join("skills");
     let settings_path = claude_dir.join("settings.local.json");

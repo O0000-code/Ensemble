@@ -234,22 +234,25 @@ pub fn get_scenes() -> Result<Vec<Scene>, String> {
 
 /// Add a new scene
 #[tauri::command]
+#[allow(non_snake_case)]
 pub fn add_scene(
     name: String,
     description: String,
     icon: String,
-    skill_ids: Vec<String>,
-    mcp_ids: Vec<String>,
+    skillIds: Vec<String>,
+    mcpIds: Vec<String>,
 ) -> Result<Scene, String> {
+    println!("add_scene called: name={}, skillIds={:?}, mcpIds={:?}", name, skillIds, mcpIds);
     let mut data = read_app_data()?;
+    println!("Current scenes count: {}", data.scenes.len());
 
     let scene = Scene {
         id: Uuid::new_v4().to_string(),
         name,
         description,
         icon,
-        skill_ids,
-        mcp_ids,
+        skill_ids: skillIds,
+        mcp_ids: mcpIds,
         created_at: chrono::Utc::now().to_rfc3339(),
         last_used: None,
     };
@@ -315,14 +318,15 @@ pub fn get_projects() -> Result<Vec<Project>, String> {
 
 /// Add a new project
 #[tauri::command]
-pub fn add_project(name: String, path: String, scene_id: Option<String>) -> Result<Project, String> {
+#[allow(non_snake_case)]
+pub fn add_project(name: String, path: String, sceneId: Option<String>) -> Result<Project, String> {
     let mut data = read_app_data()?;
 
     let project = Project {
         id: Uuid::new_v4().to_string(),
         name,
         path,
-        scene_id: scene_id.unwrap_or_default(),
+        scene_id: sceneId.unwrap_or_default(),
         last_synced: None,
     };
 
@@ -334,12 +338,13 @@ pub fn add_project(name: String, path: String, scene_id: Option<String>) -> Resu
 
 /// Update a project
 #[tauri::command]
+#[allow(non_snake_case)]
 pub fn update_project(
     id: String,
     name: Option<String>,
     path: Option<String>,
-    scene_id: Option<String>,
-    last_synced: Option<String>,
+    sceneId: Option<String>,
+    lastSynced: Option<String>,
 ) -> Result<(), String> {
     let mut data = read_app_data()?;
 
@@ -350,10 +355,10 @@ pub fn update_project(
         if let Some(p) = path {
             project.path = p;
         }
-        if let Some(s) = scene_id {
+        if let Some(s) = sceneId {
             project.scene_id = s;
         }
-        if let Some(l) = last_synced {
+        if let Some(l) = lastSynced {
             project.last_synced = Some(l);
         }
         write_app_data(data)?;

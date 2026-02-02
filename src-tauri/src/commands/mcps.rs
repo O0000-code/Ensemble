@@ -105,6 +105,7 @@ fn parse_mcp_file(
         tags: metadata.map(|m| m.tags.clone()).unwrap_or_default(),
         enabled: metadata.map(|m| m.enabled).unwrap_or(true),
         source_path: file_path.to_string_lossy().to_string(),
+        scope: metadata.map(|m| m.scope.clone()).unwrap_or_else(|| "project".to_string()),
         command: config.command,
         args: config.args.unwrap_or_default(),
         env: config.env,

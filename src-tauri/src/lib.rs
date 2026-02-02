@@ -2,7 +2,8 @@ mod commands;
 pub mod types;
 mod utils;
 
-use commands::{classify, config, data, dialog, mcps, skills, symlink};
+use commands::{classify, config, data, dialog, import, mcps, skills, symlink};
+use tauri::{Emitter, Manager};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -19,6 +20,23 @@ pub fn run() {
             }
             Ok(())
         })
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            // 检查是否有 --launch 参数
+            if let Some(launch_index) = args.iter().position(|a| a == "--launch") {
+                if let Some(path) = args.get(launch_index + 1) {
+                    // 尝试获取主窗口并发送事件
+                    // 注意：不调用 set_focus()，让前端决定是否需要显示窗口
+                    if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.emit("second-instance-launch", path.clone());
+                    } else {
+                        let windows = app.webview_windows();
+                        if let Some((_, window)) = windows.into_iter().next() {
+                            let _ = window.emit("second-instance-launch", path.clone());
+                        }
+                    }
+                }
+            }
+        }))
         .invoke_handler(tauri::generate_handler![
             // Skills commands
             skills::scan_skills,
@@ -72,6 +90,16 @@ pub fn run() {
             // Classify (Anthropic API)
             classify::auto_classify,
             classify::validate_api_key,
+            // Import commands
+            import::detect_existing_config,
+            import::backup_before_import,
+            import::import_existing_config,
+            import::update_skill_scope,
+            import::update_mcp_scope,
+            import::install_quick_action,
+            import::launch_claude_for_folder,
+            import::get_launch_args,
+            import::open_accessibility_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -16,3 +16,6 @@ export type { DropdownProps, DropdownOption } from './Dropdown';
 export { FilteredEmptyState } from './FilteredEmptyState';
 export { IconPicker, ICON_MAP } from './IconPicker';
 export type { IconPickerProps } from './IconPicker';
+export { ImportDialog } from './ImportDialog';
+export { ScopeSelector } from './ScopeSelector';
+export type { ScopeSelectorProps, Scope } from './ScopeSelector';
