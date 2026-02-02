@@ -185,7 +185,7 @@ export function SkillsPage() {
     clearError,
   } = useSkillsStore();
 
-  const { categories, tags: appTags } = useAppStore();
+  const { categories, tags: appTags, addTag: addGlobalTag } = useAppStore();
 
   const filteredSkills = getFilteredSkills();
   const enabledCount = getEnabledCount();
@@ -294,9 +294,23 @@ export function SkillsPage() {
   };
 
   // Handle adding a tag
-  const handleAddTag = (tagName: string) => {
+  const handleAddTag = async (tagName: string) => {
     if (selectedSkillId && selectedSkill && tagName.trim()) {
-      const newTags = [...(selectedSkill.tags || []), tagName.trim()];
+      const trimmedName = tagName.trim();
+
+      // Check if tag already exists in appStore
+      const existingTag = appTags.find(t => t.name.toLowerCase() === trimmedName.toLowerCase());
+
+      // If new tag, add to appStore first so it appears in sidebar
+      if (!existingTag) {
+        try {
+          await addGlobalTag(trimmedName);
+        } catch (error) {
+          console.error('Failed to add tag to global store:', error);
+        }
+      }
+
+      const newTags = [...(selectedSkill.tags || []), trimmedName];
       updateSkillTags(selectedSkillId, newTags);
       setTagInputValue('');
       setIsTagInputOpen(false);

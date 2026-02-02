@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import ContextMenu from '../common/ContextMenu';
@@ -55,10 +55,28 @@ export default function MainLayout() {
   } = useAppStore();
 
   const { loadSettings } = useSettingsStore();
-  const { loadSkills, setFilter: setSkillsFilter } = useSkillsStore();
-  const { loadMcps, setFilter: setMcpsFilter } = useMcpsStore();
+  const { skills, loadSkills, setFilter: setSkillsFilter } = useSkillsStore();
+  const { mcpServers, loadMcps, setFilter: setMcpsFilter } = useMcpsStore();
   const { loadScenes } = useScenesStore();
   const { loadProjects } = useProjectsStore();
+
+  // Dynamically calculate category counts from skills and mcps
+  const categoriesWithCounts = useMemo(() => {
+    return categories.map(cat => ({
+      ...cat,
+      count: skills.filter(s => s.category === cat.name).length +
+             mcpServers.filter(m => m.category === cat.name).length
+    }));
+  }, [categories, skills, mcpServers]);
+
+  // Dynamically calculate tag counts from skills and mcps
+  const tagsWithCounts = useMemo(() => {
+    return tags.map(tag => ({
+      ...tag,
+      count: skills.filter(s => s.tags?.includes(tag.name)).length +
+             mcpServers.filter(m => m.tags?.includes(tag.name)).length
+    }));
+  }, [tags, skills, mcpServers]);
 
   // Initialize app data on mount
   useEffect(() => {
@@ -295,8 +313,8 @@ export default function MainLayout() {
           activeNav={getActiveNav()}
           activeCategory={currentCategoryId || activeCategory}
           activeTags={currentTagId ? [currentTagId] : activeTags}
-          categories={categories}
-          tags={tags}
+          categories={categoriesWithCounts}
+          tags={tagsWithCounts}
           counts={counts}
           onNavChange={handleNavChange}
           onCategoryChange={setActiveCategory}
