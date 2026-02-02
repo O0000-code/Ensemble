@@ -157,7 +157,7 @@ export function SkillItem({
         <div className="flex flex-shrink-0 items-center gap-1.5">
           {/* Category Badge */}
           <Badge variant="category" color={categoryColor}>
-            {skill.category.charAt(0).toUpperCase() + skill.category.slice(1)}
+            {skill.category ? skill.category.charAt(0).toUpperCase() + skill.category.slice(1) : 'Uncategorized'}
           </Badge>
 
           {/* Tags (max 2) */}

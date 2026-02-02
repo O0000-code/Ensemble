@@ -15,7 +15,6 @@ import {
   Layers,
   Wand2,
   Pencil,
-  ChevronDown,
   X,
   Plus,
   Copy,
@@ -26,9 +25,10 @@ import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
 import Toggle from '@/components/common/Toggle';
-import { IconPicker, ICON_MAP } from '@/components/common';
-import SkillItem from '@/components/skills/SkillItem';
+import { IconPicker, ICON_MAP, Dropdown } from '@/components/common';
+import { SkillListItem } from '@/components/skills/SkillListItem';
 import { useSkillsStore } from '@/stores/skillsStore';
+import { useAppStore } from '@/stores/appStore';
 import type { Skill } from '@/types';
 
 // ============================================================================
@@ -79,18 +79,6 @@ function getSkillIcon(skill: Skill): React.ComponentType<{ className?: string }>
   // Default icon
   return Sparkles;
 }
-
-// ============================================================================
-// Category Color Mapping
-// ============================================================================
-
-const categoryColors: Record<string, string> = {
-  development: '#18181B',
-  design: '#8B5CF6',
-  research: '#3B82F6',
-  productivity: '#10B981',
-  other: '#71717A',
-};
 
 // ============================================================================
 // Helper Functions
@@ -189,6 +177,7 @@ export function SkillsPage() {
     setFilter,
     toggleSkill,
     updateSkillIcon,
+    updateSkillCategory,
     getFilteredSkills,
     getEnabledCount,
     autoClassify,
@@ -197,8 +186,30 @@ export function SkillsPage() {
     clearError,
   } = useSkillsStore();
 
+  const { categories } = useAppStore();
+
   const filteredSkills = getFilteredSkills();
   const enabledCount = getEnabledCount();
+
+  // Category dropdown options
+  const categoryOptions = useMemo(() => {
+    const defaultCategories = [
+      { value: '', label: 'Uncategorized', color: '#71717A' },
+      { value: 'development', label: 'Development', color: '#18181B' },
+      { value: 'design', label: 'Design', color: '#8B5CF6' },
+      { value: 'research', label: 'Research', color: '#3B82F6' },
+      { value: 'productivity', label: 'Productivity', color: '#10B981' },
+    ];
+    // Add any custom categories from store
+    const customOptions = categories
+      .filter(cat => !defaultCategories.some(d => d.value === cat.name.toLowerCase()))
+      .map(cat => ({
+        value: cat.name.toLowerCase(),
+        label: cat.name,
+        color: cat.color || '#71717A',
+      }));
+    return [...defaultCategories, ...customOptions];
+  }, [categories]);
 
   // Selected skill ID state (replaces URL-based navigation)
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
@@ -270,6 +281,13 @@ export function SkillsPage() {
     setIconPickerState({ isOpen: false, skillId: null, triggerRef: null });
   };
 
+  // Handle category change
+  const handleCategoryChange = (category: string | string[]) => {
+    if (selectedSkillId && typeof category === 'string') {
+      updateSkillCategory(selectedSkillId, category);
+    }
+  };
+
   // Detail Header content
   const detailHeader = selectedSkill && (
     <div className="flex items-center gap-3">
@@ -324,17 +342,15 @@ export function SkillsPage() {
       <div className="flex flex-col gap-4">
         {/* Category Selector */}
         <div className="flex items-center gap-3">
-          <span className="text-[11px] font-medium text-[#71717A]">Category</span>
-          <button className="flex items-center gap-2 rounded-md border border-[#E5E5E5] px-2.5 py-1.5">
-            <span
-              className="h-2 w-2 rounded-sm"
-              style={{ backgroundColor: categoryColors[selectedSkill.category] || '#71717A' }}
-            />
-            <span className="text-[13px] font-medium text-[#18181B]">
-              {selectedSkill.category.charAt(0).toUpperCase() + selectedSkill.category.slice(1)}
-            </span>
-            <ChevronDown className="h-3.5 w-3.5 text-[#A1A1AA]" />
-          </button>
+          <span className="w-16 text-[11px] font-medium text-[#71717A]">Category</span>
+          <Dropdown
+            options={categoryOptions}
+            value={selectedSkill.category || ''}
+            onChange={handleCategoryChange}
+            placeholder="Select category"
+            compact
+            className="w-40"
+          />
         </div>
 
         {/* Tags */}
@@ -534,12 +550,13 @@ export function SkillsPage() {
             }
           />
         ) : (
+          /* Skill List - Unified component with smooth transitions */
           <div className="flex flex-col gap-3">
             {filteredSkills.map((skill) => (
-              <SkillItem
+              <SkillListItem
                 key={skill.id}
                 skill={skill}
-                variant="full"
+                compact={!!selectedSkillId}
                 selected={skill.id === selectedSkillId}
                 onClick={() => handleSkillClick(skill.id)}
                 onToggle={(enabled) => handleToggle(skill.id, enabled)}
