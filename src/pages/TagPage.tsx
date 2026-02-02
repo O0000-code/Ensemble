@@ -28,13 +28,15 @@ export function TagPage() {
 
   // Find the current tag
   const tag = tags.find((t) => t.id === tagId);
+  // Get tag name for filtering (skill.tags stores tag names, not ids)
+  const tagName = tag?.name;
 
-  // Filter skills and MCPs that have this tag
+  // Filter skills and MCPs that have this tag (using tag name, not id)
   const filteredSkills = skills.filter((s) =>
-    tagId && s.tags.includes(tagId)
+    tagName && s.tags.includes(tagName)
   );
   const filteredMcps = mcpServers.filter((m) =>
-    tagId && m.tags.includes(tagId)
+    tagName && m.tags.includes(tagName)
   );
 
   // Apply search filter

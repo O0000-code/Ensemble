@@ -27,12 +27,14 @@ export function CategoryPage() {
 
   // Find current category
   const category = categories.find((c) => c.id === categoryId);
+  // Get category name for filtering (skill.category stores name, not id)
+  const categoryName = category?.name;
 
-  // Filter skills and mcps by category, then by search
+  // Filter skills and mcps by category name, then by search
   const filteredData = useMemo(() => {
-    // First filter by category
-    const categorySkills = skills.filter((s) => s.category === categoryId);
-    const categoryMcps = mcpServers.filter((m) => m.category === categoryId);
+    // First filter by category name (skill.category stores the category name, not id)
+    const categorySkills = skills.filter((s) => s.category === categoryName);
+    const categoryMcps = mcpServers.filter((m) => m.category === categoryName);
 
     // Then filter by search if search is active
     if (!search) {
@@ -55,7 +57,7 @@ export function CategoryPage() {
           mcp.description.toLowerCase().includes(searchLower)
       ),
     };
-  }, [skills, mcpServers, categoryId, search]);
+  }, [skills, mcpServers, categoryName, search]);
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -82,14 +84,14 @@ export function CategoryPage() {
   };
 
   const isEmpty = filteredData.skills.length === 0 && filteredData.mcps.length === 0;
-  const categoryName = category?.name || 'Unknown Category';
+  const displayCategoryName = categoryName || 'Unknown Category';
 
   // Empty state
   if (isEmpty && !search) {
     return (
       <div className="flex h-full flex-col">
         <PageHeader
-          title={categoryName}
+          title={displayCategoryName}
           searchValue={search}
           onSearchChange={handleSearchChange}
           searchPlaceholder="Search..."
@@ -116,7 +118,7 @@ export function CategoryPage() {
     <div className="flex h-full flex-col">
       {/* Header */}
       <PageHeader
-        title={categoryName}
+        title={displayCategoryName}
         searchValue={search}
         onSearchChange={handleSearchChange}
         searchPlaceholder="Search..."
