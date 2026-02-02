@@ -24,7 +24,6 @@ export default function MainLayout() {
     activeTags,
     categories,
     tags,
-    counts,
     setActiveCategory,
     toggleActiveTag,
     initApp,
@@ -57,8 +56,16 @@ export default function MainLayout() {
   const { loadSettings } = useSettingsStore();
   const { skills, loadSkills, setFilter: setSkillsFilter } = useSkillsStore();
   const { mcpServers, loadMcps, setFilter: setMcpsFilter } = useMcpsStore();
-  const { loadScenes } = useScenesStore();
-  const { loadProjects } = useProjectsStore();
+  const { scenes, loadScenes } = useScenesStore();
+  const { projects, loadProjects } = useProjectsStore();
+
+  // Dynamically calculate navigation counts
+  const navCounts = useMemo(() => ({
+    skills: skills.length,
+    mcpServers: mcpServers.length,
+    scenes: scenes.length,
+    projects: projects.length,
+  }), [skills.length, mcpServers.length, scenes.length, projects.length]);
 
   // Dynamically calculate category counts from skills and mcps
   const categoriesWithCounts = useMemo(() => {
@@ -315,7 +322,7 @@ export default function MainLayout() {
           activeTags={currentTagId ? [currentTagId] : activeTags}
           categories={categoriesWithCounts}
           tags={tagsWithCounts}
-          counts={counts}
+          counts={navCounts}
           onNavChange={handleNavChange}
           onCategoryChange={setActiveCategory}
           onTagToggle={toggleActiveTag}
