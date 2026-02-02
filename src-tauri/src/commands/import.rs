@@ -913,17 +913,16 @@ end tell"#,
                 .map_err(|e| format!("Failed to launch iTerm2: {}", e))?;
         }
         "Warp" => {
-            use std::time::{SystemTime, UNIX_EPOCH};
-
-            let timestamp = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map(|d| d.as_millis())
-                .unwrap_or(0);
-
             if warp_open_mode == "tab" {
                 // New Tab mode: Use temporary script approach
                 // This opens a new tab in existing Warp window and executes the command
                 // No Accessibility permissions required
+                use std::time::{SystemTime, UNIX_EPOCH};
+                let timestamp = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_millis())
+                    .unwrap_or(0);
+
                 let script_path = format!("/tmp/ensemble_warp_{}.sh", timestamp);
                 let script_content = format!(
                     r#"#!/bin/zsh
@@ -961,8 +960,14 @@ exec zsh
                     let _ = fs::remove_file(script_path_clone);
                 });
             } else {
-                // New Window mode: Use Launch Configuration YAML
-                // This opens a new Warp window and executes the command
+                // New Window mode: Use Launch Configuration (original working code)
+                use std::time::{SystemTime, UNIX_EPOCH};
+
+                // Generate unique filename based on timestamp
+                let timestamp = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_millis())
+                    .unwrap_or(0);
                 let config_name = format!("ensemble-launch-{}", timestamp);
 
                 // Get Warp launch configurations directory
@@ -975,7 +980,8 @@ exec zsh
 
                 let config_path = warp_config_dir.join(format!("{}.yaml", config_name));
 
-                // Create YAML content - commands are plain strings (not exec: prefix)
+                // Create YAML content with proper formatting and quoting
+                // Note: cwd must be an absolute path, properly quoted
                 let yaml_content = format!(
                     r#"name: {}
 windows:
@@ -984,7 +990,7 @@ windows:
         layout:
           cwd: "{}"
           commands:
-            - "{}"
+            - exec: "{}"
 "#,
                     config_name,
                     folder_path_str.replace('"', "\\\""),
@@ -994,13 +1000,13 @@ windows:
                 fs::write(&config_path, &yaml_content)
                     .map_err(|e| format!("Failed to create Warp launch config: {}", e))?;
 
-                // Launch via URI scheme using config name
+                // Launch via URI scheme using config name (NOT file path)
                 std::process::Command::new("open")
                     .arg(format!("warp://launch/{}", config_name))
                     .spawn()
                     .map_err(|e| format!("Failed to launch Warp: {}", e))?;
 
-                // Clean up config file after a delay
+                // Spawn background thread to clean up config file after a delay
                 let config_path_clone = config_path.clone();
                 std::thread::spawn(move || {
                     std::thread::sleep(std::time::Duration::from_secs(10));
