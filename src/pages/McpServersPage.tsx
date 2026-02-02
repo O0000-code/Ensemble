@@ -7,14 +7,17 @@ import {
   MessageSquare,
   Globe,
   FileText,
-  Pencil,
   Layers,
   Wrench,
+  Pencil,
+  X,
+  Plus,
 } from 'lucide-react';
 import { PageHeader, SlidePanel } from '@/components/layout';
-import { Badge, EmptyState, IconPicker, ICON_MAP } from '@/components/common';
+import { Badge, EmptyState, IconPicker, ICON_MAP, Dropdown } from '@/components/common';
 import { McpListItem } from '@/components/mcps/McpListItem';
 import { useMcpsStore } from '@/stores/mcpsStore';
+import { useAppStore } from '@/stores/appStore';
 import type { Tool } from '@/types';
 
 // ============================================================================
@@ -121,9 +124,13 @@ export const McpServersPage: React.FC = () => {
     setFilter,
     toggleMcp,
     updateMcpIcon,
+    updateMcpCategory,
+    updateMcpTags,
     getFilteredMcps,
     getEnabledCount,
   } = useMcpsStore();
+
+  const { categories, tags: appTags } = useAppStore();
 
   // Selected MCP ID state (replaces route navigation)
   const [selectedMcpId, setSelectedMcpId] = useState<string | null>(null);
@@ -136,6 +143,32 @@ export const McpServersPage: React.FC = () => {
     () => mcpServers.find((mcp) => mcp.id === selectedMcpId) || null,
     [mcpServers, selectedMcpId]
   );
+
+  // Category dropdown options - only use categories from appStore
+  const categoryOptions = useMemo(() => {
+    const options = categories.map(cat => ({
+      value: cat.name,
+      label: cat.name,
+      color: cat.color || '#71717A',
+    }));
+    // Add Uncategorized option at the beginning
+    return [{ value: '', label: 'Uncategorized', color: '#71717A' }, ...options];
+  }, [categories]);
+
+  // Tag input state
+  const [tagInputValue, setTagInputValue] = useState('');
+  const [isTagInputOpen, setIsTagInputOpen] = useState(false);
+  const tagInputRef = useRef<HTMLInputElement>(null);
+
+  // Filtered tag suggestions based on input
+  const tagSuggestions = useMemo(() => {
+    if (!tagInputValue.trim()) return appTags;
+    const query = tagInputValue.toLowerCase();
+    return appTags.filter(tag =>
+      tag.name.toLowerCase().includes(query) &&
+      !selectedMcp?.tags?.includes(tag.name)
+    );
+  }, [tagInputValue, appTags, selectedMcp?.tags]);
 
   // Icon Picker state
   const [iconPickerState, setIconPickerState] = useState<{
@@ -181,6 +214,48 @@ export const McpServersPage: React.FC = () => {
   // Handle icon picker close
   const handleIconPickerClose = () => {
     setIconPickerState({ isOpen: false, mcpId: null, triggerRef: null });
+  };
+
+  // Handle category change
+  const handleCategoryChange = (category: string | string[]) => {
+    if (selectedMcpId && typeof category === 'string') {
+      updateMcpCategory(selectedMcpId, category);
+    }
+  };
+
+  // Handle adding a tag
+  const handleAddTag = (tagName: string) => {
+    if (selectedMcpId && selectedMcp && tagName.trim()) {
+      const newTags = [...(selectedMcp.tags || []), tagName.trim()];
+      updateMcpTags(selectedMcpId, newTags);
+      setTagInputValue('');
+      setIsTagInputOpen(false);
+    }
+  };
+
+  // Handle removing a tag
+  const handleRemoveTag = (tagName: string) => {
+    if (selectedMcpId && selectedMcp) {
+      const newTags = selectedMcp.tags.filter(t => t !== tagName);
+      updateMcpTags(selectedMcpId, newTags);
+    }
+  };
+
+  // Handle tag input key down
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && tagInputValue.trim()) {
+      e.preventDefault();
+      handleAddTag(tagInputValue);
+    } else if (e.key === 'Escape') {
+      setIsTagInputOpen(false);
+      setTagInputValue('');
+    }
+  };
+
+  // Open tag input
+  const handleOpenTagInput = () => {
+    setIsTagInputOpen(true);
+    setTimeout(() => tagInputRef.current?.focus(), 0);
   };
 
   // Get the appropriate icon for the selected MCP
@@ -248,25 +323,112 @@ export const McpServersPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Category & Tags - 垂直布局 */}
+        {/* Category Selector */}
         <div className="flex flex-col gap-2">
           <span className="text-[11px] font-medium text-[#71717A]">Category</span>
-          <Badge variant="category" color="#18181B">
-            {selectedMcp.category}
-          </Badge>
+          <Dropdown
+            options={categoryOptions}
+            value={selectedMcp.category || ''}
+            onChange={handleCategoryChange}
+            placeholder="Select category"
+            compact
+            className="w-40"
+          />
         </div>
-        {selectedMcp?.tags && selectedMcp.tags.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <span className="text-[11px] font-medium text-[#71717A]">Tags</span>
-            <div className="flex flex-wrap items-center gap-2">
-              {selectedMcp.tags.map((tag) => (
-                <Badge key={tag} variant="tag">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
+
+        {/* Tags */}
+        <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-medium text-[#71717A]">Tags</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedMcp?.tags?.map((tag) => (
+              <span
+                key={tag}
+                className="flex items-center gap-1.5 rounded-md border border-[#E5E5E5] px-2.5 py-1.5"
+              >
+                <span className="text-xs font-medium text-[#18181B]">{tag}</span>
+                <button
+                  onClick={() => handleRemoveTag(tag)}
+                  className="text-[#A1A1AA] hover:text-[#71717A] transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+            {isTagInputOpen ? (
+              <div className="relative">
+                <input
+                  ref={tagInputRef}
+                  type="text"
+                  value={tagInputValue}
+                  onChange={(e) => setTagInputValue(e.target.value)}
+                  onKeyDown={handleTagInputKeyDown}
+                  onBlur={() => {
+                    // Delay to allow click on suggestion
+                    setTimeout(() => {
+                      setIsTagInputOpen(false);
+                      setTagInputValue('');
+                    }, 150);
+                  }}
+                  placeholder="Type to search..."
+                  className="w-32 rounded-md border border-[#18181B] px-2.5 py-1.5 text-xs font-medium text-[#18181B] outline-none placeholder:text-[#A1A1AA]"
+                />
+                {/* Suggestions dropdown */}
+                {tagInputValue && tagSuggestions.length > 0 && (
+                  <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-lg border border-[#E5E5E5] bg-white shadow-lg">
+                    {tagSuggestions.slice(0, 5).map((tag) => (
+                      <button
+                        key={tag.id}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleAddTag(tag.name);
+                        }}
+                        className="flex w-full items-center px-3 py-2 text-left text-xs font-medium text-[#18181B] hover:bg-[#F4F4F5]"
+                      >
+                        {tag.name}
+                      </button>
+                    ))}
+                    {/* Option to create new tag if not in suggestions */}
+                    {!tagSuggestions.some(t => t.name.toLowerCase() === tagInputValue.toLowerCase()) && (
+                      <button
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleAddTag(tagInputValue);
+                        }}
+                        className="flex w-full items-center gap-1.5 border-t border-[#E5E5E5] px-3 py-2 text-left text-xs font-medium text-[#71717A] hover:bg-[#F4F4F5]"
+                      >
+                        <Plus className="h-3 w-3" />
+                        Create "{tagInputValue}"
+                      </button>
+                    )}
+                  </div>
+                )}
+                {/* Show create option when no suggestions */}
+                {tagInputValue && tagSuggestions.length === 0 && (
+                  <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-lg border border-[#E5E5E5] bg-white shadow-lg">
+                    <button
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleAddTag(tagInputValue);
+                      }}
+                      className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs font-medium text-[#71717A] hover:bg-[#F4F4F5]"
+                    >
+                      <Plus className="h-3 w-3" />
+                      Create "{tagInputValue}"
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={handleOpenTagInput}
+                className="flex items-center gap-1 rounded-md border border-[#E5E5E5] px-2.5 py-1.5 text-[#A1A1AA] hover:bg-[#FAFAFA] transition-colors"
+              >
+                <Plus className="h-3 w-3" />
+                <span className="text-xs font-medium">Add</span>
+              </button>
+            )}
           </div>
-        )}
+        </div>
       </section>
 
       {/* Provided Tools Section (MCP-specific) */}
