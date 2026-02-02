@@ -303,15 +303,71 @@ export function SettingsPage() {
             <Card className="p-5">
               {/* App Info */}
               <div className="flex items-center gap-3.5">
-                {/* App Icon */}
-                <div className="w-12 h-12 bg-[#18181B] rounded-[10px] flex items-center justify-center flex-shrink-0">
-                  <svg width="28" height="28" viewBox="0 0 14 14" fill="none">
+                {/* App Icon - Deep Shadow 3D Style */}
+                <div
+                  className="w-12 h-12 rounded-[10px] flex-shrink-0 relative overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(145deg, #27272A 0%, #18181B 40%, #09090B 100%)',
+                    boxShadow: '0 4.8px 14.4px -2.4px rgba(0,0,0,0.38), 0 1.2px 2.4px rgba(0,0,0,0.19), inset 0 0.6px 0 rgba(255,255,255,0.06)'
+                  }}
+                >
+                  <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 48 48"
+                    fill="none"
+                    className="absolute inset-0"
+                  >
+                    <defs>
+                      {/* 连接线描边渐变 - 180度 (从上到下) */}
+                      <linearGradient id="iconStrokeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#FFFFFF" />
+                        <stop offset="100%" stopColor="#A1A1AA" />
+                      </linearGradient>
+                      {/* 图形填充渐变 - 135度 (从左上到右下) */}
+                      <linearGradient id="iconFillGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#FFFFFF" />
+                        <stop offset="100%" stopColor="#D4D4D8" />
+                      </linearGradient>
+                      {/* 图形阴影滤镜 */}
+                      <filter id="iconShapeShadow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="0" dy="1.8" stdDeviation="1.8" floodColor="#000000" floodOpacity="0.25" />
+                      </filter>
+                    </defs>
+
+                    {/* 三角形连接线 - 位置(14, 15), 尺寸(20 x 17.32) */}
                     <path
-                      d="M3 3L7 7L3 11M7 3L11 7L7 11"
-                      stroke="white"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                      d="M24 15 L14 32.32 L34 32.32 Z"
+                      fill="none"
+                      stroke="url(#iconStrokeGradient)"
+                      strokeWidth="0.9"
+                    />
+
+                    {/* 六边形 - 位置(19.5, 10.5), 尺寸(9 x 9) */}
+                    <polygon
+                      points="24,10.5 28.5,12.75 28.5,17.25 24,19.5 19.5,17.25 19.5,12.75"
+                      fill="url(#iconFillGradient)"
+                      filter="url(#iconShapeShadow)"
+                    />
+
+                    {/* 圆形 - 位置(10, 28.32), 尺寸(8 x 8) */}
+                    <circle
+                      cx="14"
+                      cy="32.32"
+                      r="4"
+                      fill="url(#iconFillGradient)"
+                      filter="url(#iconShapeShadow)"
+                    />
+
+                    {/* 圆角矩形 - 位置(30.2, 28.52), 尺寸(7.6 x 7.6), 圆角 1.6 */}
+                    <rect
+                      x="30.2"
+                      y="28.52"
+                      width="7.6"
+                      height="7.6"
+                      rx="1.6"
+                      fill="url(#iconFillGradient)"
+                      filter="url(#iconShapeShadow)"
                     />
                   </svg>
                 </div>

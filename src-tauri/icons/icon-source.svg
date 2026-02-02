@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 背景渐变 - 145度 -->
+    <linearGradient id="bgGradient" x1="15%" y1="0%" x2="85%" y2="100%">
+      <stop offset="0%" stop-color="#27272A"/>
+      <stop offset="40%" stop-color="#18181B"/>
+      <stop offset="100%" stop-color="#09090B"/>
+    </linearGradient>
+
+    <!-- 连接线描边渐变 - 180度 -->
+    <linearGradient id="strokeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#A1A1AA"/>
+    </linearGradient>
+
+    <!-- 图形填充渐变 - 135度 -->
+    <linearGradient id="fillGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#D4D4D8"/>
+    </linearGradient>
+  </defs>
+
+  <!--
+    设计稿原始数据 (48x48 画布):
+    - 背景: 48x48, 圆角 10
+    - 六边形: 位置(19.5, 10.5), 尺寸 9x9, 中心(24, 15)
+    - 三角形: 位置(14, 15), 尺寸 20x17.32, 描边 0.9
+    - 圆形: 位置(10, 28.32), 尺寸 8x8, 中心(14, 32.32)
+    - 方形: 位置(30.2, 28.52), 尺寸 7.6x7.6, 中心(34, 32.32), 圆角 1.6
+
+    缩放到 83% (850x850 在 1024 画布):
+    - 边距: 87px
+    - 缩放因子: 850/48 = 17.708
+
+    计算后的位置:
+    - 六边形中心: (24*17.708+87, 15*17.708+87) = (512, 353)
+    - 圆形中心: (14*17.708+87, 32.32*17.708+87) = (335, 660)
+    - 方形中心: (34*17.708+87, 32.32*17.708+87) = (689, 660)
+
+    计算后的尺寸:
+    - 六边形半径: 4.5*17.708 = 80
+    - 圆形半径: 4*17.708 = 71
+    - 方形边长: 7.6*17.708 = 135
+    - 方形圆角: 1.6*17.708 = 28
+    - 三角形描边: 0.9*17.708 = 16
+    - 背景圆角: 10*17.708 = 177
+  -->
+
+  <!-- 背景容器 - 83% 大小 -->
+  <rect
+    x="87"
+    y="87"
+    width="850"
+    height="850"
+    rx="177"
+    fill="url(#bgGradient)"
+  />
+
+  <!-- 三角形连接线 - 连接六边形中心、圆形中心、方形中心 -->
+  <path
+    d="M512 353 L335 660 L689 660 Z"
+    fill="none"
+    stroke="url(#strokeGrad)"
+    stroke-width="16"
+    stroke-linejoin="round"
+  />
+
+  <!-- 六边形 - 中心(512, 353), 半径80 -->
+  <!-- 正六边形顶点: 上、右上、右下、下、左下、左上 -->
+  <polygon
+    points="512,273 581,313 581,393 512,433 443,393 443,313"
+    fill="url(#fillGrad)"
+  />
+
+  <!-- 圆形 - 中心(335, 660), 半径71 -->
+  <circle
+    cx="335"
+    cy="660"
+    r="71"
+    fill="url(#fillGrad)"
+  />
+
+  <!-- 圆角矩形 - 中心(689, 660), 边长135, 圆角28 -->
+  <rect
+    x="622"
+    y="593"
+    width="135"
+    height="135"
+    rx="28"
+    fill="url(#fillGrad)"
+  />
+</svg>
