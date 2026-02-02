@@ -12,7 +12,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { PageHeader, SlidePanel } from '@/components/layout';
-import { Badge, EmptyState, IconPicker, ICON_MAP, Toggle } from '@/components/common';
+import { Badge, EmptyState, IconPicker, ICON_MAP } from '@/components/common';
 import { McpListItem } from '@/components/mcps/McpListItem';
 import { useMcpsStore } from '@/stores/mcpsStore';
 import type { Tool } from '@/types';
@@ -214,24 +214,8 @@ export const McpServersPage: React.FC = () => {
   // ============================================================================
   // Detail Panel Header Right (from McpDetailPage.tsx)
   // ============================================================================
-  const detailHeaderRight = selectedMcp && (
-    <div className="flex items-center gap-2">
-      {/* Edit Button */}
-      <button
-        type="button"
-        className="flex h-8 items-center gap-1.5 rounded-md border border-[#E5E5E5] px-3 text-[13px] font-medium text-[#18181B] transition-colors hover:bg-[#FAFAFA]"
-      >
-        <Pencil className="h-3.5 w-3.5" />
-        Edit
-      </button>
-      {/* Toggle */}
-      <Toggle
-        checked={selectedMcp.enabled}
-        onChange={() => handleToggle(selectedMcp.id)}
-        size="large"
-      />
-    </div>
-  );
+  // 关闭按钮由 SlidePanel 组件提供，不需要额外的 header right 内容
+  const detailHeaderRight = null;
 
   // ============================================================================
   // Detail Panel Content (from McpDetailPage.tsx)
@@ -264,17 +248,25 @@ export const McpServersPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Category & Tags */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Category & Tags - 垂直布局 */}
+        <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-medium text-[#71717A]">Category</span>
           <Badge variant="category" color="#18181B">
             {selectedMcp.category}
           </Badge>
-          {selectedMcp?.tags?.map((tag) => (
-            <Badge key={tag} variant="tag">
-              {tag}
-            </Badge>
-          ))}
         </div>
+        {selectedMcp?.tags && selectedMcp.tags.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <span className="text-[11px] font-medium text-[#71717A]">Tags</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {selectedMcp.tags.map((tag) => (
+                <Badge key={tag} variant="tag">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Provided Tools Section (MCP-specific) */}

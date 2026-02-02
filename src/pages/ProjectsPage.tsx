@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Plus, Folder } from 'lucide-react';
+import { Plus, Folder, X } from 'lucide-react';
 import { PageHeader, SlidePanel } from '../components/layout';
 import { Button, EmptyState, IconPicker } from '../components/common';
 import { NewProjectItem, ProjectConfigPanel, ProjectCard } from '../components/projects';
@@ -184,17 +184,25 @@ export function ProjectsPage() {
       </Button>
     </div>
   ) : selectedProject ? (
-    <Button
-      variant="secondary"
-      size="small"
-      icon={<Folder className="h-3.5 w-3.5" />}
-      onClick={() => {
-        // Open folder in system file manager
-        console.log('Open folder:', selectedProject.path);
-      }}
-    >
-      Open Folder
-    </Button>
+    <div className="flex items-center gap-2">
+      <Button
+        variant="secondary"
+        size="small"
+        icon={<Folder className="h-3.5 w-3.5" />}
+        onClick={() => {
+          // Open folder in system file manager
+          console.log('Open folder:', selectedProject.path);
+        }}
+      >
+        Open Folder
+      </Button>
+      <button
+        onClick={handleCloseDetail}
+        className="flex h-8 w-8 items-center justify-center rounded-md border border-[#E5E5E5] hover:bg-[#F4F4F5] transition-colors"
+      >
+        <X className="h-[18px] w-[18px] text-[#71717A]" />
+      </button>
+    </div>
   ) : null;
 
   // Detail Content

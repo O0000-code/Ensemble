@@ -112,7 +112,7 @@ export function SlidePanel({
       )}
 
       {/* Content - Scrollable area */}
-      <div className="flex-1 overflow-y-auto p-7">
+      <div className="flex-1 overflow-y-auto pt-3 pr-7 pb-7 pl-7">
         {children}
       </div>
     </div>

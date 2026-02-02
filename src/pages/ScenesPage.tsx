@@ -19,6 +19,7 @@ import {
   Zap,
   FileCode,
   Sparkles,
+  X,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SlidePanel } from '@/components/layout/SlidePanel';
@@ -385,6 +386,12 @@ export const ScenesPage: React.FC = () => {
               >
                 Delete
               </Button>
+              <button
+                onClick={handleCloseDetail}
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-[#E5E5E5] hover:bg-[#F4F4F5] transition-colors"
+              >
+                <X className="h-[18px] w-[18px] text-[#71717A]" />
+              </button>
             </div>
           )
         }

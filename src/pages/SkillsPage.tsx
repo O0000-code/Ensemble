@@ -14,7 +14,6 @@ import {
   TestTube,
   Layers,
   Wand2,
-  Pencil,
   X,
   Plus,
   Copy,
@@ -24,7 +23,6 @@ import { PageHeader, SlidePanel } from '@/components/layout';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
-import Toggle from '@/components/common/Toggle';
 import { IconPicker, ICON_MAP, Dropdown } from '@/components/common';
 import { SkillListItem } from '@/components/skills/SkillListItem';
 import { useSkillsStore } from '@/stores/skillsStore';
@@ -356,19 +354,8 @@ export function SkillsPage() {
     </div>
   );
 
-  // Detail Header right content (Edit button + Toggle)
-  const detailHeaderRight = selectedSkill && (
-    <div className="flex items-center gap-2">
-      <Button variant="secondary" size="small" icon={<Pencil />}>
-        Edit
-      </Button>
-      <Toggle
-        checked={selectedSkill.enabled}
-        onChange={() => handleToggle(selectedSkill.id)}
-        size="large"
-      />
-    </div>
-  );
+  // Detail Header right content (close button provided by SlidePanel)
+  const detailHeaderRight = null;
 
   // Detail Content
   const detailContent = selectedSkill && (
@@ -383,8 +370,8 @@ export function SkillsPage() {
       {/* Category & Tags Section */}
       <div className="flex flex-col gap-4">
         {/* Category Selector */}
-        <div className="flex items-center gap-3">
-          <span className="w-16 text-[11px] font-medium text-[#71717A]">Category</span>
+        <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-medium text-[#71717A]">Category</span>
           <Dropdown
             options={categoryOptions}
             value={selectedSkill.category || ''}
@@ -396,9 +383,9 @@ export function SkillsPage() {
         </div>
 
         {/* Tags */}
-        <div className="flex items-start gap-3">
-          <span className="mt-2 w-16 text-[11px] font-medium text-[#71717A]">Tags</span>
-          <div className="flex flex-1 flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-2">
+          <span className="text-[11px] font-medium text-[#71717A]">Tags</span>
+          <div className="flex flex-wrap items-center gap-2">
             {selectedSkill?.tags?.map((tag) => (
               <span
                 key={tag}
