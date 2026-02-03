@@ -184,17 +184,10 @@ export const SkillListItem: React.FC<SkillListItemProps> = ({
         ))}
       </div>
 
-      {/* More Menu - Hidden when compact (detail panel open) */}
+      {/* More Menu - Always visible */}
       <div
         ref={menuRef}
         className="shrink-0 ml-4 relative"
-        style={{
-          opacity: compact ? 0 : 1,
-          width: compact ? 0 : '32px',
-          minWidth: compact ? 0 : '32px',
-          overflow: compact ? 'hidden' : 'visible',
-          transition: 'opacity 0.2s ease-in-out, width 0.2s ease-in-out, min-width 0.2s ease-in-out',
-        }}
       >
         <button
           onClick={handleMoreClick}

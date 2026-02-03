@@ -143,17 +143,10 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           </span>
         )}
 
-        {/* Action Button - Hidden when compact (detail panel open) */}
+        {/* Action Button - Always visible */}
         <div
           ref={menuRef}
           className="relative shrink-0"
-          style={{
-            opacity: compact ? 0 : 1,
-            width: compact ? 0 : '28px',
-            minWidth: compact ? 0 : '28px',
-            overflow: compact ? 'hidden' : 'visible',
-            transition: 'opacity 0.2s ease-in-out, width 0.2s ease-in-out, min-width 0.2s ease-in-out',
-          }}
         >
           <button
             onClick={handleMoreClick}

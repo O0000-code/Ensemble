@@ -200,101 +200,97 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
         </div>
       </div>
 
-      {/* Right Section - visible in full mode */}
-      <div
-        className="flex items-center"
-        style={{
-          opacity: compact ? 0 : 1,
-          maxWidth: compact ? 0 : '400px',
-          gap: compact ? 0 : '24px',
-          overflow: compact ? 'hidden' : 'visible',
-          transition: `opacity ${TRANSITION_BASE}, max-width ${TRANSITION_BASE}, gap ${TRANSITION_BASE}`,
-        }}
-      >
-        {/* Meta Stats */}
+      {/* Right Section Wrapper - keeps stats and menu together */}
+      <div className="flex items-center">
+        {/* Stats Section - visible in full mode */}
         <div
           className="flex items-center"
           style={{
-            gap: compact ? 0 : '20px',
-            transition: `gap ${TRANSITION_BASE}`,
-          }}
-        >
-          {/* Skills Count */}
-          <div
-            className="flex items-center overflow-hidden whitespace-nowrap"
-            style={{
-              gap: compact ? 0 : '6px',
-              maxWidth: compact ? 0 : '100px',
-              transition: `gap ${TRANSITION_BASE}, max-width ${TRANSITION_BASE}`,
-            }}
-          >
-            <span className="text-[11px] font-medium text-[#A1A1AA]">Skills</span>
-            <span className="text-[11px] font-semibold text-[#52525B]">
-              {scene.skillIds.length}
-            </span>
-          </div>
-
-          {/* MCPs Count */}
-          <div
-            className="flex items-center overflow-hidden whitespace-nowrap"
-            style={{
-              gap: compact ? 0 : '6px',
-              maxWidth: compact ? 0 : '100px',
-              transition: `gap ${TRANSITION_BASE}, max-width ${TRANSITION_BASE}`,
-            }}
-          >
-            <span className="text-[11px] font-medium text-[#A1A1AA]">MCPs</span>
-            <span className="text-[11px] font-semibold text-[#52525B]">
-              {scene.mcpIds.length}
-            </span>
-          </div>
-        </div>
-
-        {/* Active Badge */}
-        {active && (
-          <span
-            className="overflow-hidden whitespace-nowrap rounded px-2.5 py-1 text-[10px] font-semibold text-[#16A34A] bg-[#DCFCE7]"
-            style={{
-              opacity: compact ? 0 : 1,
-              maxWidth: compact ? 0 : '80px',
-              transition: `opacity ${TRANSITION_BASE}, max-width ${TRANSITION_BASE}`,
-            }}
-          >
-            Active
-          </span>
-        )}
-
-        {/* More Button with Dropdown Menu */}
-        <div
-          ref={menuRef}
-          className="relative shrink-0"
-          style={{
             opacity: compact ? 0 : 1,
-            width: compact ? 0 : '28px',
-            minWidth: compact ? 0 : '28px',
+            maxWidth: compact ? 0 : '400px',
+            gap: compact ? 0 : '24px',
             overflow: compact ? 'hidden' : 'visible',
-            transition: `opacity ${TRANSITION_BASE}, width ${TRANSITION_BASE}, min-width ${TRANSITION_BASE}`,
+            transition: `opacity ${TRANSITION_BASE}, max-width ${TRANSITION_BASE}, gap ${TRANSITION_BASE}`,
           }}
         >
-          <button
-            onClick={handleMoreClick}
-            className="flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-[#F4F4F5]"
+          {/* Meta Stats */}
+          <div
+            className="flex items-center"
+            style={{
+              gap: compact ? 0 : '20px',
+              transition: `gap ${TRANSITION_BASE}`,
+            }}
           >
-            <MoreHorizontal className="h-4 w-4 text-[#A1A1AA]" />
-          </button>
-
-          {showMenu && (
-            <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg border border-[#E5E5E5] shadow-lg z-50 py-1">
-              <button
-                onClick={handleDelete}
-                className="w-full px-3 py-2 text-left text-sm text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-2 transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-                Delete
-              </button>
+            {/* Skills Count */}
+            <div
+              className="flex items-center overflow-hidden whitespace-nowrap"
+              style={{
+                gap: compact ? 0 : '6px',
+                maxWidth: compact ? 0 : '100px',
+                transition: `gap ${TRANSITION_BASE}, max-width ${TRANSITION_BASE}`,
+              }}
+            >
+              <span className="text-[11px] font-medium text-[#A1A1AA]">Skills</span>
+              <span className="text-[11px] font-semibold text-[#52525B]">
+                {scene.skillIds.length}
+              </span>
             </div>
+
+            {/* MCPs Count */}
+            <div
+              className="flex items-center overflow-hidden whitespace-nowrap"
+              style={{
+                gap: compact ? 0 : '6px',
+                maxWidth: compact ? 0 : '100px',
+                transition: `gap ${TRANSITION_BASE}, max-width ${TRANSITION_BASE}`,
+              }}
+            >
+              <span className="text-[11px] font-medium text-[#A1A1AA]">MCPs</span>
+              <span className="text-[11px] font-semibold text-[#52525B]">
+                {scene.mcpIds.length}
+              </span>
+            </div>
+          </div>
+
+          {/* Active Badge */}
+          {active && (
+            <span
+              className="overflow-hidden whitespace-nowrap rounded px-2.5 py-1 text-[10px] font-semibold text-[#16A34A] bg-[#DCFCE7]"
+              style={{
+                opacity: compact ? 0 : 1,
+                maxWidth: compact ? 0 : '80px',
+                transition: `opacity ${TRANSITION_BASE}, max-width ${TRANSITION_BASE}`,
+              }}
+            >
+              Active
+            </span>
           )}
         </div>
+
+        {/* More Button with Dropdown Menu - Always visible */}
+        <div
+          ref={menuRef}
+          className="relative shrink-0 ml-4"
+        >
+        <button
+          onClick={handleMoreClick}
+          className="flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-[#F4F4F5]"
+        >
+          <MoreHorizontal className="h-4 w-4 text-[#A1A1AA]" />
+        </button>
+
+        {showMenu && (
+          <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg border border-[#E5E5E5] shadow-lg z-50 py-1">
+            <button
+              onClick={handleDelete}
+              className="w-full px-3 py-2 text-left text-sm text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-2 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
       </div>
     </div>
   );
