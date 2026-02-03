@@ -246,7 +246,7 @@ export const ScenesPage: React.FC = () => {
     setIsCreateModalOpen(false);
   };
 
-  // Handle delete
+  // Handle delete from detail panel
   const handleDelete = () => {
     if (!selectedScene) return;
     if (usingProjects.length > 0) {
@@ -256,6 +256,25 @@ export const ScenesPage: React.FC = () => {
     if (confirm(`Are you sure you want to delete "${selectedScene.name}"?`)) {
       deleteScene(selectedScene.id);
       setSelectedSceneId(null); // Clear selection after delete
+    }
+  };
+
+  // Handle delete from list item dropdown menu
+  const handleDeleteScene = async (id: string) => {
+    const scene = scenes.find((s) => s.id === id);
+    if (!scene) return;
+
+    const projectsUsingScene = mockProjects.filter((p) => p.sceneId === id);
+    if (projectsUsingScene.length > 0) {
+      alert('Cannot delete a scene that is being used by projects.');
+      return;
+    }
+
+    if (confirm(`Are you sure you want to delete "${scene.name}"?`)) {
+      await deleteScene(id);
+      if (selectedSceneId === id) {
+        setSelectedSceneId(null); // Clear selection if deleting selected scene
+      }
     }
   };
 
@@ -331,6 +350,7 @@ export const ScenesPage: React.FC = () => {
                 selected={scene.id === selectedSceneId}
                 onClick={() => handleSceneClick(scene.id)}
                 onIconClick={(ref) => handleIconClick(scene.id, ref)}
+                onDelete={() => handleDeleteScene(scene.id)}
               />
             ))}
           </div>

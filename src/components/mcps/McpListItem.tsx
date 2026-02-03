@@ -201,10 +201,17 @@ export const McpListItem: React.FC<McpListItemProps> = ({
 
       </div>
 
-      {/* More Menu - Always visible */}
+      {/* More Menu - Hidden when compact (detail panel open) */}
       <div
         ref={menuRef}
         className="shrink-0 ml-4 relative"
+        style={{
+          opacity: compact ? 0 : 1,
+          width: compact ? 0 : '32px',
+          minWidth: compact ? 0 : '32px',
+          overflow: compact ? 'hidden' : 'visible',
+          transition: 'opacity 0.2s ease-in-out, width 0.2s ease-in-out, min-width 0.2s ease-in-out',
+        }}
       >
         <button
           onClick={handleMoreClick}

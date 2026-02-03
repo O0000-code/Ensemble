@@ -65,12 +65,37 @@ pub struct Scene {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct TrashedScene {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub icon: String,
+    pub skill_ids: Vec<String>,
+    pub mcp_ids: Vec<String>,
+    pub created_at: String,
+    pub last_used: Option<String>,
+    pub deleted_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Project {
     pub id: String,
     pub name: String,
     pub path: String,
     pub scene_id: String,
     pub last_synced: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrashedProject {
+    pub id: String,
+    pub name: String,
+    pub path: String,
+    pub scene_id: String,
+    pub last_synced: Option<String>,
+    pub deleted_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -99,6 +124,10 @@ pub struct AppData {
     pub projects: Vec<Project>,
     pub skill_metadata: HashMap<String, SkillMetadata>,
     pub mcp_metadata: HashMap<String, McpMetadata>,
+    #[serde(default)]
+    pub trashed_scenes: Vec<TrashedScene>,
+    #[serde(default)]
+    pub trashed_projects: Vec<TrashedProject>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

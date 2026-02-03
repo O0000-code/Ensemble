@@ -1,4 +1,4 @@
-use crate::types::{AppData, AppSettings, Category, Project, Scene, Tag};
+use crate::types::{AppData, AppSettings, Category, Project, Scene, Tag, TrashedProject, TrashedScene};
 use crate::utils::{ensure_dir, get_app_data_dir, get_data_file_path, get_settings_file_path};
 use std::fs;
 use uuid::Uuid;
@@ -106,6 +106,8 @@ pub fn init_app_data() -> Result<(), String> {
             projects: vec![],
             skill_metadata: std::collections::HashMap::new(),
             mcp_metadata: std::collections::HashMap::new(),
+            trashed_scenes: vec![],
+            trashed_projects: vec![],
         };
         write_app_data(default_data)?;
     }
@@ -298,11 +300,31 @@ pub fn update_scene(
     }
 }
 
-/// Delete a scene
+/// Delete a scene (soft delete - moves to trashed_scenes)
 #[tauri::command]
 pub fn delete_scene(id: String) -> Result<(), String> {
     let mut data = read_app_data()?;
-    data.scenes.retain(|s| s.id != id);
+
+    // Find and remove the scene from active scenes
+    if let Some(index) = data.scenes.iter().position(|s| s.id == id) {
+        let scene = data.scenes.remove(index);
+
+        // Create TrashedScene with deleted_at timestamp
+        let trashed_scene = TrashedScene {
+            id: scene.id,
+            name: scene.name,
+            description: scene.description,
+            icon: scene.icon,
+            skill_ids: scene.skill_ids,
+            mcp_ids: scene.mcp_ids,
+            created_at: scene.created_at,
+            last_used: scene.last_used,
+            deleted_at: chrono::Utc::now().to_rfc3339(),
+        };
+
+        data.trashed_scenes.push(trashed_scene);
+    }
+
     write_app_data(data)?;
     Ok(())
 }
@@ -368,11 +390,28 @@ pub fn update_project(
     }
 }
 
-/// Delete a project
+/// Delete a project (soft delete - moves to trashed_projects)
 #[tauri::command]
 pub fn delete_project(id: String) -> Result<(), String> {
     let mut data = read_app_data()?;
-    data.projects.retain(|p| p.id != id);
+
+    // Find and remove the project from active projects
+    if let Some(index) = data.projects.iter().position(|p| p.id == id) {
+        let project = data.projects.remove(index);
+
+        // Create TrashedProject with deleted_at timestamp
+        let trashed_project = TrashedProject {
+            id: project.id,
+            name: project.name,
+            path: project.path,
+            scene_id: project.scene_id,
+            last_synced: project.last_synced,
+            deleted_at: chrono::Utc::now().to_rfc3339(),
+        };
+
+        data.trashed_projects.push(trashed_project);
+    }
+
     write_app_data(data)?;
     Ok(())
 }

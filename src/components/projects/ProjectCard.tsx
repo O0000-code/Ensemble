@@ -1,5 +1,5 @@
-import React from 'react';
-import { Folder, MoreHorizontal } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Folder, MoreHorizontal, Trash2 } from 'lucide-react';
 import type { Project, Scene } from '../../types';
 
 // ============================================================================
@@ -9,9 +9,11 @@ import type { Project, Scene } from '../../types';
 export interface ProjectCardProps {
   project: Project;
   scene?: Scene;
+  compact?: boolean;
   selected?: boolean;
   onClick: () => void;
   onMoreClick?: (e: React.MouseEvent) => void;
+  onDelete?: () => void;
 }
 
 // ============================================================================
@@ -44,10 +46,36 @@ export interface ProjectCardProps {
 export const ProjectCard: React.FC<ProjectCardProps> = ({
   project,
   scene,
+  compact = false,
   selected = false,
   onClick,
   onMoreClick,
+  onDelete,
 }) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleMoreClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(!showMenu);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    onDelete?.();
+  };
+
   // Format path for display (show truncated version)
   const formatPath = (path: string) => {
     const segments = path.split('/').filter(Boolean);
@@ -115,16 +143,37 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           </span>
         )}
 
-        {/* Action Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onMoreClick?.(e);
+        {/* Action Button - Hidden when compact (detail panel open) */}
+        <div
+          ref={menuRef}
+          className="relative shrink-0"
+          style={{
+            opacity: compact ? 0 : 1,
+            width: compact ? 0 : '28px',
+            minWidth: compact ? 0 : '28px',
+            overflow: compact ? 'hidden' : 'visible',
+            transition: 'opacity 0.2s ease-in-out, width 0.2s ease-in-out, min-width 0.2s ease-in-out',
           }}
-          className="flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-[#F4F4F5]"
         >
-          <MoreHorizontal className="h-4 w-4 text-[#A1A1AA]" />
-        </button>
+          <button
+            onClick={handleMoreClick}
+            className="flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-[#F4F4F5]"
+          >
+            <MoreHorizontal className="h-4 w-4 text-[#A1A1AA]" />
+          </button>
+
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg border border-[#E5E5E5] shadow-lg z-50 py-1">
+              <button
+                onClick={handleDelete}
+                className="w-full px-3 py-2 text-left text-sm text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-2 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
