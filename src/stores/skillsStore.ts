@@ -448,6 +448,17 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
       );
     }
 
+    // Sort: plugin-imported skills at the bottom
+    filtered.sort((a, b) => {
+      const aIsPlugin = a.installSource === 'plugin';
+      const bIsPlugin = b.installSource === 'plugin';
+      if (aIsPlugin === bIsPlugin) {
+        // Same source type, sort by name
+        return a.name.localeCompare(b.name);
+      }
+      return aIsPlugin ? 1 : -1;
+    });
+
     return filtered;
   },
 
