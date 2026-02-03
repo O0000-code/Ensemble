@@ -32,6 +32,7 @@ import { useSkillsStore } from '@/stores/skillsStore';
 import { useAppStore } from '@/stores/appStore';
 import { useImportStore } from '@/stores/importStore';
 import { useScenesStore } from '@/stores/scenesStore';
+import { usePluginsStore } from '@/stores/pluginsStore';
 import type { Skill } from '@/types';
 
 // ============================================================================
@@ -205,13 +206,17 @@ export function SkillsPage() {
 
   const { scenes } = useScenesStore();
 
+  const { loadInstalledPlugins } = usePluginsStore();
+
   const filteredSkills = getFilteredSkills();
   const enabledCount = getEnabledCount();
 
-  // Load usage stats on mount
+  // Load usage stats and plugin enabled status on mount
   useEffect(() => {
     loadUsageStats();
-  }, [loadUsageStats]);
+    // Load installed plugins to populate pluginEnabledStatus
+    loadInstalledPlugins();
+  }, [loadUsageStats, loadInstalledPlugins]);
 
   // Category dropdown options - only use categories from appStore
   const categoryOptions = useMemo(() => {

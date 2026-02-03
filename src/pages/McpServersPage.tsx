@@ -26,6 +26,7 @@ import { useMcpsStore } from '@/stores/mcpsStore';
 import { useAppStore } from '@/stores/appStore';
 import { useImportStore } from '@/stores/importStore';
 import { useScenesStore } from '@/stores/scenesStore';
+import { usePluginsStore } from '@/stores/pluginsStore';
 import type { Tool } from '@/types';
 
 // ============================================================================
@@ -168,10 +169,14 @@ export const McpServersPage: React.FC = () => {
   // Selected MCP ID state (replaces route navigation)
   const [selectedMcpId, setSelectedMcpId] = useState<string | null>(null);
 
-  // Load usage stats on mount
+  const { loadInstalledPlugins } = usePluginsStore();
+
+  // Load usage stats and plugin enabled status on mount
   useEffect(() => {
     loadUsageStats();
-  }, [loadUsageStats]);
+    // Load installed plugins to populate pluginEnabledStatus
+    loadInstalledPlugins();
+  }, [loadUsageStats, loadInstalledPlugins]);
 
   const filteredMcps = getFilteredMcps();
   const enabledCount = getEnabledCount();

@@ -2,7 +2,7 @@ mod commands;
 pub mod types;
 mod utils;
 
-use commands::{classify, config, data, dialog, import, mcps, skills, symlink, usage};
+use commands::{classify, config, data, dialog, import, mcps, plugins, skills, symlink, usage};
 use tauri::{Emitter, Manager};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -108,6 +108,13 @@ pub fn run() {
             import::open_accessibility_settings,
             // Usage stats commands
             usage::scan_usage_stats,
+            // Plugin commands
+            plugins::detect_installed_plugins,
+            plugins::detect_plugin_skills,
+            plugins::detect_plugin_mcps,
+            plugins::import_plugin_skills,
+            plugins::import_plugin_mcps,
+            plugins::check_plugins_enabled,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

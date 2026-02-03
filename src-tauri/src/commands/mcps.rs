@@ -89,6 +89,25 @@ pub fn update_mcp_metadata(
     Ok(())
 }
 
+/// Check if a plugin is enabled in Claude settings
+fn is_plugin_enabled(plugin_id: &str) -> bool {
+    if let Some(home) = dirs::home_dir() {
+        let settings_path = home.join(".claude").join("settings.json");
+        if settings_path.exists() {
+            if let Ok(content) = fs::read_to_string(&settings_path) {
+                if let Ok(settings) = serde_json::from_str::<serde_json::Value>(&content) {
+                    if let Some(enabled_plugins) = settings.get("enabledPlugins") {
+                        if let Some(enabled) = enabled_plugins.get(plugin_id) {
+                            return enabled.as_bool().unwrap_or(false);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    false
+}
+
 fn parse_mcp_file(
     file_path: &std::path::Path,
     metadata_map: &std::collections::HashMap<String, McpMetadata>,
@@ -111,6 +130,13 @@ fn parse_mcp_file(
             datetime.to_rfc3339()
         });
 
+    // Determine plugin enabled status if this is a plugin-sourced MCP
+    let plugin_enabled = if config.install_source.as_deref() == Some("plugin") {
+        config.plugin_id.as_ref().map(|pid| is_plugin_enabled(pid))
+    } else {
+        None
+    };
+
     let mcp = McpServer {
         id: id.clone(),
         name: config.name,
@@ -128,6 +154,11 @@ fn parse_mcp_file(
         last_used: metadata.and_then(|m| m.last_used.clone()),
         usage_count: metadata.map(|m| m.usage_count).unwrap_or(0),
         installed_at,
+        install_source: config.install_source,
+        plugin_id: config.plugin_id,
+        plugin_name: config.plugin_name,
+        marketplace: config.marketplace,
+        plugin_enabled,
     };
 
     Ok(mcp)

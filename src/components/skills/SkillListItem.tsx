@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Sparkles, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Sparkles, MoreHorizontal, Trash2, Puzzle } from 'lucide-react';
 import Badge from '../common/Badge';
 import { ICON_MAP } from '@/components/common';
 import { Skill } from '@/types';
@@ -71,6 +71,9 @@ export const SkillListItem: React.FC<SkillListItemProps> = ({
   const IconComponent = getSkillIcon(skill);
   const categoryColor = categoryColors[skill.category] || '#71717A';
 
+  // Plugin source detection
+  const isPluginSource = skill.installSource === 'plugin';
+
   const handleMoreClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowMenu(!showMenu);
@@ -130,32 +133,44 @@ export const SkillListItem: React.FC<SkillListItemProps> = ({
     >
       {/* Left Section */}
       <div className="flex items-center gap-3.5 min-w-0 flex-1">
-        {/* Icon Container */}
-        <div
-          ref={iconRef}
-          onClick={(e) => {
-            e.stopPropagation();
-            onIconClick?.(iconRef as React.RefObject<HTMLDivElement>);
-          }}
-          className={`
-            flex h-10 w-10 shrink-0 items-center justify-center rounded-lg
-            ${selected ? 'bg-[#F4F4F5]' : 'bg-[#FAFAFA]'}
-            ${onIconClick ? 'cursor-pointer hover:ring-2 hover:ring-[#18181B]/10' : ''}
-          `}
-          style={{
-            transition: `background-color ${TRANSITION_BASE}, box-shadow ${TRANSITION_BASE}`,
-          }}
-        >
-          <IconComponent
-            className={`h-5 w-5 ${selected ? 'text-[#18181B]' : 'text-[#52525B]'}`}
-            style={{ transition: `color ${TRANSITION_BASE}` }}
-          />
+
+        {/* Icon Container with Plugin Badge */}
+        <div className="relative shrink-0">
+          <div
+            ref={iconRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              onIconClick?.(iconRef as React.RefObject<HTMLDivElement>);
+            }}
+            className={`
+              flex h-10 w-10 items-center justify-center rounded-lg
+              ${selected ? 'bg-[#F4F4F5]' : 'bg-[#FAFAFA]'}
+              ${onIconClick ? 'cursor-pointer hover:ring-2 hover:ring-[#18181B]/10' : ''}
+            `}
+            style={{
+              transition: `background-color ${TRANSITION_BASE}, box-shadow ${TRANSITION_BASE}`,
+            }}
+          >
+            <IconComponent
+              className={`h-5 w-5 ${selected ? 'text-[#18181B]' : 'text-[#52525B]'}`}
+              style={{ transition: `color ${TRANSITION_BASE}` }}
+            />
+          </div>
+          {/* Plugin Badge */}
+          {isPluginSource && (
+            <div
+              className="absolute flex items-center justify-center w-4 h-4 bg-[#3B82F6] rounded-lg border-2 border-white"
+              style={{ right: '-4px', top: '-4px' }}
+            >
+              <Puzzle className="w-2 h-2 text-white" />
+            </div>
+          )}
         </div>
 
         {/* Info */}
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <span
-            className={`text-sm text-[#18181B] truncate ${selected ? 'font-semibold' : 'font-medium'}`}
+            className={`text-[13px] text-[#18181B] truncate ${selected ? 'font-semibold' : 'font-medium'}`}
             style={{ transition: `font-weight ${TRANSITION_BASE}` }}
           >
             {skill.name}

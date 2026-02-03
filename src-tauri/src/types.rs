@@ -20,6 +20,17 @@ pub struct Skill {
     pub usage_count: u32,
     pub icon: Option<String>,
     pub installed_at: Option<String>,
+    // Plugin source fields
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub install_source: Option<String>, // "local" | "plugin"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plugin_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plugin_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub marketplace: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plugin_enabled: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -41,6 +52,17 @@ pub struct McpServer {
     pub last_used: Option<String>,
     pub usage_count: u32,
     pub installed_at: Option<String>,
+    // Plugin source fields
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub install_source: Option<String>, // "local" | "plugin"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plugin_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plugin_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub marketplace: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plugin_enabled: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -128,6 +150,12 @@ pub struct AppData {
     pub trashed_scenes: Vec<TrashedScene>,
     #[serde(default)]
     pub trashed_projects: Vec<TrashedProject>,
+    /// Imported plugin Skills' pluginId list
+    #[serde(default)]
+    pub imported_plugin_skills: Vec<String>,
+    /// Imported plugin MCPs' pluginId list
+    #[serde(default)]
+    pub imported_plugin_mcps: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -199,6 +227,15 @@ pub struct McpConfigFile {
     pub env: Option<HashMap<String, String>>,
     #[serde(rename = "providedTools")]
     pub provided_tools: Option<Vec<Tool>>,
+    // Plugin source fields
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub install_source: Option<String>, // "local" | "plugin"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plugin_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plugin_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub marketplace: Option<String>,
 }
 
 /// Claude settings.json MCP configuration format
@@ -364,4 +401,96 @@ pub struct FetchMcpToolsResult {
 pub struct McpServerRuntimeInfo {
     pub name: String,
     pub version: Option<String>,
+}
+
+// ============================================================================
+// Plugin-related types (for plugin detection and import)
+// ============================================================================
+
+/// Installed plugin information
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InstalledPlugin {
+    /// Plugin ID: "plugin-name@marketplace"
+    pub id: String,
+    /// Plugin name
+    pub name: String,
+    /// Marketplace name
+    pub marketplace: String,
+    /// Plugin version
+    pub version: String,
+    /// Whether enabled in Claude Code settings
+    pub enabled: bool,
+    /// Installation path
+    pub install_path: String,
+    /// Whether plugin contains Skills
+    pub has_skills: bool,
+    /// Whether plugin contains MCP configurations
+    pub has_mcp: bool,
+}
+
+/// Detected plugin Skill (for import dialog)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DetectedPluginSkill {
+    /// Plugin ID: "plugin-name@marketplace"
+    pub plugin_id: String,
+    /// Plugin display name
+    pub plugin_name: String,
+    /// Marketplace name
+    pub marketplace: String,
+    /// Skill name (directory name)
+    pub skill_name: String,
+    /// Skill description from SKILL.md
+    pub description: String,
+    /// Path to SKILL.md directory
+    pub path: String,
+    /// Plugin version
+    pub version: String,
+    /// Whether already imported to Ensemble
+    pub is_imported: bool,
+}
+
+/// Detected plugin MCP (for import dialog)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DetectedPluginMcp {
+    /// Plugin ID: "plugin-name@marketplace"
+    pub plugin_id: String,
+    /// Plugin display name
+    pub plugin_name: String,
+    /// Marketplace name
+    pub marketplace: String,
+    /// MCP name (from .mcp.json)
+    pub mcp_name: String,
+    /// Execution command
+    pub command: String,
+    /// Command arguments
+    pub args: Vec<String>,
+    /// Environment variables
+    pub env: Option<HashMap<String, String>>,
+    /// Path to .mcp.json file
+    pub path: String,
+    /// Plugin version
+    pub version: String,
+    /// Whether already imported to Ensemble
+    pub is_imported: bool,
+}
+
+/// Plugin import item
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginImportItem {
+    /// Plugin ID: "plugin-name@marketplace"
+    pub plugin_id: String,
+    /// Plugin display name
+    pub plugin_name: String,
+    /// Marketplace name
+    pub marketplace: String,
+    /// Item name (skill name or MCP name)
+    pub item_name: String,
+    /// Source file path
+    pub source_path: String,
+    /// Plugin version
+    pub version: String,
 }

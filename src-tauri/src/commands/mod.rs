@@ -4,6 +4,7 @@ pub mod data;
 pub mod dialog;
 pub mod import;
 pub mod mcps;
+pub mod plugins;
 pub mod skills;
 pub mod symlink;
 pub mod usage;

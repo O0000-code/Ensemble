@@ -7,3 +7,4 @@ export { useProjectsStore } from './projectsStore';
 export { useSettingsStore } from './settingsStore';
 export { useImportStore } from './importStore';
 export { useLauncherStore } from './launcherStore';
+export { usePluginsStore } from './pluginsStore';

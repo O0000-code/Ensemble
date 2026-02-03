@@ -108,6 +108,8 @@ pub fn init_app_data() -> Result<(), String> {
             mcp_metadata: std::collections::HashMap::new(),
             trashed_scenes: vec![],
             trashed_projects: vec![],
+            imported_plugin_skills: vec![],
+            imported_plugin_mcps: vec![],
         };
         write_app_data(default_data)?;
     }

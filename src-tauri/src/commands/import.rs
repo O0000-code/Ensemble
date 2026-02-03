@@ -601,6 +601,11 @@ fn extract_mcp_config(
             args: mcp_config.args.clone(),
             env: mcp_config.env.clone(),
             provided_tools: None, // MCP provided tools are discovered at runtime
+            // Not from plugin, so these are None
+            install_source: Some("local".to_string()),
+            plugin_id: None,
+            plugin_name: None,
+            marketplace: None,
         };
 
         let json = serde_json::to_string_pretty(&mcp_file)

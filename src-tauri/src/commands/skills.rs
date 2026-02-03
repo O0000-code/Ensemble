@@ -103,6 +103,55 @@ pub fn update_skill_metadata(
     Ok(())
 }
 
+/// Extract plugin info from a symlink path pointing to plugin cache
+fn extract_plugin_info_from_path(real_path: &std::path::Path) -> Option<(String, String, String)> {
+    let path_str = real_path.to_string_lossy();
+
+    // Check if path contains .claude/plugins/cache/
+    if !path_str.contains(".claude/plugins/cache/") {
+        return None;
+    }
+
+    // Path format: ~/.claude/plugins/cache/{marketplace}/{plugin_name}/{version}/skills/{skill_name}
+    // We need to extract marketplace and plugin_name
+    let parts: Vec<&str> = path_str.split(".claude/plugins/cache/").collect();
+    if parts.len() < 2 {
+        return None;
+    }
+
+    let after_cache = parts[1];
+    let segments: Vec<&str> = after_cache.split('/').collect();
+
+    // segments[0] = marketplace, segments[1] = plugin_name
+    if segments.len() >= 2 {
+        let marketplace = segments[0].to_string();
+        let plugin_name = segments[1].to_string();
+        let plugin_id = format!("{}@{}", plugin_name, marketplace);
+        Some((plugin_id, plugin_name, marketplace))
+    } else {
+        None
+    }
+}
+
+/// Check if a plugin is enabled in Claude settings
+fn is_plugin_enabled(plugin_id: &str) -> bool {
+    if let Some(home) = dirs::home_dir() {
+        let settings_path = home.join(".claude").join("settings.json");
+        if settings_path.exists() {
+            if let Ok(content) = fs::read_to_string(&settings_path) {
+                if let Ok(settings) = serde_json::from_str::<serde_json::Value>(&content) {
+                    if let Some(enabled_plugins) = settings.get("enabledPlugins") {
+                        if let Some(enabled) = enabled_plugins.get(plugin_id) {
+                            return enabled.as_bool().unwrap_or(false);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    false
+}
+
 fn parse_skill_file(
     skill_md_path: &std::path::Path,
     metadata_map: &std::collections::HashMap<String, SkillMetadata>,
@@ -137,6 +186,21 @@ fn parse_skill_file(
             datetime.to_rfc3339()
         });
 
+    // Check if this is a symlink pointing to plugin cache
+    let (install_source, plugin_id, plugin_name, marketplace, plugin_enabled) =
+        if let Ok(real_path) = fs::read_link(skill_dir) {
+            // It's a symlink - check if it points to plugin cache
+            if let Some((pid, pname, mkt)) = extract_plugin_info_from_path(&real_path) {
+                let enabled = is_plugin_enabled(&pid);
+                (Some("plugin".to_string()), Some(pid), Some(pname), Some(mkt), Some(enabled))
+            } else {
+                (Some("local".to_string()), None, None, None, None)
+            }
+        } else {
+            // Not a symlink - local skill
+            (Some("local".to_string()), None, None, None, None)
+        };
+
     let skill = Skill {
         id: id.clone(),
         name,
@@ -154,6 +218,11 @@ fn parse_skill_file(
         usage_count: metadata.map(|m| m.usage_count).unwrap_or(0),
         icon: metadata.and_then(|m| m.icon.clone()),
         installed_at,
+        install_source,
+        plugin_id,
+        plugin_name,
+        marketplace,
+        plugin_enabled,
     };
 
     Ok(skill)

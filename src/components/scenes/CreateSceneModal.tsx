@@ -14,9 +14,11 @@ import {
   Globe,
   FileCode,
   Zap,
+  Info,
 } from 'lucide-react';
 import { Skill, McpServer } from '@/types';
 import { Dropdown } from '@/components/common/Dropdown';
+import { usePluginsStore } from '@/stores/pluginsStore';
 
 // ============================================================================
 // Types
@@ -71,6 +73,8 @@ interface CheckableItemProps {
   selected: boolean;
   type: 'skill' | 'mcp';
   onToggle: (id: string) => void;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
 const CheckableItem: React.FC<CheckableItemProps> = ({
@@ -82,15 +86,25 @@ const CheckableItem: React.FC<CheckableItemProps> = ({
   selected,
   type,
   onToggle,
+  disabled = false,
 }) => {
   const IconComponent = type === 'skill' ? getSkillIcon(category) : getMcpIcon(category);
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  const handleClick = () => {
+    if (!disabled) {
+      onToggle(id);
+    }
+  };
 
   return (
     <div
-      onClick={() => onToggle(id)}
+      onClick={handleClick}
+      onMouseEnter={() => disabled && setShowTooltip(true)}
+      onMouseLeave={() => disabled && setShowTooltip(false)}
       className={`
+        relative
         flex
-        cursor-pointer
         items-center
         gap-3.5
         rounded-lg
@@ -98,12 +112,34 @@ const CheckableItem: React.FC<CheckableItemProps> = ({
         px-4
         py-3.5
         transition-colors
-        ${selected
-          ? 'border-[#18181B] bg-[#FAFAFA]'
-          : 'border-[#E5E5E5] bg-white hover:bg-[#FAFAFA]'
+        ${disabled
+          ? 'cursor-not-allowed border-[#E5E5E5] bg-white'
+          : selected
+            ? 'cursor-pointer border-[#E5E5E5] bg-[#FAFAFA]'
+            : 'cursor-pointer border-[#E5E5E5] bg-white hover:bg-[#FAFAFA]'
         }
       `}
     >
+      {/* Tooltip for disabled items - shows on hover anywhere on the item */}
+      {disabled && showTooltip && (
+        <div
+          className="absolute left-1/2 -translate-x-1/2 flex flex-col gap-0.5 rounded-[6px] py-2 px-3 shadow-lg"
+          style={{
+            width: '244px',
+            zIndex: 9999,
+            bottom: 'calc(100% + 8px)',
+            backgroundColor: '#18181B',
+          }}
+        >
+          <span className="text-[12px] font-medium text-white">
+            Already globally enabled
+          </span>
+          <span className="text-[11px] font-normal leading-normal text-[#A1A1AA]" style={{ width: '220px' }}>
+            This {type === 'skill' ? 'skill' : 'MCP'} is enabled via plugin and is already active in all projects.
+          </span>
+        </div>
+      )}
+
       {/* Checkbox */}
       <div
         className={`
@@ -115,10 +151,15 @@ const CheckableItem: React.FC<CheckableItemProps> = ({
           justify-center
           rounded
           transition-colors
-          ${selected ? 'bg-[#18181B]' : 'border-2 border-[#D4D4D4]'}
+          ${disabled
+            ? 'bg-[#F4F4F5]'
+            : selected
+              ? 'bg-[#18181B]'
+              : 'border-2 border-[#D4D4D4]'
+          }
         `}
       >
-        {selected && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
+        {selected && !disabled && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
       </div>
 
       {/* Icon Container */}
@@ -131,20 +172,21 @@ const CheckableItem: React.FC<CheckableItemProps> = ({
           items-center
           justify-center
           rounded-lg
-          ${selected ? 'bg-white' : 'bg-[#FAFAFA]'}
+          ${disabled ? 'bg-[#FAFAFA]' : selected ? 'bg-white' : 'bg-[#FAFAFA]'}
         `}
       >
         <IconComponent
-          className={`h-[18px] w-[18px] ${selected ? 'text-[#18181B]' : 'text-[#52525B]'}`}
+          className={`h-[18px] w-[18px] ${disabled ? 'text-[#A1A1AA]' : selected ? 'text-[#18181B]' : 'text-[#52525B]'}`}
         />
       </div>
 
       {/* Info */}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
+        {/* Name row */}
         <span
           className={`
             text-[13px]
-            ${selected ? 'font-semibold text-[#18181B]' : 'font-medium text-[#18181B]'}
+            ${disabled ? 'font-medium text-[#A1A1AA]' : selected ? 'font-semibold text-[#18181B]' : 'font-medium text-[#18181B]'}
           `}
         >
           {name}
@@ -152,7 +194,7 @@ const CheckableItem: React.FC<CheckableItemProps> = ({
         <span
           className={`
             truncate text-xs font-normal
-            ${selected ? 'text-[#52525B]' : 'text-[#71717A]'}
+            ${disabled ? 'text-[#D4D4D8]' : selected ? 'text-[#52525B]' : 'text-[#71717A]'}
           `}
         >
           {description}
@@ -170,9 +212,11 @@ const CheckableItem: React.FC<CheckableItemProps> = ({
               py-[3px]
               text-[10px]
               font-medium
-              ${selected && index === 0
-                ? 'bg-white text-[#18181B]'
-                : 'bg-[#FAFAFA] text-[#52525B]'
+              ${disabled
+                ? 'bg-[#FAFAFA] text-[#D4D4D8]'
+                : selected && index === 0
+                  ? 'bg-white text-[#18181B]'
+                  : 'bg-[#FAFAFA] text-[#52525B]'
               }
             `}
           >
@@ -289,6 +333,9 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
   skills,
   mcpServers,
 }) => {
+  // Plugin state for filtering
+  const { pluginEnabledStatus, loadInstalledPlugins } = usePluginsStore();
+
   // Local state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -298,6 +345,27 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>([]);
   const [selectedMcpIds, setSelectedMcpIds] = useState<string[]>([]);
+
+  // Load plugin status when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      loadInstalledPlugins();
+    }
+  }, [isOpen, loadInstalledPlugins]);
+
+  // Check if a Skill should be disabled (from an enabled plugin)
+  const isSkillDisabled = useCallback((skill: Skill): boolean => {
+    if (skill.installSource !== 'plugin') return false;
+    if (!skill.pluginId) return false;
+    return pluginEnabledStatus[skill.pluginId] === true;
+  }, [pluginEnabledStatus]);
+
+  // Check if an MCP should be disabled (from an enabled plugin)
+  const isMcpDisabled = useCallback((mcp: McpServer): boolean => {
+    if (mcp.installSource !== 'plugin') return false;
+    if (!mcp.pluginId) return false;
+    return pluginEnabledStatus[mcp.pluginId] === true;
+  }, [pluginEnabledStatus]);
 
   // Reset state when modal opens
   useEffect(() => {
@@ -357,10 +425,10 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
     }));
   }, [activeTab, skills, mcpServers]);
 
-  // Filter items
+  // Filter and sort items (disabled items at bottom)
   const filteredItems = useMemo(() => {
     const items = activeTab === 'skills' ? skills : mcpServers;
-    return items.filter((item) => {
+    const filtered = items.filter((item) => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -385,7 +453,20 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
 
       return true;
     });
-  }, [activeTab, skills, mcpServers, searchQuery, categoryFilter, tagFilter]);
+
+    // Sort: enabled items first, disabled items at bottom
+    return filtered.sort((a, b) => {
+      const aDisabled = activeTab === 'skills'
+        ? isSkillDisabled(a as Skill)
+        : isMcpDisabled(a as McpServer);
+      const bDisabled = activeTab === 'skills'
+        ? isSkillDisabled(b as Skill)
+        : isMcpDisabled(b as McpServer);
+
+      if (aDisabled === bDisabled) return 0;
+      return aDisabled ? 1 : -1;
+    });
+  }, [activeTab, skills, mcpServers, searchQuery, categoryFilter, tagFilter, isSkillDisabled, isMcpDisabled]);
 
   // Selection handlers
   const handleToggleSkill = useCallback((id: string) => {
@@ -402,23 +483,31 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
 
   const handleSelectAll = useCallback(() => {
     if (activeTab === 'skills') {
-      const allIds = filteredItems.map((item) => item.id);
-      const allSelected = allIds.every((id) => selectedSkillIds.includes(id));
+      // Filter out disabled skills
+      const selectableItems = filteredItems.filter(
+        (item) => !isSkillDisabled(item as Skill)
+      );
+      const selectableIds = selectableItems.map((item) => item.id);
+      const allSelected = selectableIds.every((id) => selectedSkillIds.includes(id));
       if (allSelected) {
-        setSelectedSkillIds((prev) => prev.filter((id) => !allIds.includes(id)));
+        setSelectedSkillIds((prev) => prev.filter((id) => !selectableIds.includes(id)));
       } else {
-        setSelectedSkillIds((prev) => [...new Set([...prev, ...allIds])]);
+        setSelectedSkillIds((prev) => [...new Set([...prev, ...selectableIds])]);
       }
     } else {
-      const allIds = filteredItems.map((item) => item.id);
-      const allSelected = allIds.every((id) => selectedMcpIds.includes(id));
+      // Filter out disabled MCPs
+      const selectableItems = filteredItems.filter(
+        (item) => !isMcpDisabled(item as McpServer)
+      );
+      const selectableIds = selectableItems.map((item) => item.id);
+      const allSelected = selectableIds.every((id) => selectedMcpIds.includes(id));
       if (allSelected) {
-        setSelectedMcpIds((prev) => prev.filter((id) => !allIds.includes(id)));
+        setSelectedMcpIds((prev) => prev.filter((id) => !selectableIds.includes(id)));
       } else {
-        setSelectedMcpIds((prev) => [...new Set([...prev, ...allIds])]);
+        setSelectedMcpIds((prev) => [...new Set([...prev, ...selectableIds])]);
       }
     }
-  }, [activeTab, filteredItems, selectedSkillIds, selectedMcpIds]);
+  }, [activeTab, filteredItems, selectedSkillIds, selectedMcpIds, isSkillDisabled, isMcpDisabled]);
 
   const handleClearAll = useCallback(() => {
     setSelectedSkillIds([]);
@@ -447,13 +536,21 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
     [mcpServers, selectedMcpIds]
   );
 
-  // Check if all filtered items are selected
+  // Check if all filtered items are selected (excluding disabled items)
   const allFilteredSelected = useMemo(() => {
     if (activeTab === 'skills') {
-      return filteredItems.every((item) => selectedSkillIds.includes(item.id));
+      const selectableItems = filteredItems.filter(
+        (item) => !isSkillDisabled(item as Skill)
+      );
+      if (selectableItems.length === 0) return false;
+      return selectableItems.every((item) => selectedSkillIds.includes(item.id));
     }
-    return filteredItems.every((item) => selectedMcpIds.includes(item.id));
-  }, [activeTab, filteredItems, selectedSkillIds, selectedMcpIds]);
+    const selectableItems = filteredItems.filter(
+      (item) => !isMcpDisabled(item as McpServer)
+    );
+    if (selectableItems.length === 0) return false;
+    return selectableItems.every((item) => selectedMcpIds.includes(item.id));
+  }, [activeTab, filteredItems, selectedSkillIds, selectedMcpIds, isSkillDisabled, isMcpDisabled]);
 
   if (!isOpen) return null;
 
@@ -687,13 +784,13 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
                   triggerClassName="w-[120px]"
                 />
 
-                {/* Select All Button */}
+                {/* All Button */}
                 <button
                   onClick={handleSelectAll}
                   className="flex h-10 items-center gap-1.5 rounded-lg bg-[#FAFAFA] px-3.5 text-xs font-medium text-[#52525B] transition-colors hover:bg-[#F4F4F5]"
                 >
                   <CheckSquare className="h-3.5 w-3.5" />
-                  {allFilteredSelected ? 'Deselect All' : 'Select All'}
+                  All
                 </button>
               </div>
             </div>
@@ -701,23 +798,34 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
             {/* Center Content - Checkable List */}
             <div className="flex-1 overflow-y-auto p-5">
               <div className="flex flex-col gap-2">
-                {filteredItems.map((item) => (
-                  <CheckableItem
-                    key={item.id}
-                    id={item.id}
-                    name={item.name}
-                    description={item.description}
-                    category={item.category}
-                    tags={item.tags}
-                    selected={
-                      activeTab === 'skills'
-                        ? selectedSkillIds.includes(item.id)
-                        : selectedMcpIds.includes(item.id)
-                    }
-                    type={activeTab === 'skills' ? 'skill' : 'mcp'}
-                    onToggle={activeTab === 'skills' ? handleToggleSkill : handleToggleMcp}
-                  />
-                ))}
+                {filteredItems.map((item) => {
+                  const disabled = activeTab === 'skills'
+                    ? isSkillDisabled(item as Skill)
+                    : isMcpDisabled(item as McpServer);
+                  const disabledReason = disabled
+                    ? `此 ${activeTab === 'skills' ? 'Skill' : 'MCP'} 由已启用的插件提供，全局已生效，无需添加到场景`
+                    : undefined;
+
+                  return (
+                    <CheckableItem
+                      key={item.id}
+                      id={item.id}
+                      name={item.name}
+                      description={item.description}
+                      category={item.category}
+                      tags={item.tags}
+                      selected={
+                        activeTab === 'skills'
+                          ? selectedSkillIds.includes(item.id)
+                          : selectedMcpIds.includes(item.id)
+                      }
+                      type={activeTab === 'skills' ? 'skill' : 'mcp'}
+                      onToggle={activeTab === 'skills' ? handleToggleSkill : handleToggleMcp}
+                      disabled={disabled}
+                      disabledReason={disabledReason}
+                    />
+                  );
+                })}
 
                 {filteredItems.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-12 text-center">

@@ -1,3 +1,6 @@
+// 安装来源类型
+export type InstallSource = 'manual' | 'import' | 'npx' | 'plugin';
+
 export interface Skill {
   id: string;
   name: string;
@@ -15,6 +18,12 @@ export interface Skill {
   usageCount: number;
   icon?: string;  // 自定义图标名称
   installedAt?: string;  // 安装时间 (文件创建时间)
+  // 插件相关字段 - 从 Rust 后端返回
+  installSource?: 'local' | 'plugin';  // 安装来源
+  pluginId?: string;  // 插件 ID，如 "nanobanana-skill@claude-code-settings"
+  pluginName?: string;  // 插件显示名称
+  marketplace?: string;  // marketplace 名称
+  pluginEnabled?: boolean;  // 插件在 Claude Code 中是否启用
 }
 
 export interface McpServer {
@@ -35,6 +44,12 @@ export interface McpServer {
   usageCount: number;
   icon?: string;  // 自定义图标名称
   installedAt?: string;  // 安装时间 (文件创建时间)
+  // 插件相关字段 - 从 Rust 后端返回
+  installSource?: 'local' | 'plugin';  // 安装来源
+  pluginId?: string;  // 插件 ID，如 "nanobanana-skill@claude-code-settings"
+  pluginName?: string;  // 插件显示名称
+  marketplace?: string;  // marketplace 名称
+  pluginEnabled?: boolean;  // 插件在 Claude Code 中是否启用
 }
 
 export interface Tool {
@@ -212,3 +227,25 @@ export interface UsageStats {
   skills: Record<string, SkillUsage>;
   mcps: Record<string, McpUsage>;
 }
+
+// ==================== 应用数据类型 ====================
+
+/**
+ * 应用持久化数据
+ * 存储在 ~/.ensemble/data.json 中
+ */
+export interface AppData {
+  skills: Skill[];
+  mcpServers: McpServer[];
+  scenes: Scene[];
+  projects: Project[];
+  categories: Category[];
+  tags: Tag[];
+  settings: AppSettings;
+  importedPluginSkills?: string[];  // 已导入的插件 Skills 的 pluginId 列表
+  importedPluginMcps?: string[];    // 已导入的插件 MCPs 的 pluginId 列表
+}
+
+// ==================== 插件相关类型导出 ====================
+
+export * from './plugin';
