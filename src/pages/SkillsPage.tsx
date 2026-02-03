@@ -671,13 +671,6 @@ export function SkillsPage() {
       {/* Header */}
       <PageHeader
         title="Skills"
-        badge={
-          enabledCount > 0 && (
-            <Badge variant="status">
-              {enabledCount} enabled
-            </Badge>
-          )
-        }
         searchValue={filter.search}
         onSearchChange={handleSearchChange}
         searchPlaceholder="Search skills..."

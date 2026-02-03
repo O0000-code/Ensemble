@@ -618,11 +618,6 @@ export const McpServersPage: React.FC = () => {
       <div className="flex h-full flex-col">
         <PageHeader
           title="MCP Servers"
-          badge={
-            <Badge variant="status">
-              {enabledCount} active
-            </Badge>
-          }
           searchValue={filter.search}
           onSearchChange={handleSearchChange}
           searchPlaceholder="Search servers..."
@@ -663,11 +658,6 @@ export const McpServersPage: React.FC = () => {
       {/* Page Header */}
       <PageHeader
         title="MCP Servers"
-        badge={
-          <Badge variant="status">
-            {enabledCount} active
-          </Badge>
-        }
         searchValue={filter.search}
         onSearchChange={handleSearchChange}
         searchPlaceholder="Search servers..."
