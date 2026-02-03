@@ -36,6 +36,7 @@ export function ProjectsPage() {
     updateNewProject,
     createProject,
     updateProject,
+    deleteProject,
     syncProject,
     clearProjectConfig,
     selectProjectFolder,
@@ -67,6 +68,11 @@ export function ProjectsPage() {
   // Handle icon picker close
   const handleIconPickerClose = () => {
     setIconPickerState({ isOpen: false, projectId: null, triggerRef: null });
+  };
+
+  // Handle delete project
+  const handleDeleteProject = async (id: string) => {
+    await deleteProject(id);
   };
 
   // Handle close detail panel
@@ -271,8 +277,10 @@ export function ProjectsPage() {
                   key={project.id}
                   project={project}
                   scene={scene}
+                  compact={!!selectedProjectId && !isCreating}
                   selected={selectedProjectId === project.id && !isCreating}
                   onClick={() => selectProject(project.id)}
+                  onDelete={() => handleDeleteProject(project.id)}
                 />
               );
             })

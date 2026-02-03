@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   Layers,
   Code,
@@ -9,6 +9,7 @@ import {
   BookOpen,
   Smartphone,
   MoreHorizontal,
+  Trash2,
 } from 'lucide-react';
 import { Scene } from '@/types';
 
@@ -24,6 +25,7 @@ interface SceneListItemProps {
   onClick?: () => void;
   onMoreClick?: (e: React.MouseEvent) => void;
   onIconClick?: (triggerRef: React.RefObject<HTMLDivElement>) => void;
+  onDelete?: () => void;
 }
 
 // ============================================================================
@@ -76,11 +78,36 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
   selected = false,
   active = false,
   onClick,
-  onMoreClick,
+  onMoreClick: _onMoreClick,
   onIconClick,
+  onDelete,
 }) => {
   const iconRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [showMenu, setShowMenu] = useState(false);
   const IconComponent = getIcon(scene.icon);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleMoreClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(!showMenu);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    onDelete?.();
+  };
 
   // Stats text for both modes
   const statsText = `${scene.skillIds.length} Skills · ${scene.mcpIds.length} MCPs`;
@@ -98,10 +125,7 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
         border
         px-5
         py-4
-        ${selected
-          ? 'border-[#18181B] bg-[#FAFAFA]'
-          : 'border-[#E5E5E5] bg-white hover:bg-[#FAFAFA]'
-        }
+        border-[#E5E5E5] ${selected ? 'bg-[#FAFAFA]' : 'bg-white hover:bg-[#FAFAFA]'}
       `}
       style={{
         transition: `background-color ${TRANSITION_BASE}, border-color ${TRANSITION_BASE}`,
@@ -178,11 +202,12 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
 
       {/* Right Section - visible in full mode */}
       <div
-        className="flex items-center overflow-hidden"
+        className="flex items-center"
         style={{
           opacity: compact ? 0 : 1,
           maxWidth: compact ? 0 : '400px',
           gap: compact ? 0 : '24px',
+          overflow: compact ? 'hidden' : 'visible',
           transition: `opacity ${TRANSITION_BASE}, max-width ${TRANSITION_BASE}, gap ${TRANSITION_BASE}`,
         }}
       >
@@ -239,22 +264,37 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
           </span>
         )}
 
-        {/* More Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onMoreClick?.(e);
-          }}
-          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded transition-colors hover:bg-[#F4F4F5]"
+        {/* More Button with Dropdown Menu */}
+        <div
+          ref={menuRef}
+          className="relative shrink-0"
           style={{
             opacity: compact ? 0 : 1,
             width: compact ? 0 : '28px',
             minWidth: compact ? 0 : '28px',
+            overflow: compact ? 'hidden' : 'visible',
             transition: `opacity ${TRANSITION_BASE}, width ${TRANSITION_BASE}, min-width ${TRANSITION_BASE}`,
           }}
         >
-          <MoreHorizontal className="h-4 w-4 text-[#A1A1AA]" />
-        </button>
+          <button
+            onClick={handleMoreClick}
+            className="flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-[#F4F4F5]"
+          >
+            <MoreHorizontal className="h-4 w-4 text-[#A1A1AA]" />
+          </button>
+
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg border border-[#E5E5E5] shadow-lg z-50 py-1">
+              <button
+                onClick={handleDelete}
+                className="w-full px-3 py-2 text-left text-sm text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-2 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
