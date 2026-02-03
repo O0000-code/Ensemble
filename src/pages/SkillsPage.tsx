@@ -21,6 +21,7 @@ import {
   Download,
 } from 'lucide-react';
 import { PageHeader, SlidePanel } from '@/components/layout';
+import { parseDescription } from '@/utils/parseDescription';
 import Badge from '@/components/common/Badge';
 import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
@@ -382,9 +383,17 @@ export function SkillsPage() {
         <h2 className="text-base font-semibold text-[#18181B]">
           {selectedSkill.name}
         </h2>
-        <p className="text-xs font-normal text-[#71717A]">
-          {selectedSkill.description}
-        </p>
+        {(() => {
+          const { firstSentence } = parseDescription(selectedSkill.description);
+          return (
+            <p
+              className="max-w-[500px] truncate text-xs font-normal text-[#71717A]"
+              title={selectedSkill.description}
+            >
+              {firstSentence}
+            </p>
+          );
+        })()}
       </div>
     </div>
   );
@@ -513,12 +522,22 @@ export function SkillsPage() {
       </div>
 
       {/* Instructions Section */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold text-[#18181B]">Instructions</h3>
         <div className="rounded-lg border border-[#E5E5E5] bg-white p-4">
-          <p className="whitespace-pre-wrap text-xs font-normal leading-relaxed text-[#52525B]">
-            {selectedSkill.instructions}
-          </p>
+          {(() => {
+            const { remaining } = parseDescription(selectedSkill.description);
+            return (
+              <div className="whitespace-pre-wrap text-xs font-normal leading-relaxed text-[#52525B]">
+                {remaining && (
+                  <p className="mb-3 rounded bg-[#FAFAFA] p-2 text-[#71717A] italic">
+                    {remaining}
+                  </p>
+                )}
+                <p>{selectedSkill.instructions}</p>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
