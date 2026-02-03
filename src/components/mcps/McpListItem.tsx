@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Code, Zap, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Wrench, Zap, MoreHorizontal, Trash2 } from 'lucide-react';
 import { ICON_MAP } from '@/components/common';
 import { McpServer } from '@/types';
 
@@ -50,6 +50,8 @@ interface McpListItemProps {
   onDelete?: (id: string) => void;
   onClick?: (id: string) => void;
   onIconClick?: (triggerRef: React.RefObject<HTMLDivElement>) => void;
+  /** Override usage count from external source (e.g., usage stats store) */
+  usageCount?: number;
 }
 
 /**
@@ -70,8 +72,11 @@ export const McpListItem: React.FC<McpListItemProps> = ({
   onDelete,
   onClick,
   onIconClick,
+  usageCount,
 }) => {
   const iconRef = useRef<HTMLDivElement>(null);
+  // Use provided usageCount (from store) or fall back to mcp.usageCount
+  const displayUsageCount = usageCount ?? mcp.usageCount;
   const menuRef = useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = useState(false);
   const IconComponent = getMcpIcon(mcp);
@@ -184,7 +189,7 @@ export const McpListItem: React.FC<McpListItemProps> = ({
         <div className="flex items-center gap-5 whitespace-nowrap">
           {/* Tools Count */}
           <div className="flex items-center gap-1.5">
-            <Code className="h-3 w-3 text-[#A1A1AA]" />
+            <Wrench className="h-3 w-3 text-[#A1A1AA]" />
             <span className="text-[11px] text-[#71717A]">
               {mcp.providedTools.length} tools
             </span>
@@ -194,7 +199,7 @@ export const McpListItem: React.FC<McpListItemProps> = ({
           <div className="flex items-center gap-1.5">
             <Zap className="h-3 w-3 text-[#A1A1AA]" />
             <span className="text-[11px] text-[#71717A]">
-              {formatUsageCount(mcp.usageCount)} calls
+              {formatUsageCount(displayUsageCount)} calls
             </span>
           </div>
         </div>
