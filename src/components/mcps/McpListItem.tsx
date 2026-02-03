@@ -1,8 +1,11 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Wrench, Zap, MoreHorizontal, Trash2, Puzzle } from 'lucide-react';
+import { MoreHorizontal, Trash2, Puzzle } from 'lucide-react';
 import { ICON_MAP } from '@/components/common';
 import { truncateToFirstSentence } from '@/utils/text';
 import { McpServer } from '@/types';
+import { getCategoryColor } from '@/utils/constants';
+import { TagsWithTooltip } from '@/components/common/TagsWithTooltip';
+import { Badge } from '@/components/common/Badge';
 
 // ============================================================================
 // Animation Constants
@@ -33,12 +36,6 @@ const getMcpIcon = (mcp: McpServer): React.ElementType => {
   return categoryIconMap[mcp.category] || ICON_MAP['folder-open'] || ICON_MAP['folder'];
 };
 
-const formatUsageCount = (count: number): string => {
-  if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}k`;
-  }
-  return count.toString();
-};
 
 // ============================================================================
 // McpListItem Component
@@ -51,14 +48,12 @@ interface McpListItemProps {
   onDelete?: (id: string) => void;
   onClick?: (id: string) => void;
   onIconClick?: (triggerRef: React.RefObject<HTMLDivElement>) => void;
-  /** Override usage count from external source (e.g., usage stats store) */
-  usageCount?: number;
 }
 
 /**
  * Unified MCP list item with smooth transition between full and compact modes.
  *
- * Full mode (compact=false): Shows tools count, calls count
+ * Full mode (compact=false): Shows category badge and tags
  * Compact mode (compact=true): Shows only icon, name, description
  *
  * Key animation behavior:
@@ -73,14 +68,12 @@ export const McpListItem: React.FC<McpListItemProps> = ({
   onDelete,
   onClick,
   onIconClick,
-  usageCount,
 }) => {
   const iconRef = useRef<HTMLDivElement>(null);
-  // Use provided usageCount (from store) or fall back to mcp.usageCount
-  const displayUsageCount = usageCount ?? mcp.usageCount;
   const menuRef = useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = useState(false);
   const IconComponent = getMcpIcon(mcp);
+  const categoryColor = getCategoryColor(mcp.category);
 
   // Plugin source detection
   const isPluginSource = mcp.installSource === 'plugin';
@@ -196,30 +189,20 @@ export const McpListItem: React.FC<McpListItemProps> = ({
         </div>
       </div>
 
-      {/* Right Section - Stats & Badge (hidden in compact mode with delay on show) */}
+      {/* Right Section - Category & Tags (hidden in compact mode with delay on show) */}
       <div
-        className="flex items-center gap-4 shrink-0"
+        className="flex items-center gap-1.5 shrink-0"
         style={rightSectionStyle}
       >
-        {/* Stats */}
-        <div className="flex items-center gap-5 whitespace-nowrap">
-          {/* Tools Count */}
-          <div className="flex items-center gap-1.5">
-            <Wrench className="h-3 w-3 text-[#A1A1AA]" />
-            <span className="text-[11px] text-[#71717A]">
-              {mcp.providedTools.length} tools
-            </span>
-          </div>
+        {/* Category Badge - only show if category exists */}
+        {mcp.category && (
+          <Badge variant="category" color={categoryColor}>
+            {mcp.category.charAt(0).toUpperCase() + mcp.category.slice(1)}
+          </Badge>
+        )}
 
-          {/* Usage Count */}
-          <div className="flex items-center gap-1.5">
-            <Zap className="h-3 w-3 text-[#A1A1AA]" />
-            <span className="text-[11px] text-[#71717A]">
-              {formatUsageCount(displayUsageCount)} calls
-            </span>
-          </div>
-        </div>
-
+        {/* Tags */}
+        <TagsWithTooltip tags={mcp.tags} />
       </div>
 
       {/* More Menu - Always visible */}

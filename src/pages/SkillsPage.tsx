@@ -185,7 +185,6 @@ export function SkillsPage() {
     updateSkillTags,
     updateSkillScope,
     getFilteredSkills,
-    getEnabledCount,
     autoClassify,
     isClassifying,
     error,
@@ -209,7 +208,6 @@ export function SkillsPage() {
   const { loadInstalledPlugins } = usePluginsStore();
 
   const filteredSkills = getFilteredSkills();
-  const enabledCount = getEnabledCount();
 
   // Load usage stats and plugin enabled status on mount
   useEffect(() => {

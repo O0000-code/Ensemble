@@ -2,7 +2,9 @@ import React, { useRef, useState } from 'react';
 import { Sparkles, MoreHorizontal, Trash2, Puzzle } from 'lucide-react';
 import Badge from '../common/Badge';
 import { ICON_MAP } from '@/components/common';
+import { TagsWithTooltip } from '@/components/common/TagsWithTooltip';
 import { truncateToFirstSentence } from '@/utils/text';
+import { getCategoryColor } from '@/utils/constants';
 import { Skill } from '@/types';
 
 // ============================================================================
@@ -26,13 +28,6 @@ const getSkillIcon = (skill: Skill): React.ElementType => {
   return Sparkles;
 };
 
-const categoryColors: Record<string, string> = {
-  development: '#18181B',
-  design: '#8B5CF6',
-  research: '#3B82F6',
-  productivity: '#10B981',
-  other: '#71717A',
-};
 
 // ============================================================================
 // SkillListItem Component
@@ -70,7 +65,7 @@ export const SkillListItem: React.FC<SkillListItemProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = useState(false);
   const IconComponent = getSkillIcon(skill);
-  const categoryColor = categoryColors[skill.category] || '#71717A';
+  const categoryColor = getCategoryColor(skill.category);
 
   // Plugin source detection
   const isPluginSource = skill.installSource === 'plugin';
@@ -187,17 +182,15 @@ export const SkillListItem: React.FC<SkillListItemProps> = ({
         className="flex items-center gap-1.5 shrink-0"
         style={rightSectionStyle}
       >
-        {/* Category Badge */}
-        <Badge variant="category" color={categoryColor}>
-          {skill.category ? skill.category.charAt(0).toUpperCase() + skill.category.slice(1) : 'Uncategorized'}
-        </Badge>
-
-        {/* Tags (max 2) */}
-        {skill.tags.slice(0, 2).map((tag) => (
-          <Badge key={tag} variant="tag">
-            {tag}
+        {/* Category Badge - only show if category exists */}
+        {skill.category && (
+          <Badge variant="category" color={categoryColor}>
+            {skill.category.charAt(0).toUpperCase() + skill.category.slice(1)}
           </Badge>
-        ))}
+        )}
+
+        {/* Tags */}
+        <TagsWithTooltip tags={skill.tags} />
       </div>
 
       {/* More Menu - Always visible */}

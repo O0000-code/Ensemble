@@ -19,7 +19,7 @@ import {
   Check,
 } from 'lucide-react';
 import { PageHeader, SlidePanel } from '@/components/layout';
-import { Badge, EmptyState, IconPicker, ICON_MAP, Dropdown, ScopeSelector, Button } from '@/components/common';
+import { EmptyState, IconPicker, ICON_MAP, Dropdown, ScopeSelector, Button } from '@/components/common';
 import { McpListItem } from '@/components/mcps/McpListItem';
 import { ImportMcpModal } from '@/components/modals/ImportMcpModal';
 import { useMcpsStore } from '@/stores/mcpsStore';
@@ -146,7 +146,6 @@ export const McpServersPage: React.FC = () => {
     updateMcpTags,
     updateMcpScope,
     getFilteredMcps,
-    getEnabledCount,
     loadMcps,
     fetchMcpTools,
     fetchingToolsForMcp,
@@ -179,7 +178,6 @@ export const McpServersPage: React.FC = () => {
   }, [loadUsageStats, loadInstalledPlugins]);
 
   const filteredMcps = getFilteredMcps();
-  const enabledCount = getEnabledCount();
 
   // Get selected MCP data using useMemo
   const selectedMcp = useMemo(
@@ -708,7 +706,6 @@ export const McpServersPage: React.FC = () => {
                 onDelete={handleDelete}
                 onClick={handleMcpClick}
                 onIconClick={(ref) => handleIconClick(mcp.id, ref)}
-                usageCount={usageStats[mcp.id]?.total_calls ?? usageStats[mcp.name]?.total_calls}
               />
             ))}
           </div>
