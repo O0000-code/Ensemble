@@ -1,5 +1,34 @@
 import React from 'react';
 import { SearchInput } from '../common/SearchInput';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+
+// Helper to start window dragging
+const startDrag = async (e: React.MouseEvent) => {
+  if (e.button !== 0) return;
+
+  const target = e.target as HTMLElement;
+  const tagName = target.tagName.toLowerCase();
+
+  // Don't drag if clicking on interactive elements
+  if (
+    tagName === 'button' ||
+    tagName === 'input' ||
+    tagName === 'a' ||
+    tagName === 'select' ||
+    tagName === 'textarea' ||
+    target.getAttribute('role') === 'button' ||
+    target.getAttribute('role') === 'switch' ||
+    target.closest('button, input, a, select, textarea, [role="button"], [role="switch"]')
+  ) {
+    return;
+  }
+
+  try {
+    await getCurrentWindow().startDragging();
+  } catch (err) {
+    // Ignore errors in browser mode
+  }
+};
 
 // ============================================================================
 // PageHeader Component
@@ -54,6 +83,7 @@ export function PageHeader({
 
   return (
     <header
+      onMouseDown={startDrag}
       className={`
         flex
         h-14
