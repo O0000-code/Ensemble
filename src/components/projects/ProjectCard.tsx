@@ -105,18 +105,18 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       `}
     >
       {/* Left Section */}
-      <div className="flex items-center gap-3.5">
+      <div className="flex items-center gap-3.5 min-w-0 flex-1">
         {/* Icon Wrap */}
         <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${selected ? 'bg-[#F4F4F5]' : 'bg-[#FAFAFA]'}`}>
           <Folder className={`h-5 w-5 ${selected ? 'text-[#18181B]' : 'text-[#52525B]'}`} />
         </div>
 
         {/* Info */}
-        <div className="flex flex-col gap-1">
-          <span className={`text-sm text-[#18181B] ${selected ? 'font-semibold' : 'font-medium'}`}>
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className={`text-sm text-[#18181B] truncate ${selected ? 'font-semibold' : 'font-medium'}`}>
             {project.name}
           </span>
-          <span className="text-xs font-normal text-[#71717A]">
+          <span className="text-xs font-normal text-[#71717A] truncate">
             {formatPath(project.path)}
           </span>
         </div>
@@ -146,13 +146,13 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         {/* Action Button - Always visible */}
         <div
           ref={menuRef}
-          className="relative shrink-0"
+          className="shrink-0 ml-4 relative"
         >
           <button
             onClick={handleMoreClick}
-            className="flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-[#F4F4F5]"
+            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-[#F4F4F5] transition-colors"
           >
-            <MoreHorizontal className="h-4 w-4 text-[#A1A1AA]" />
+            <MoreHorizontal className="w-4 h-4 text-[#71717A]" />
           </button>
 
           {showMenu && (
