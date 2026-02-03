@@ -575,12 +575,18 @@ export const McpServersPage: React.FC = () => {
             <span className="text-xs font-medium text-[#71717A]">
               Install Scope
             </span>
-            <ScopeSelector
-              value={selectedMcp.scope}
-              onChange={async (scope) => {
-                await updateMcpScope(selectedMcp.id, scope);
-              }}
-            />
+            {selectedMcp.installSource === 'plugin' ? (
+              <span className="rounded bg-[#EFF6FF] px-2 py-0.5 text-[11px] font-medium text-[#3B82F6]">
+                Plugin
+              </span>
+            ) : (
+              <ScopeSelector
+                value={selectedMcp.scope}
+                onChange={async (scope) => {
+                  await updateMcpScope(selectedMcp.id, scope);
+                }}
+              />
+            )}
           </div>
         </div>
       </section>

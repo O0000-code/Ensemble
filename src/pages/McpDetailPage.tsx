@@ -338,9 +338,15 @@ export const McpDetailPage: React.FC = () => {
             <span className="text-xs font-medium text-[#71717A]">
               Install Scope
             </span>
-            <span className="rounded bg-[#EEF2FF] px-2 py-1 text-[10px] font-semibold text-[#4F46E5]">
-              User
-            </span>
+            {selectedMcp.installSource === 'plugin' ? (
+              <span className="rounded bg-[#EFF6FF] px-2 py-0.5 text-[11px] font-medium text-[#3B82F6]">
+                Plugin
+              </span>
+            ) : (
+              <span className="rounded bg-[#EEF2FF] px-2 py-1 text-[10px] font-semibold text-[#4F46E5]">
+                User
+              </span>
+            )}
           </div>
         </div>
       </section>

@@ -613,12 +613,18 @@ export function SkillsPage() {
           <ConfigItem
             label="Scope"
             value={
-              <ScopeSelector
-                value={selectedSkill.scope}
-                onChange={async (scope) => {
-                  await updateSkillScope(selectedSkill.id, scope);
-                }}
-              />
+              selectedSkill.installSource === 'plugin' ? (
+                <span className="rounded bg-[#EFF6FF] px-2 py-0.5 text-[11px] font-medium text-[#3B82F6]">
+                  Plugin
+                </span>
+              ) : (
+                <ScopeSelector
+                  value={selectedSkill.scope}
+                  onChange={async (scope) => {
+                    await updateSkillScope(selectedSkill.id, scope);
+                  }}
+                />
+              )
             }
             isLast
           />
