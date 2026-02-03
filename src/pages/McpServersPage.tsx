@@ -569,42 +569,46 @@ export const McpServersPage: React.FC = () => {
         <h3 className="text-sm font-semibold text-[#18181B]">
           Source Configuration
         </h3>
-        <div className="flex flex-col gap-3 rounded-lg border border-[#E5E5E5] p-4">
+        <div className="overflow-hidden rounded-lg border border-[#E5E5E5]">
           {/* Config Path */}
-          <div className="flex items-center gap-2.5">
-            <span className="text-xs font-medium text-[#71717A]">Config Path</span>
-            <span className="text-xs font-normal text-[#18181B]">
+          <div className="flex items-center gap-3 px-3.5 py-3 border-b border-[#E5E5E5]">
+            <span className="w-24 flex-shrink-0 text-xs font-medium text-[#71717A]">
+              Config Path
+            </span>
+            <span className="flex-1 font-mono text-xs text-[#18181B] truncate">
               {selectedMcp.sourcePath}
             </span>
           </div>
           {/* Install Scope */}
-          <div className="flex items-center gap-2.5">
-            <span className="text-xs font-medium text-[#71717A]">
+          <div className="flex items-center gap-3 px-3.5 py-3">
+            <span className="w-24 flex-shrink-0 text-xs font-medium text-[#71717A]">
               Install Scope
             </span>
-            {selectedMcp.installSource === 'plugin' ? (
-              <span className="rounded bg-[#EFF6FF] px-2 py-0.5 text-[11px] font-medium text-[#3B82F6]">
-                Plugin
-              </span>
-            ) : (
-              <ScopeSelector
-                value={selectedMcp.scope}
-                onChange={async (scope) => {
-                  await updateMcpScope(selectedMcp.id, scope);
-                }}
-              />
-            )}
+            <div className="flex-1">
+              {selectedMcp.installSource === 'plugin' ? (
+                <span className="rounded bg-[#EFF6FF] px-2 py-0.5 text-[11px] font-medium text-[#3B82F6]">
+                  Plugin
+                </span>
+              ) : (
+                <ScopeSelector
+                  value={selectedMcp.scope}
+                  onChange={async (scope) => {
+                    await updateMcpScope(selectedMcp.id, scope);
+                  }}
+                />
+              )}
+            </div>
           </div>
-          {/* Open in Finder Button */}
-          <Button
-            variant="secondary"
-            size="small"
-            icon={<FolderOpen />}
-            onClick={handleOpenInFinder}
-          >
-            Open in Finder
-          </Button>
         </div>
+        {/* Open in Finder Button */}
+        <Button
+          variant="secondary"
+          size="small"
+          icon={<FolderOpen />}
+          onClick={handleOpenInFinder}
+        >
+          Open in Finder
+        </Button>
       </section>
 
       {/* Used in Scenes Section */}
