@@ -1,14 +1,17 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
 import { Sparkles, Plug, Loader2 } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { useSkillsStore } from '@/stores/skillsStore';
 import { useMcpsStore } from '@/stores/mcpsStore';
 import PageHeader from '@/components/layout/PageHeader';
-import SkillItem from '@/components/skills/SkillItem';
-import { McpItem } from '@/components/mcps/McpItem';
+import { SkillListItem } from '@/components/skills/SkillListItem';
+import { SkillDetailPanel } from '@/components/skills/SkillDetailPanel';
+import { McpListItem } from '@/components/mcps/McpListItem';
+import { McpDetailPanel } from '@/components/mcps/McpDetailPanel';
 import { FilteredEmptyState } from '@/components/common/FilteredEmptyState';
 import Button from '@/components/common/Button';
+import type { Skill } from '@/types';
 
 // ============================================================================
 // TagPage Component
@@ -18,8 +21,11 @@ import Button from '@/components/common/Button';
 
 export function TagPage() {
   const { tagId } = useParams<{ tagId: string }>();
-  const navigate = useNavigate();
   const [search, setSearch] = useState('');
+
+  // Selected item state for detail panels - track ID only
+  const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
+  const [selectedMcpId, setSelectedMcpId] = useState<string | null>(null);
 
   // Get data from stores
   const { tags } = useAppStore();
@@ -30,6 +36,16 @@ export function TagPage() {
   const tag = tags.find((t) => t.id === tagId);
   // Get tag name for filtering (skill.tags stores tag names, not ids)
   const tagName = tag?.name;
+
+  // Get selected skill/mcp objects
+  const selectedSkill = useMemo(
+    () => skills.find((s) => s.id === selectedSkillId) || null,
+    [skills, selectedSkillId]
+  );
+  const selectedMcp = useMemo(
+    () => mcpServers.find((m) => m.id === selectedMcpId) || null,
+    [mcpServers, selectedMcpId]
+  );
 
   // Filter skills and MCPs that have this tag (using tag name, not id)
   const filteredSkills = skills.filter((s) =>
@@ -58,30 +74,49 @@ export function TagPage() {
     : filteredMcps;
 
   // Handlers
-  const handleSkillClick = (skillId: string) => {
-    navigate(`/skills/${encodeURIComponent(skillId)}`);
+  const handleSkillClick = (skill: Skill) => {
+    setSelectedSkillId(skill.id);
+    setSelectedMcpId(null); // Close MCP panel if open
   };
 
   const handleSkillDelete = (skillId: string) => {
     deleteSkill(skillId);
+    if (selectedSkillId === skillId) {
+      setSelectedSkillId(null);
+    }
   };
 
   const handleMcpClick = (mcpId: string) => {
-    navigate(`/mcp-servers/${encodeURIComponent(mcpId)}`);
+    setSelectedMcpId(mcpId);
+    setSelectedSkillId(null); // Close Skill panel if open
   };
 
   const handleMcpDelete = (mcpId: string) => {
     deleteMcp(mcpId);
+    if (selectedMcpId === mcpId) {
+      setSelectedMcpId(null);
+    }
   };
 
   const handleAutoClassify = async () => {
     await autoClassify();
   };
 
+  const handleCloseSkillPanel = () => {
+    setSelectedSkillId(null);
+  };
+
+  const handleCloseMcpPanel = () => {
+    setSelectedMcpId(null);
+  };
+
+  // Check if any panel is open for layout adjustment
+  const isPanelOpen = !!selectedSkillId || !!selectedMcpId;
+
   // Empty state - no items with this tag at all
   if (filteredSkills.length === 0 && filteredMcps.length === 0) {
     return (
-      <div className="flex h-full flex-col">
+      <div className="relative flex h-full flex-col overflow-hidden">
         <PageHeader
           title={tag?.name || 'Unknown Tag'}
           searchValue=""
@@ -96,7 +131,7 @@ export function TagPage() {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative flex h-full flex-col overflow-hidden">
       {/* Header */}
       <PageHeader
         title={tag?.name || 'Unknown Tag'}
@@ -116,8 +151,14 @@ export function TagPage() {
         }
       />
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-7 py-6">
+      {/* Content - with shrink animation matching SkillsPage */}
+      <div
+        className={`
+          flex-1 overflow-y-auto px-7 py-6
+          transition-[margin-right] duration-[250ms] ease-[cubic-bezier(0.4,0,0.2,1)]
+          ${isPanelOpen ? 'mr-[800px]' : ''}
+        `}
+      >
         <div className="flex flex-col gap-8">
           {/* Skills Section */}
           {displayedSkills.length > 0 && (
@@ -132,11 +173,12 @@ export function TagPage() {
               {/* Skills List */}
               <div className="flex flex-col gap-3">
                 {displayedSkills.map((skill) => (
-                  <SkillItem
+                  <SkillListItem
                     key={skill.id}
                     skill={skill}
-                    variant="full"
-                    onClick={() => handleSkillClick(skill.id)}
+                    compact={isPanelOpen}
+                    selected={selectedSkillId === skill.id}
+                    onClick={() => handleSkillClick(skill)}
                     onDelete={() => handleSkillDelete(skill.id)}
                   />
                 ))}
@@ -157,10 +199,12 @@ export function TagPage() {
               {/* MCP List */}
               <div className="flex flex-col gap-3">
                 {displayedMcps.map((mcp) => (
-                  <McpItem
+                  <McpListItem
                     key={mcp.id}
                     mcp={mcp}
-                    onClick={() => handleMcpClick(mcp.id)}
+                    compact={isPanelOpen}
+                    selected={selectedMcpId === mcp.id}
+                    onClick={handleMcpClick}
                     onDelete={() => handleMcpDelete(mcp.id)}
                   />
                 ))}
@@ -178,6 +222,20 @@ export function TagPage() {
           )}
         </div>
       </div>
+
+      {/* Skill Detail Panel - Always render, control visibility with isOpen */}
+      <SkillDetailPanel
+        skill={selectedSkill}
+        isOpen={!!selectedSkillId}
+        onClose={handleCloseSkillPanel}
+      />
+
+      {/* MCP Detail Panel - Always render, control visibility with isOpen */}
+      <McpDetailPanel
+        mcp={selectedMcp}
+        isOpen={!!selectedMcpId}
+        onClose={handleCloseMcpPanel}
+      />
     </div>
   );
 }
