@@ -190,7 +190,7 @@ export const McpListItem: React.FC<McpListItemProps> = ({
           >
             {mcp.name}
           </span>
-          <span className="text-xs font-normal text-[#71717A] max-w-[600px]">
+          <span className="text-xs font-normal text-[#71717A] truncate max-w-[600px]">
             {truncateToFirstSentence(mcp.description, 100)}
           </span>
         </div>

@@ -154,7 +154,11 @@ export const usePluginsStore = create<PluginsState>((set, get) => ({
     set({ isDetectingSkills: true, error: null });
 
     try {
-      const { importedPluginSkills } = get();
+      // Load latest imported IDs from AppData first
+      const appData = await safeInvoke<AppData>('read_app_data');
+      const importedPluginSkills = appData?.importedPluginSkills || [];
+      set({ importedPluginSkills });
+
       const skills = await safeInvoke<DetectedPluginSkill[]>('detect_plugin_skills', {
         importedPluginSkills,
       });
@@ -182,7 +186,11 @@ export const usePluginsStore = create<PluginsState>((set, get) => ({
     set({ isDetectingMcps: true, error: null });
 
     try {
-      const { importedPluginMcps } = get();
+      // Load latest imported IDs from AppData first
+      const appData = await safeInvoke<AppData>('read_app_data');
+      const importedPluginMcps = appData?.importedPluginMcps || [];
+      set({ importedPluginMcps });
+
       const mcps = await safeInvoke<DetectedPluginMcp[]>('detect_plugin_mcps', {
         importedPluginMcps,
       });

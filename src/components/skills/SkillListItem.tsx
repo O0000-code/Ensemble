@@ -176,7 +176,7 @@ export const SkillListItem: React.FC<SkillListItemProps> = ({
           >
             {skill.name}
           </span>
-          <span className="text-xs font-normal text-[#71717A] max-w-[600px]">
+          <span className="text-xs font-normal text-[#71717A] truncate max-w-[600px]">
             {truncateToFirstSentence(skill.description, 100)}
           </span>
         </div>

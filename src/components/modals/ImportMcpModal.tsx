@@ -246,8 +246,8 @@ export function ImportMcpModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
     >
       <div className="w-[520px] h-[580px] bg-white rounded-[16px] flex flex-col overflow-hidden shadow-[0_25px_50px_rgba(0,0,0,0.1)]">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between py-5 px-6 border-b border-[#E5E5E5]">
+        {/* Modal Header - 80px height */}
+        <div className="flex items-center justify-between h-20 px-6 border-b border-[#E5E5E5]">
           <div className="flex flex-col gap-1">
             <h2 className="text-[18px] font-semibold text-[#18181B]">
               Import MCP Servers

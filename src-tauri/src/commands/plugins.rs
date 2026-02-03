@@ -502,8 +502,9 @@ pub fn detect_plugin_skills(imported_plugin_skills: Vec<String>) -> Result<Vec<D
                 // Check if this skill is from an enabled plugin
                 let _is_enabled = enabled_plugins.get(&plugin_id).copied().unwrap_or(false);
 
-                // Check if already imported
-                let is_imported = imported_set.contains(&plugin_id);
+                // Check if already imported (using pluginId|skillName combination for precise tracking)
+                let import_key = format!("{}|{}", plugin_id, skill_name);
+                let is_imported = imported_set.contains(&import_key);
 
                 detected_skills.push(DetectedPluginSkill {
                     plugin_id: plugin_id.clone(),
@@ -630,11 +631,12 @@ pub fn detect_plugin_mcps(imported_plugin_mcps: Vec<String>) -> Result<Vec<Detec
             // Check if this MCP is from an enabled plugin
             let _is_enabled = enabled_plugins.get(&plugin_id).copied().unwrap_or(false);
 
-            // Check if already imported
-            let is_imported = imported_set.contains(&plugin_id);
-
             // Process each MCP server in the file
             for (mcp_name, mcp_config) in mcp_file.servers {
+                // Check if already imported (using pluginId|mcpName combination for precise tracking)
+                let import_key = format!("{}|{}", plugin_id, mcp_name);
+                let is_imported = imported_set.contains(&import_key);
+
                 detected_mcps.push(DetectedPluginMcp {
                     plugin_id: plugin_id.clone(),
                     plugin_name: display_name.clone(),
@@ -691,10 +693,12 @@ pub fn import_plugin_skills(items: Vec<PluginImportItem>, dest_dir: String) -> R
 
         // Check if destination already exists
         if dest_skill_path.exists() || dest_skill_path.symlink_metadata().is_ok() {
-            errors.push(format!(
-                "Skill '{}' already exists in destination",
-                item.item_name
-            ));
+            // Still track as imported since it exists (was imported before)
+            // Use pluginId|skillName combination for precise tracking
+            let import_key = format!("{}|{}", item.plugin_id, item.item_name);
+            if !imported_plugin_ids.contains(&import_key) {
+                imported_plugin_ids.push(import_key);
+            }
             continue;
         }
 
@@ -721,9 +725,10 @@ pub fn import_plugin_skills(items: Vec<PluginImportItem>, dest_dir: String) -> R
             }
         }
 
-        // Track imported plugin ID
-        if !imported_plugin_ids.contains(&item.plugin_id) {
-            imported_plugin_ids.push(item.plugin_id.clone());
+        // Track imported skill using pluginId|skillName combination
+        let import_key = format!("{}|{}", item.plugin_id, item.item_name);
+        if !imported_plugin_ids.contains(&import_key) {
+            imported_plugin_ids.push(import_key);
         }
     }
 
@@ -791,10 +796,12 @@ pub fn import_plugin_mcps(items: Vec<PluginImportItem>, dest_dir: String) -> Res
 
         // Check if destination already exists
         if dest_mcp_path.exists() {
-            errors.push(format!(
-                "MCP config '{}' already exists in destination",
-                item.item_name
-            ));
+            // Still track as imported since it exists (was imported before)
+            // Use pluginId|mcpName combination for precise tracking
+            let import_key = format!("{}|{}", item.plugin_id, item.item_name);
+            if !imported_plugin_ids.contains(&import_key) {
+                imported_plugin_ids.push(import_key);
+            }
             continue;
         }
 
@@ -828,9 +835,10 @@ pub fn import_plugin_mcps(items: Vec<PluginImportItem>, dest_dir: String) -> Res
             continue;
         }
 
-        // Track imported plugin ID
-        if !imported_plugin_ids.contains(&item.plugin_id) {
-            imported_plugin_ids.push(item.plugin_id.clone());
+        // Track imported MCP using pluginId|mcpName combination
+        let import_key = format!("{}|{}", item.plugin_id, item.item_name);
+        if !imported_plugin_ids.contains(&import_key) {
+            imported_plugin_ids.push(import_key);
         }
     }
 
