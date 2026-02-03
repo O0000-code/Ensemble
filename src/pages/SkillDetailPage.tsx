@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Code,
@@ -146,6 +146,8 @@ export function SkillDetailPage() {
     getFilteredSkills,
     getEnabledCount,
     getSelectedSkill,
+    usageStats,
+    loadUsageStats,
   } = useSkillsStore();
 
   const { scenes } = useScenesStore();
@@ -158,10 +160,20 @@ export function SkillDetailPage() {
   const selectedSkill = getSelectedSkill();
 
   // Get scenes that use the selected skill
-  const usedInScenes = React.useMemo(() => {
+  const usedInScenes = useMemo(() => {
     if (!skillId) return [];
     return scenes.filter((scene) => scene.skillIds.includes(skillId));
   }, [scenes, skillId]);
+
+  // Calculate scenes count for selected skill
+  const scenesCount = usedInScenes.length;
+
+  // Get usage stats for selected skill
+  const selectedSkillUsage = useMemo(() => {
+    if (!selectedSkill) return null;
+    // Try by id first, then by name
+    return usageStats[selectedSkill.id] || usageStats[selectedSkill.name] || null;
+  }, [selectedSkill, usageStats]);
 
   // Detail header icon ref
   const detailIconRef = useRef<HTMLDivElement>(null);
@@ -179,6 +191,11 @@ export function SkillDetailPage() {
       selectSkill(skillId);
     }
   }, [skillId, selectSkill]);
+
+  // Load usage stats on mount
+  useEffect(() => {
+    loadUsageStats();
+  }, [loadUsageStats]);
 
   const handleSearchChange = (value: string) => {
     setFilter({ search: value });
@@ -301,9 +318,10 @@ export function SkillDetailPage() {
     <div className="flex flex-col gap-7">
       {/* Info Section */}
       <div className="flex gap-8">
-        <InfoItem label="Created" value={formatDate(selectedSkill.createdAt)} />
-        <InfoItem label="Usage" value={`${selectedSkill.usageCount} times`} />
-        <InfoItem label="Last Used" value={formatRelativeTime(selectedSkill.lastUsed)} />
+        <InfoItem label="Installed" value={formatDate(selectedSkill.installedAt || selectedSkill.createdAt)} />
+        <InfoItem label="Usage" value={`${(selectedSkillUsage?.call_count ?? 0).toLocaleString()} calls`} />
+        <InfoItem label="Last Used" value={formatRelativeTime(selectedSkillUsage?.last_used ?? undefined)} />
+        <InfoItem label="Scenes" value={`${scenesCount} ${scenesCount === 1 ? 'scene' : 'scenes'}`} />
       </div>
 
       {/* Category & Tags Section */}

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { McpServer, FetchMcpToolsResult } from '@/types';
+import { McpServer, FetchMcpToolsResult, McpUsage, UsageStats } from '@/types';
 import { useSettingsStore } from './settingsStore';
 import { isTauri, safeInvoke } from '@/utils/tauri';
 
@@ -18,6 +18,10 @@ interface McpsState {
   fetchingToolsForMcp: string | null;  // Track which MCP is currently fetching tools
   fetchToolsSuccessMcp: string | null; // Track which MCP just succeeded fetching tools
 
+  // Usage stats
+  usageStats: Record<string, McpUsage>;
+  isLoadingUsage: boolean;
+
   // Actions
   setMcpServers: (servers: McpServer[]) => void;
   selectMcp: (id: string | null) => void;
@@ -29,6 +33,7 @@ interface McpsState {
   updateMcpIcon: (id: string, icon: string) => Promise<void>;
   updateMcpScope: (id: string, scope: 'global' | 'project') => Promise<void>;
   fetchMcpTools: (mcpId: string, showSuccessAnimation?: boolean) => Promise<FetchMcpToolsResult>;
+  loadUsageStats: () => Promise<void>;
 
   // Computed getters (via selectors)
   getFilteredMcps: () => McpServer[];
@@ -48,6 +53,8 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
   error: null,
   fetchingToolsForMcp: null,
   fetchToolsSuccessMcp: null,
+  usageStats: {},
+  isLoadingUsage: false,
 
   setMcpServers: (servers) => set({ mcpServers: servers }),
 
@@ -274,6 +281,33 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
       console.error('Failed to fetch MCP tools:', error);
       set({ fetchingToolsForMcp: null, error: message });
       return { success: false, tools: [], error: message };
+    }
+  },
+
+  loadUsageStats: async () => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('McpsStore: Cannot load usage stats in browser mode');
+      return;
+    }
+
+    const { claudeConfigDir } = useSettingsStore.getState();
+    set({ isLoadingUsage: true });
+
+    try {
+      const stats = await safeInvoke<UsageStats>('scan_usage_stats', {
+        claudeDir: claudeConfigDir || '~/.claude',
+      });
+
+      if (stats && stats.mcps) {
+        set({ usageStats: stats.mcps, isLoadingUsage: false });
+      } else {
+        set({ usageStats: {}, isLoadingUsage: false });
+      }
+    } catch (error) {
+      const message = typeof error === 'string' ? error : String(error);
+      console.error('Failed to load MCP usage stats:', error);
+      set({ usageStats: {}, isLoadingUsage: false, error: message });
     }
   },
 

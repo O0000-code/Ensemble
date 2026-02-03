@@ -14,6 +14,7 @@ export interface Skill {
   lastUsed?: string;
   usageCount: number;
   icon?: string;  // 自定义图标名称
+  installedAt?: string;  // 安装时间 (文件创建时间)
 }
 
 export interface McpServer {
@@ -33,6 +34,7 @@ export interface McpServer {
   lastUsed?: string;
   usageCount: number;
   icon?: string;  // 自定义图标名称
+  installedAt?: string;  // 安装时间 (文件创建时间)
 }
 
 export interface Tool {
@@ -183,4 +185,30 @@ export interface FetchMcpToolsResult {
     name: string;
     version?: string;
   };
+}
+
+// ==================== 使用统计类型 ====================
+
+/**
+ * Skill 使用统计
+ */
+export interface SkillUsage {
+  call_count: number;
+  last_used: string | null;
+}
+
+/**
+ * MCP 使用统计
+ */
+export interface McpUsage {
+  total_calls: number;
+  last_used: string | null;
+}
+
+/**
+ * 完整使用统计数据
+ */
+export interface UsageStats {
+  skills: Record<string, SkillUsage>;
+  mcps: Record<string, McpUsage>;
 }

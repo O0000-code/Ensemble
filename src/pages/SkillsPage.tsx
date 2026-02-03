@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Sparkles,
   Loader2,
@@ -189,6 +189,8 @@ export function SkillsPage() {
     error,
     clearError,
     loadSkills,
+    usageStats,
+    loadUsageStats,
   } = useSkillsStore();
 
   const { categories, tags: appTags, addTag: addGlobalTag } = useAppStore();
@@ -204,6 +206,11 @@ export function SkillsPage() {
 
   const filteredSkills = getFilteredSkills();
   const enabledCount = getEnabledCount();
+
+  // Load usage stats on mount
+  useEffect(() => {
+    loadUsageStats();
+  }, [loadUsageStats]);
 
   // Category dropdown options - only use categories from appStore
   const categoryOptions = useMemo(() => {
@@ -230,6 +237,16 @@ export function SkillsPage() {
     if (!selectedSkillId) return [];
     return scenes.filter((scene) => scene.skillIds.includes(selectedSkillId));
   }, [scenes, selectedSkillId]);
+
+  // Calculate scenes count for selected skill
+  const scenesCount = usedInScenes.length;
+
+  // Get usage stats for selected skill
+  const selectedSkillUsage = useMemo(() => {
+    if (!selectedSkill) return null;
+    // Try by id first, then by name
+    return usageStats[selectedSkill.id] || usageStats[selectedSkill.name] || null;
+  }, [selectedSkill, usageStats]);
 
   // Tag input state
   const [tagInputValue, setTagInputValue] = useState('');
@@ -397,9 +414,10 @@ export function SkillsPage() {
     <div className="flex flex-col gap-7">
       {/* Info Section */}
       <div className="flex gap-8">
-        <InfoItem label="Created" value={formatDate(selectedSkill.createdAt)} />
-        <InfoItem label="Usage" value={`${selectedSkill.usageCount} times`} />
-        <InfoItem label="Last Used" value={formatRelativeTime(selectedSkill.lastUsed)} />
+        <InfoItem label="Installed" value={formatDate(selectedSkill.installedAt || selectedSkill.createdAt)} />
+        <InfoItem label="Usage" value={`${(selectedSkillUsage?.call_count ?? 0).toLocaleString()} calls`} />
+        <InfoItem label="Last Used" value={formatRelativeTime(selectedSkillUsage?.last_used ?? undefined)} />
+        <InfoItem label="Scenes" value={`${scenesCount} ${scenesCount === 1 ? 'scene' : 'scenes'}`} />
       </div>
 
       {/* Category & Tags Section */}

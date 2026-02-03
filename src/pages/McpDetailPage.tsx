@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Database,
@@ -57,6 +57,21 @@ const getToolIcon = (toolName: string): React.ElementType => {
   return Wrench;
 };
 
+// Format date for display (e.g., "Jan 15, 2025")
+const formatDate = (dateString?: string): string => {
+  if (!dateString) return 'Unknown';
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch {
+    return 'Unknown';
+  }
+};
+
 /**
  * McpDetailPage - MCP Server Detail Page
  *
@@ -84,6 +99,8 @@ export const McpDetailPage: React.FC = () => {
     getFilteredMcps,
     getEnabledCount,
     getSelectedMcp,
+    usageStats,
+    loadUsageStats,
   } = useMcpsStore();
 
   const { scenes } = useScenesStore();
@@ -96,7 +113,7 @@ export const McpDetailPage: React.FC = () => {
   const selectedMcp = getSelectedMcp();
 
   // Get scenes that use the selected MCP
-  const usedInScenes = React.useMemo(() => {
+  const usedInScenes = useMemo(() => {
     if (!id) return [];
     return scenes.filter((scene) => scene.mcpIds.includes(id));
   }, [scenes, id]);
@@ -107,6 +124,11 @@ export const McpDetailPage: React.FC = () => {
       selectMcp(id);
     }
   }, [id, selectMcp]);
+
+  // Load usage stats on mount
+  useEffect(() => {
+    loadUsageStats();
+  }, [loadUsageStats]);
 
   const handleSearchChange = (value: string) => {
     setFilter({ search: value });
@@ -228,27 +250,35 @@ export const McpDetailPage: React.FC = () => {
     <div className="flex flex-col gap-7">
       {/* Info Section */}
       <section className="flex flex-col gap-4">
-        {/* Info Row - MCP specific: Tools, Total Calls, Avg Response */}
+        {/* Info Row - MCP specific: Installed, Tools, Total Calls, Scenes */}
         <div className="flex gap-8">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-1 flex-col gap-1">
+            <span className="text-[11px] font-medium text-[#71717A]">Installed</span>
+            <span className="text-[13px] font-medium text-[#18181B]">
+              {formatDate(selectedMcp?.installedAt)}
+            </span>
+          </div>
+          <div className="flex flex-1 flex-col gap-1">
             <span className="text-[11px] font-medium text-[#71717A]">Tools</span>
             <span className="text-[13px] font-medium text-[#18181B]">
               {selectedMcp?.providedTools?.length ?? 0} available
             </span>
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-1 flex-col gap-1">
             <span className="text-[11px] font-medium text-[#71717A]">
               Total Calls
             </span>
             <span className="text-[13px] font-medium text-[#18181B]">
-              {selectedMcp?.usageCount?.toLocaleString()}
+              {(usageStats[selectedMcp?.id ?? '']?.total_calls ?? usageStats[selectedMcp?.name ?? '']?.total_calls ?? 0).toLocaleString()} calls
             </span>
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-1 flex-col gap-1">
             <span className="text-[11px] font-medium text-[#71717A]">
-              Avg Response
+              Scenes
             </span>
-            <span className="text-[13px] font-medium text-[#18181B]">12ms</span>
+            <span className="text-[13px] font-medium text-[#18181B]">
+              {usedInScenes.length} {usedInScenes.length === 1 ? 'scene' : 'scenes'}
+            </span>
           </div>
         </div>
 

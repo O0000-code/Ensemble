@@ -102,6 +102,15 @@ fn parse_mcp_file(
     // Get metadata if exists
     let metadata = metadata_map.get(&id);
 
+    // Get installed_at from file creation time
+    let installed_at = fs::metadata(file_path)
+        .ok()
+        .and_then(|m| m.created().ok())
+        .map(|t| {
+            let datetime: chrono::DateTime<chrono::Utc> = t.into();
+            datetime.to_rfc3339()
+        });
+
     let mcp = McpServer {
         id: id.clone(),
         name: config.name,
@@ -118,6 +127,7 @@ fn parse_mcp_file(
         created_at: chrono::Utc::now().to_rfc3339(),
         last_used: metadata.and_then(|m| m.last_used.clone()),
         usage_count: metadata.map(|m| m.usage_count).unwrap_or(0),
+        installed_at,
     };
 
     Ok(mcp)
