@@ -1,4 +1,18 @@
+use std::process::Command;
 use tauri_plugin_dialog::DialogExt;
+
+/// Reveal a path in Finder (macOS)
+#[tauri::command]
+pub fn reveal_in_finder(path: String) -> Result<(), String> {
+    // Use 'open -R' to reveal the file/folder in Finder
+    // -R flag reveals the item in Finder instead of opening it
+    Command::new("open")
+        .arg("-R")
+        .arg(&path)
+        .spawn()
+        .map_err(|e| format!("Failed to open Finder: {}", e))?;
+    Ok(())
+}
 
 /// Open folder selection dialog
 #[tauri::command]

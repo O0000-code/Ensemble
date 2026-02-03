@@ -123,7 +123,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center">
         {/* Meta Info - hidden in compact mode */}
         {scene && (
           <div

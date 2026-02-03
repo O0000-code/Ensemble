@@ -13,10 +13,11 @@ import {
   Info,
 } from 'lucide-react';
 import { ListDetailLayout } from '@/components/layout/ListDetailLayout';
-import { SearchInput, Badge, EmptyState, IconPicker, ICON_MAP } from '@/components/common';
+import { SearchInput, Badge, Button, EmptyState, IconPicker, ICON_MAP } from '@/components/common';
 import { McpItemCompact } from '@/components/mcps/McpItem';
 import { useMcpsStore } from '@/stores/mcpsStore';
 import { useScenesStore } from '@/stores/scenesStore';
+import { safeInvoke } from '@/utils/tauri';
 import { Tool } from '@/types';
 
 // Icon mapping for MCP servers
@@ -168,6 +169,13 @@ export const McpDetailPage: React.FC = () => {
   // Handle icon picker close
   const handleIconPickerClose = () => {
     setIconPickerState({ isOpen: false, mcpId: null, triggerRef: null });
+  };
+
+  // Handle open in Finder
+  const handleOpenInFinder = async () => {
+    if (selectedMcp?.sourcePath) {
+      await safeInvoke('reveal_in_finder', { path: selectedMcp.sourcePath });
+    }
   };
 
   // List Panel Header
@@ -325,24 +333,43 @@ export const McpDetailPage: React.FC = () => {
         <h3 className="text-sm font-semibold text-[#18181B]">
           Source Configuration
         </h3>
-        <div className="flex flex-col gap-3 rounded-lg border border-[#E5E5E5] p-4">
+        <div className="overflow-hidden rounded-lg border border-[#E5E5E5]">
           {/* Config Path */}
-          <div className="flex items-center gap-2.5">
-            <span className="text-xs font-medium text-[#71717A]">Config Path</span>
-            <span className="text-xs font-normal text-[#18181B]">
+          <div className="flex items-center gap-3 px-3.5 py-3 border-b border-[#E5E5E5]">
+            <span className="w-24 flex-shrink-0 text-xs font-medium text-[#71717A]">
+              Config Path
+            </span>
+            <span className="flex-1 font-mono text-xs text-[#18181B] truncate">
               {selectedMcp.sourcePath}
             </span>
           </div>
           {/* Install Scope */}
-          <div className="flex items-center gap-2.5">
-            <span className="text-xs font-medium text-[#71717A]">
+          <div className="flex items-center gap-3 px-3.5 py-3">
+            <span className="w-24 flex-shrink-0 text-xs font-medium text-[#71717A]">
               Install Scope
             </span>
-            <span className="rounded bg-[#EEF2FF] px-2 py-1 text-[10px] font-semibold text-[#4F46E5]">
-              User
-            </span>
+            <div className="flex-1">
+              {selectedMcp.installSource === 'plugin' ? (
+                <span className="rounded bg-[#EFF6FF] px-2 py-0.5 text-[11px] font-medium text-[#3B82F6]">
+                  Plugin
+                </span>
+              ) : (
+                <span className="rounded bg-[#EEF2FF] px-2 py-1 text-[10px] font-semibold text-[#4F46E5]">
+                  User
+                </span>
+              )}
+            </div>
           </div>
         </div>
+        {/* Open in Finder Button */}
+        <Button
+          variant="secondary"
+          size="small"
+          icon={<FolderOpen />}
+          onClick={handleOpenInFinder}
+        >
+          Open in Finder
+        </Button>
       </section>
 
       {/* Used in Scenes Section */}
