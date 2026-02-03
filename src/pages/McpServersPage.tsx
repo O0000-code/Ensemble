@@ -491,7 +491,7 @@ export const McpServersPage: React.FC = () => {
               Install Scope
             </span>
             <ScopeSelector
-              value={selectedMcp.scope as 'global' | 'project'}
+              value={selectedMcp.scope}
               onChange={async (scope) => {
                 await updateMcpScope(selectedMcp.id, scope);
               }}

@@ -570,7 +570,7 @@ export function SkillsPage() {
             label="Scope"
             value={
               <ScopeSelector
-                value={selectedSkill.scope as 'global' | 'project'}
+                value={selectedSkill.scope}
                 onChange={async (scope) => {
                   await updateSkillScope(selectedSkill.id, scope);
                 }}

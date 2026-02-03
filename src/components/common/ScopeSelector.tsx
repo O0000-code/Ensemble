@@ -8,7 +8,7 @@ import { Globe, FolderGit2, ChevronDown, Check, Loader2 } from 'lucide-react';
 export type Scope = 'global' | 'project';
 
 export interface ScopeSelectorProps {
-  value: Scope;
+  value: Scope | 'user' | undefined;  // 'user' from backend maps to 'global'
   onChange: (scope: Scope) => Promise<void>;
   disabled?: boolean;
   className?: string;
@@ -54,11 +54,16 @@ export function ScopeSelector({
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const currentScope = scopeConfig[value];
+  // Normalize scope value: 'user' from backend maps to 'global' in UI
+  // Default to 'project' if value is undefined or unknown
+  const normalizedValue: Scope =
+    value === 'global' || value === 'user' ? 'global' : 'project';
+
+  const currentScope = scopeConfig[normalizedValue];
   const CurrentIcon = currentScope.icon;
 
   const handleSelect = async (scope: Scope) => {
-    if (scope === value || isUpdating) return;
+    if (scope === normalizedValue || isUpdating) return;
 
     setIsUpdating(true);
     setIsOpen(false);
@@ -109,7 +114,7 @@ export function ScopeSelector({
               {(Object.keys(scopeConfig) as Scope[]).map((scope) => {
                 const config = scopeConfig[scope];
                 const Icon = config.icon;
-                const isSelected = scope === value;
+                const isSelected = scope === normalizedValue;
 
                 return (
                   <button

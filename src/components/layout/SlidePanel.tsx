@@ -101,10 +101,10 @@ export function SlidePanel({
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-md border border-[#E5E5E5] text-[#71717A] transition-colors hover:bg-[#FAFAFA] hover:text-[#18181B]"
+                className="flex h-8 w-8 items-center justify-center rounded-md border border-[#E5E5E5] hover:bg-[#F4F4F5] transition-colors"
                 aria-label="Close panel"
               >
-                <X className="h-4 w-4" />
+                <X className="h-[18px] w-[18px] text-[#71717A]" />
               </button>
             )}
           </div>
