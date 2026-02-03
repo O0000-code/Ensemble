@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Skill } from '../types';
+import type { Skill, SkillUsage, UsageStats } from '../types';
 import { useSettingsStore } from './settingsStore';
 import { useAppStore } from './appStore';
 import { isTauri, safeInvoke } from '@/utils/tauri';
@@ -48,6 +48,10 @@ interface SkillsState {
   // Classification state
   isClassifying: boolean;
 
+  // Usage stats
+  usageStats: Record<string, SkillUsage>;
+  isLoadingUsage: boolean;
+
   // Actions
   loadSkills: () => Promise<void>;
   setSkills: (skills: Skill[]) => void;
@@ -61,6 +65,7 @@ interface SkillsState {
   clearFilter: () => void;
   clearError: () => void;
   autoClassify: () => Promise<void>;
+  loadUsageStats: () => Promise<void>;
 
   // Computed
   getFilteredSkills: () => Skill[];
@@ -86,6 +91,8 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
   isLoading: false,
   isClassifying: false,
   error: null,
+  usageStats: {},
+  isLoadingUsage: false,
 
   // Actions
   loadSkills: async () => {
@@ -384,6 +391,33 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
     } catch (error) {
       const message = typeof error === 'string' ? error : String(error);
       set({ error: message, isClassifying: false });
+    }
+  },
+
+  loadUsageStats: async () => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('SkillsStore: Cannot load usage stats in browser mode');
+      return;
+    }
+
+    const { claudeConfigDir } = useSettingsStore.getState();
+    set({ isLoadingUsage: true });
+
+    try {
+      const stats = await safeInvoke<UsageStats>('scan_usage_stats', {
+        claudeDir: claudeConfigDir || '~/.claude',
+      });
+
+      if (stats && stats.skills) {
+        set({ usageStats: stats.skills, isLoadingUsage: false });
+      } else {
+        set({ usageStats: {}, isLoadingUsage: false });
+      }
+    } catch (error) {
+      const message = typeof error === 'string' ? error : String(error);
+      console.error('Failed to load usage stats:', error);
+      set({ usageStats: {}, isLoadingUsage: false, error: message });
     }
   },
 

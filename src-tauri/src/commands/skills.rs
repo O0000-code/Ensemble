@@ -128,6 +128,15 @@ fn parse_skill_file(
     let name = frontmatter.name.clone().unwrap_or(skill_name);
     let invocation = frontmatter.name.clone();
 
+    // Get installed_at from directory creation time
+    let installed_at = fs::metadata(skill_dir)
+        .ok()
+        .and_then(|m| m.created().ok())
+        .map(|t| {
+            let datetime: chrono::DateTime<chrono::Utc> = t.into();
+            datetime.to_rfc3339()
+        });
+
     let skill = Skill {
         id: id.clone(),
         name,
@@ -144,6 +153,7 @@ fn parse_skill_file(
         last_used: metadata.and_then(|m| m.last_used.clone()),
         usage_count: metadata.map(|m| m.usage_count).unwrap_or(0),
         icon: metadata.and_then(|m| m.icon.clone()),
+        installed_at,
     };
 
     Ok(skill)

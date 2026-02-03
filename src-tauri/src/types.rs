@@ -19,6 +19,7 @@ pub struct Skill {
     pub last_used: Option<String>,
     pub usage_count: u32,
     pub icon: Option<String>,
+    pub installed_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -39,6 +40,7 @@ pub struct McpServer {
     pub created_at: String,
     pub last_used: Option<String>,
     pub usage_count: u32,
+    pub installed_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
