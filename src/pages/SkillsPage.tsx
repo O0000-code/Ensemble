@@ -366,7 +366,7 @@ export function SkillsPage() {
 
   // Detail Header content
   const detailHeader = selectedSkill && (
-    <div className="flex items-center gap-3">
+    <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
       {/* Icon - Clickable for IconPicker */}
       <div
         ref={detailIconRef}
@@ -379,7 +379,7 @@ export function SkillsPage() {
       </div>
 
       {/* Title & Description */}
-      <div className="flex flex-col gap-0.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <h2 className="text-base font-semibold text-[#18181B]">
           {selectedSkill.name}
         </h2>
@@ -387,7 +387,7 @@ export function SkillsPage() {
           const { firstSentence } = parseDescription(selectedSkill.description);
           return (
             <p
-              className="max-w-[500px] truncate text-xs font-normal text-[#71717A]"
+              className="w-full truncate text-xs font-normal text-[#71717A]"
               title={selectedSkill.description}
             >
               {firstSentence}
@@ -525,19 +525,14 @@ export function SkillsPage() {
       <div className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold text-[#18181B]">Instructions</h3>
         <div className="rounded-lg border border-[#E5E5E5] bg-white p-4">
-          {(() => {
-            const { remaining } = parseDescription(selectedSkill.description);
-            return (
-              <div className="whitespace-pre-wrap text-xs font-normal leading-relaxed text-[#52525B]">
-                {remaining && (
-                  <p className="mb-3 rounded bg-[#FAFAFA] p-2 text-[#71717A] italic">
-                    {remaining}
-                  </p>
-                )}
-                <p>{selectedSkill.instructions}</p>
-              </div>
-            );
-          })()}
+          <div className="whitespace-pre-wrap text-xs font-normal leading-relaxed text-[#52525B]">
+            {selectedSkill.description && (
+              <p className="mb-3 rounded bg-[#FAFAFA] p-2 text-[#71717A]">
+                {selectedSkill.description}
+              </p>
+            )}
+            <p>{selectedSkill.instructions}</p>
+          </div>
         </div>
       </div>
 

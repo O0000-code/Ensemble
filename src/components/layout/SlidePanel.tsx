@@ -87,16 +87,16 @@ export function SlidePanel({
       {/* Header - 56px height, draggable for window movement */}
       {(header || showCloseButton) && (
         <div
-          className="flex h-14 flex-shrink-0 items-center justify-between border-b border-[#E5E5E5] px-7"
+          className="flex h-14 flex-shrink-0 items-center gap-4 border-b border-[#E5E5E5] px-7"
           onMouseDown={startDrag}
         >
           {/* Left side - Header content */}
-          <div className="pointer-events-none flex items-center [&_button]:pointer-events-auto [&_input]:pointer-events-auto [&_a]:pointer-events-auto [&_[role='button']]:pointer-events-auto [&_[role='switch']]:pointer-events-auto">
+          <div className="pointer-events-none flex min-w-0 flex-1 items-center [&_button]:pointer-events-auto [&_input]:pointer-events-auto [&_a]:pointer-events-auto [&_[role='button']]:pointer-events-auto [&_[role='switch']]:pointer-events-auto">
             {header}
           </div>
 
           {/* Right side - Actions and Close button */}
-          <div className="pointer-events-none flex items-center gap-2 [&_button]:pointer-events-auto [&_input]:pointer-events-auto [&_a]:pointer-events-auto [&_[role='button']]:pointer-events-auto [&_[role='switch']]:pointer-events-auto">
+          <div className="pointer-events-none flex flex-shrink-0 items-center gap-2 [&_button]:pointer-events-auto [&_input]:pointer-events-auto [&_a]:pointer-events-auto [&_[role='button']]:pointer-events-auto [&_[role='switch']]:pointer-events-auto">
             {headerRight}
             {showCloseButton && (
               <button
