@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Check, Loader2 } from 'lucide-react';
 
 // ============================================================================
@@ -49,6 +50,8 @@ export function ScopeSelector({
 }: ScopeSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Normalize scope value: 'user' from backend maps to 'global' in UI
   // Default to 'project' if value is undefined or unknown
@@ -56,6 +59,17 @@ export function ScopeSelector({
     value === 'global' || value === 'user' ? 'global' : 'project';
 
   const currentScope = scopeConfig[normalizedValue];
+
+  // Calculate dropdown position when opening
+  useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 4, // 4px gap
+        left: rect.left,
+      });
+    }
+  }, [isOpen]);
 
   const handleSelect = async (scope: Scope) => {
     if (scope === normalizedValue || isUpdating) return;
@@ -74,6 +88,7 @@ export function ScopeSelector({
     <div className={`relative ${className}`}>
       {/* Trigger Button */}
       <button
+        ref={triggerRef}
         onClick={() => !disabled && !isUpdating && setIsOpen(!isOpen)}
         disabled={disabled || isUpdating}
         className={`
@@ -93,17 +108,23 @@ export function ScopeSelector({
         )}
       </button>
 
-      {/* Dropdown Menu */}
-      {isOpen && (
+      {/* Dropdown Menu - Rendered via Portal to avoid clipping */}
+      {isOpen && createPortal(
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-10"
+            className="fixed inset-0 z-[100]"
             onClick={() => setIsOpen(false)}
           />
 
           {/* Menu */}
-          <div className="absolute top-full left-0 mt-1 w-[220px] bg-white rounded-lg border border-[#E5E5E5] shadow-[0_4px_12px_rgba(0,0,0,0.06)] z-20">
+          <div
+            className="fixed w-[220px] bg-white rounded-lg border border-[#E5E5E5] shadow-[0_4px_12px_rgba(0,0,0,0.06)] z-[101]"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+            }}
+          >
             {(Object.keys(scopeConfig) as Scope[]).map((scope, index) => {
               const config = scopeConfig[scope];
               const isSelected = scope === normalizedValue;
@@ -149,7 +170,8 @@ export function ScopeSelector({
               );
             })}
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );

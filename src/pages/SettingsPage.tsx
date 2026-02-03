@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { ShieldCheck, Github, BookOpen, FileText, ChevronDown } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { ShieldCheck, Github, BookOpen, FileText, ChevronDown, Check } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import Toggle from '@/components/common/Toggle';
 import Modal from '@/components/common/Modal';
@@ -77,6 +78,115 @@ function ActionButton({ onClick, children }: ActionButtonProps) {
     >
       {children}
     </button>
+  );
+}
+
+// ============================================================================
+// Custom Select Component (ScopeSelector style)
+// ============================================================================
+
+interface CustomSelectOption {
+  value: string;
+  label: string;
+}
+
+interface CustomSelectProps {
+  value: string;
+  options: CustomSelectOption[];
+  onChange: (value: string) => void;
+  className?: string;
+}
+
+function CustomSelect({ value, options, onChange, className = '' }: CustomSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const selectedOption = options.find(opt => opt.value === value);
+
+  // Calculate dropdown position when opening
+  useEffect(() => {
+    if (isOpen && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, [isOpen]);
+
+  const handleSelect = (optionValue: string) => {
+    onChange(optionValue);
+    setIsOpen(false);
+  };
+
+  return (
+    <div className={`relative ${className}`}>
+      {/* Trigger Button */}
+      <button
+        ref={triggerRef}
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between gap-2 h-9 px-3 min-w-[140px] rounded-md border border-[#E5E5E5] hover:bg-[#FAFAFA] transition-colors cursor-pointer"
+      >
+        <span className="text-[13px] text-[#18181B]">{selectedOption?.label || value}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-[#A1A1AA] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Dropdown Menu - Rendered via Portal */}
+      {isOpen && createPortal(
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-[100]"
+            onClick={() => setIsOpen(false)}
+          />
+
+          {/* Menu */}
+          <div
+            className="fixed bg-white rounded-lg border border-[#E5E5E5] shadow-[0_4px_12px_rgba(0,0,0,0.06)] z-[101]"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              minWidth: dropdownPosition.width,
+            }}
+          >
+            {options.map((option, index) => {
+              const isSelected = option.value === value;
+              const isFirst = index === 0;
+              const isLast = index === options.length - 1;
+
+              const roundedClass = isFirst
+                ? 'rounded-t-md'
+                : isLast
+                ? 'rounded-b-md'
+                : '';
+
+              return (
+                <button
+                  key={option.value}
+                  onClick={() => handleSelect(option.value)}
+                  className={`
+                    w-full flex items-center justify-between gap-2.5 py-2.5 px-3 text-left
+                    transition-colors cursor-pointer
+                    ${roundedClass}
+                    ${isSelected ? 'bg-[#F4F4F5]' : 'hover:bg-[#FAFAFA]'}
+                  `}
+                >
+                  <span className={`text-[13px] text-[#18181B] ${isSelected ? 'font-semibold' : 'font-medium'}`}>
+                    {option.label}
+                  </span>
+                  {isSelected && (
+                    <Check className="w-3.5 h-3.5 text-[#18181B]" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </>,
+        document.body
+      )}
+    </div>
   );
 }
 
@@ -374,19 +484,16 @@ export function SettingsPage() {
                     Select your preferred terminal app
                   </span>
                 </div>
-                <div className="relative">
-                  <select
-                    value={terminalApp}
-                    onChange={(e) => setTerminalApp(e.target.value)}
-                    className="h-9 appearance-none rounded-md border border-[#E5E5E5] pl-3 pr-8 text-[13px] text-[#18181B] focus:border-[#18181B] focus:outline-none cursor-pointer"
-                  >
-                    <option value="Terminal">Terminal.app</option>
-                    <option value="iTerm">iTerm2</option>
-                    <option value="Warp">Warp</option>
-                    <option value="Alacritty">Alacritty</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#A1A1AA] pointer-events-none" />
-                </div>
+                <CustomSelect
+                  value={terminalApp}
+                  onChange={setTerminalApp}
+                  options={[
+                    { value: 'Terminal', label: 'Terminal.app' },
+                    { value: 'iTerm', label: 'iTerm2' },
+                    { value: 'Warp', label: 'Warp' },
+                    { value: 'Alacritty', label: 'Alacritty' },
+                  ]}
+                />
               </Row>
 
               {/* Warp Open Mode - Only shown when Warp is selected */}
@@ -400,17 +507,14 @@ export function SettingsPage() {
                       How to open new sessions in Warp
                     </span>
                   </div>
-                  <div className="relative">
-                    <select
-                      value={warpOpenMode}
-                      onChange={(e) => setWarpOpenMode(e.target.value as 'tab' | 'window')}
-                      className="h-9 appearance-none rounded-md border border-[#E5E5E5] pl-3 pr-8 text-[13px] text-[#18181B] focus:border-[#18181B] focus:outline-none cursor-pointer"
-                    >
-                      <option value="window">New Window</option>
-                      <option value="tab">New Tab</option>
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#A1A1AA] pointer-events-none" />
-                  </div>
+                  <CustomSelect
+                    value={warpOpenMode}
+                    onChange={(value) => setWarpOpenMode(value as 'tab' | 'window')}
+                    options={[
+                      { value: 'window', label: 'New Window' },
+                      { value: 'tab', label: 'New Tab' },
+                    ]}
+                  />
                 </Row>
               )}
 
