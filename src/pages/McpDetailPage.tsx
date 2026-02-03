@@ -10,6 +10,7 @@ import {
   Pencil,
   Layers,
   Wrench,
+  Info,
 } from 'lucide-react';
 import { ListDetailLayout } from '@/components/layout/ListDetailLayout';
 import { SearchInput, Badge, EmptyState, IconPicker, ICON_MAP } from '@/components/common';
@@ -265,13 +266,24 @@ export const McpDetailPage: React.FC = () => {
       <section className="flex flex-col gap-4">
         <h3 className="text-sm font-semibold text-[#18181B]">Provided Tools</h3>
         <div className="overflow-hidden rounded-lg border border-[#E5E5E5]">
-          {selectedMcp?.providedTools?.map((tool, index) => (
-            <ToolItem
-              key={tool.name}
-              tool={tool}
-              isLast={index === (selectedMcp?.providedTools?.length ?? 0) - 1}
-            />
-          ))}
+          {selectedMcp?.providedTools && selectedMcp.providedTools.length > 0 ? (
+            selectedMcp.providedTools.map((tool, index) => (
+              <ToolItem
+                key={tool.name}
+                tool={tool}
+                isLast={index === selectedMcp.providedTools!.length - 1}
+              />
+            ))
+          ) : (
+            <div className="flex items-center gap-3 px-3.5 py-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#F4F4F5]">
+                <Info className="h-3.5 w-3.5 text-[#A1A1AA]" />
+              </div>
+              <span className="text-[13px] text-[#71717A]">
+                No tools detected yet
+              </span>
+            </div>
+          )}
         </div>
       </section>
 
