@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Server,
   Database,
@@ -15,6 +15,8 @@ import {
   Download,
   Loader2,
   Info,
+  RefreshCw,
+  Check,
 } from 'lucide-react';
 import { PageHeader, SlidePanel } from '@/components/layout';
 import { Badge, EmptyState, IconPicker, ICON_MAP, Dropdown, ScopeSelector, Button } from '@/components/common';
@@ -135,6 +137,9 @@ export const McpServersPage: React.FC = () => {
     getFilteredMcps,
     getEnabledCount,
     loadMcps,
+    fetchMcpTools,
+    fetchingToolsForMcp,
+    fetchToolsSuccessMcp,
   } = useMcpsStore();
 
   const { categories, tags: appTags, addTag: addGlobalTag } = useAppStore();
@@ -157,6 +162,18 @@ export const McpServersPage: React.FC = () => {
     () => mcpServers.find((mcp) => mcp.id === selectedMcpId) || null,
     [mcpServers, selectedMcpId]
   );
+
+  // Auto-fetch tools when selecting an MCP that has no tools yet
+  // Pass false for showSuccessAnimation since this is automatic, not user-initiated
+  useEffect(() => {
+    if (
+      selectedMcp &&
+      (!selectedMcp.providedTools || selectedMcp.providedTools.length === 0) &&
+      fetchingToolsForMcp !== selectedMcp.id
+    ) {
+      fetchMcpTools(selectedMcp.id, false);
+    }
+  }, [selectedMcpId, selectedMcp, fetchMcpTools, fetchingToolsForMcp]);
 
   // Category dropdown options - only use categories from appStore
   const categoryOptions = useMemo(() => {
@@ -461,7 +478,27 @@ export const McpServersPage: React.FC = () => {
 
       {/* Provided Tools Section (MCP-specific) */}
       <section className="flex flex-col gap-4">
-        <h3 className="text-sm font-semibold text-[#18181B]">Provided Tools</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-[#18181B]">Provided Tools</h3>
+          <button
+            onClick={() => fetchMcpTools(selectedMcp.id)}
+            disabled={fetchingToolsForMcp === selectedMcp.id}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-all duration-200 disabled:opacity-50 ${
+              fetchToolsSuccessMcp === selectedMcp.id
+                ? 'text-[#22C55E] bg-[#F0FDF4]'
+                : 'text-[#71717A] hover:text-[#18181B] hover:bg-[#F4F4F5]'
+            }`}
+          >
+            {fetchingToolsForMcp === selectedMcp.id ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : fetchToolsSuccessMcp === selectedMcp.id ? (
+              <Check className="h-3.5 w-3.5 animate-[scale-in_0.2s_ease-out]" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            {fetchToolsSuccessMcp === selectedMcp.id ? 'Done' : 'Fetch'}
+          </button>
+        </div>
         <div className="overflow-hidden rounded-lg border border-[#E5E5E5]">
           {selectedMcp?.providedTools && selectedMcp.providedTools.length > 0 ? (
             selectedMcp.providedTools.map((tool, index) => (
@@ -477,7 +514,7 @@ export const McpServersPage: React.FC = () => {
                 <Info className="h-3.5 w-3.5 text-[#A1A1AA]" />
               </div>
               <span className="text-[13px] text-[#71717A]">
-                No tools detected yet
+                No tools detected yet. Click Fetch to discover available tools.
               </span>
             </div>
           )}

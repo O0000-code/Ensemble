@@ -1,6 +1,11 @@
-use crate::types::{McpConfigFile, McpMetadata, McpServer};
+use crate::types::{FetchMcpToolsResult, McpConfigFile, McpMetadata, McpServer, McpServerRuntimeInfo, McpToolInfo};
 use crate::utils::{expand_path, get_data_file_path};
+use std::collections::HashMap;
 use std::fs;
+use std::process::Stdio;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::process::Command as TokioCommand;
+use tokio::time::{timeout, Duration};
 use walkdir::WalkDir;
 
 /// Scan MCPs directory and return list of MCP servers
@@ -128,6 +133,235 @@ fn load_mcp_metadata() -> std::collections::HashMap<String, McpMetadata> {
         }
     }
     std::collections::HashMap::new()
+}
+
+// ============================================================================
+// MCP Tools Fetch Implementation
+// ============================================================================
+
+/// JSON-RPC response structure for MCP communication
+#[derive(Debug, serde::Deserialize)]
+struct JsonRpcResponse {
+    #[allow(dead_code)]
+    jsonrpc: String,
+    #[allow(dead_code)]
+    id: Option<u64>,
+    result: Option<serde_json::Value>,
+    error: Option<JsonRpcError>,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct JsonRpcError {
+    #[allow(dead_code)]
+    code: i64,
+    message: String,
+}
+
+/// Fetch tools from an MCP server by starting it and querying tools/list
+///
+/// This command:
+/// 1. Starts the MCP server as a child process
+/// 2. Sends initialize request via JSON-RPC
+/// 3. Receives initialize response and sends initialized notification
+/// 4. Sends tools/list request
+/// 5. Parses and returns the tools
+/// 6. Gracefully shuts down the server
+#[tauri::command]
+pub async fn fetch_mcp_tools(
+    command: String,
+    args: Vec<String>,
+    env: Option<HashMap<String, String>>,
+    timeout_ms: Option<u64>,
+) -> Result<FetchMcpToolsResult, String> {
+    let timeout_duration = Duration::from_millis(timeout_ms.unwrap_or(15000));
+
+    // Build the command
+    let mut cmd = TokioCommand::new(&command);
+    cmd.args(&args)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .kill_on_drop(true); // Ensure process is terminated when dropped
+
+    // Inherit current environment and add custom env vars
+    cmd.envs(std::env::vars());
+    if let Some(env_vars) = &env {
+        for (key, value) in env_vars {
+            cmd.env(key, value);
+        }
+    }
+
+    // Spawn the child process
+    let mut child = match cmd.spawn() {
+        Ok(c) => c,
+        Err(e) => {
+            return Ok(FetchMcpToolsResult {
+                success: false,
+                tools: vec![],
+                error: Some(format!("Failed to spawn MCP server '{}': {}", command, e)),
+                server_info: None,
+            });
+        }
+    };
+
+    let stdin = match child.stdin.take() {
+        Some(s) => s,
+        None => {
+            let _ = child.kill().await;
+            return Ok(FetchMcpToolsResult {
+                success: false,
+                tools: vec![],
+                error: Some("Failed to get stdin of MCP server process".to_string()),
+                server_info: None,
+            });
+        }
+    };
+
+    let stdout = match child.stdout.take() {
+        Some(s) => s,
+        None => {
+            let _ = child.kill().await;
+            return Ok(FetchMcpToolsResult {
+                success: false,
+                tools: vec![],
+                error: Some("Failed to get stdout of MCP server process".to_string()),
+                server_info: None,
+            });
+        }
+    };
+
+    let mut stdin = stdin;
+    let mut reader = BufReader::new(stdout).lines();
+
+    // Wrap the entire communication in a timeout
+    let result = timeout(timeout_duration, async {
+        // Step 1: Send initialize request
+        let init_request = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {
+                    "roots": { "listChanged": true }
+                },
+                "clientInfo": {
+                    "name": "Ensemble",
+                    "version": "1.0.0"
+                }
+            }
+        });
+
+        let init_json = serde_json::to_string(&init_request)
+            .map_err(|e| format!("Failed to serialize initialize request: {}", e))?;
+
+        stdin.write_all(init_json.as_bytes()).await
+            .map_err(|e| format!("Failed to write initialize request: {}", e))?;
+        stdin.write_all(b"\n").await
+            .map_err(|e| format!("Failed to write newline: {}", e))?;
+        stdin.flush().await
+            .map_err(|e| format!("Failed to flush: {}", e))?;
+
+        // Step 2: Read initialize response
+        let init_response_line = reader.next_line().await
+            .map_err(|e| format!("Failed to read initialize response: {}", e))?
+            .ok_or("No response from MCP server")?;
+
+        let init_response: JsonRpcResponse = serde_json::from_str(&init_response_line)
+            .map_err(|e| format!("Failed to parse initialize response: {} (raw: {})", e, init_response_line))?;
+
+        if let Some(error) = init_response.error {
+            return Err(format!("Initialize error: {}", error.message));
+        }
+
+        // Parse server info from initialize response
+        let server_info = init_response.result
+            .as_ref()
+            .and_then(|r| r.get("serverInfo"))
+            .map(|si| McpServerRuntimeInfo {
+                name: si.get("name").and_then(|n| n.as_str()).unwrap_or("unknown").to_string(),
+                version: si.get("version").and_then(|v| v.as_str()).map(|s| s.to_string()),
+            });
+
+        // Step 3: Send initialized notification (no id, it's a notification)
+        let initialized_notification = serde_json::json!({
+            "jsonrpc": "2.0",
+            "method": "notifications/initialized"
+        });
+
+        let notif_json = serde_json::to_string(&initialized_notification)
+            .map_err(|e| format!("Failed to serialize initialized notification: {}", e))?;
+
+        stdin.write_all(notif_json.as_bytes()).await
+            .map_err(|e| format!("Failed to write initialized notification: {}", e))?;
+        stdin.write_all(b"\n").await
+            .map_err(|e| format!("Failed to write newline: {}", e))?;
+        stdin.flush().await
+            .map_err(|e| format!("Failed to flush: {}", e))?;
+
+        // Step 4: Send tools/list request
+        let tools_request = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/list",
+            "params": {}
+        });
+
+        let tools_json = serde_json::to_string(&tools_request)
+            .map_err(|e| format!("Failed to serialize tools/list request: {}", e))?;
+
+        stdin.write_all(tools_json.as_bytes()).await
+            .map_err(|e| format!("Failed to write tools/list request: {}", e))?;
+        stdin.write_all(b"\n").await
+            .map_err(|e| format!("Failed to write newline: {}", e))?;
+        stdin.flush().await
+            .map_err(|e| format!("Failed to flush: {}", e))?;
+
+        // Step 5: Read tools/list response
+        let tools_response_line = reader.next_line().await
+            .map_err(|e| format!("Failed to read tools/list response: {}", e))?
+            .ok_or("No tools response from MCP server")?;
+
+        let tools_response: JsonRpcResponse = serde_json::from_str(&tools_response_line)
+            .map_err(|e| format!("Failed to parse tools/list response: {} (raw: {})", e, tools_response_line))?;
+
+        if let Some(error) = tools_response.error {
+            return Err(format!("tools/list error: {}", error.message));
+        }
+
+        // Step 6: Parse tools from response
+        let tools: Vec<McpToolInfo> = tools_response.result
+            .and_then(|r| r.get("tools").cloned())
+            .and_then(|t| serde_json::from_value(t).ok())
+            .unwrap_or_default();
+
+        Ok::<_, String>(FetchMcpToolsResult {
+            success: true,
+            tools,
+            error: None,
+            server_info,
+        })
+    })
+    .await;
+
+    // Ensure child process is terminated
+    let _ = child.kill().await;
+
+    match result {
+        Ok(Ok(result)) => Ok(result),
+        Ok(Err(e)) => Ok(FetchMcpToolsResult {
+            success: false,
+            tools: vec![],
+            error: Some(e),
+            server_info: None,
+        }),
+        Err(_) => Ok(FetchMcpToolsResult {
+            success: false,
+            tools: vec![],
+            error: Some(format!("Operation timed out after {}ms", timeout_ms.unwrap_or(15000))),
+            server_info: None,
+        }),
+    }
 }
 
 /// Delete an MCP by moving it to the trash directory

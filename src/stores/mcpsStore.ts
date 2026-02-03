@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { McpServer } from '@/types';
+import { McpServer, FetchMcpToolsResult } from '@/types';
 import { useSettingsStore } from './settingsStore';
 import { isTauri, safeInvoke } from '@/utils/tauri';
 
@@ -15,6 +15,8 @@ interface McpsState {
   filter: McpsFilter;
   isLoading: boolean;
   error: string | null;
+  fetchingToolsForMcp: string | null;  // Track which MCP is currently fetching tools
+  fetchToolsSuccessMcp: string | null; // Track which MCP just succeeded fetching tools
 
   // Actions
   setMcpServers: (servers: McpServer[]) => void;
@@ -26,6 +28,7 @@ interface McpsState {
   updateMcpTags: (id: string, tags: string[]) => Promise<void>;
   updateMcpIcon: (id: string, icon: string) => Promise<void>;
   updateMcpScope: (id: string, scope: 'global' | 'project') => Promise<void>;
+  fetchMcpTools: (mcpId: string, showSuccessAnimation?: boolean) => Promise<FetchMcpToolsResult>;
 
   // Computed getters (via selectors)
   getFilteredMcps: () => McpServer[];
@@ -43,6 +46,8 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
   },
   isLoading: false,
   error: null,
+  fetchingToolsForMcp: null,
+  fetchToolsSuccessMcp: null,
 
   setMcpServers: (servers) => set({ mcpServers: servers }),
 
@@ -208,6 +213,67 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
         ),
         error: message,
       }));
+    }
+  },
+
+  fetchMcpTools: async (mcpId, showSuccessAnimation = true) => {
+    // Skip in non-Tauri environment
+    if (!isTauri()) {
+      console.warn('McpsStore: Cannot fetch MCP tools in browser mode');
+      return { success: false, tools: [], error: 'Not in Tauri environment' };
+    }
+
+    const mcp = get().mcpServers.find((m) => m.id === mcpId);
+    if (!mcp) {
+      return { success: false, tools: [], error: 'MCP not found' };
+    }
+
+    // Set loading state
+    set({ fetchingToolsForMcp: mcpId });
+
+    try {
+      const result = await safeInvoke<FetchMcpToolsResult>('fetch_mcp_tools', {
+        command: mcp.command,
+        args: mcp.args,
+        env: mcp.env || null,
+        timeoutMs: 15000,
+      });
+
+      if (result && result.success) {
+        // Update MCP's providedTools with the fetched tools
+        set((state) => ({
+          mcpServers: state.mcpServers.map((m) =>
+            m.id === mcpId
+              ? {
+                  ...m,
+                  providedTools: result.tools.map((t) => ({
+                    name: t.name,
+                    description: t.description || '',
+                  })),
+                }
+              : m
+          ),
+          fetchingToolsForMcp: null,
+          // Only show success animation if explicitly requested (manual click)
+          fetchToolsSuccessMcp: showSuccessAnimation ? mcpId : null,
+        }));
+        // Clear success state after 2 seconds (only if showing animation)
+        if (showSuccessAnimation) {
+          setTimeout(() => {
+            set({ fetchToolsSuccessMcp: null });
+          }, 2000);
+        }
+        return result;
+      } else {
+        // Clear loading state on failure
+        set({ fetchingToolsForMcp: null, error: result?.error || 'Failed to fetch tools' });
+        return result || { success: false, tools: [], error: 'No result returned' };
+      }
+    } catch (error) {
+      const message = typeof error === 'string' ? error : String(error);
+      console.error('Failed to fetch MCP tools:', error);
+      set({ fetchingToolsForMcp: null, error: message });
+      return { success: false, tools: [], error: message };
     }
   },
 

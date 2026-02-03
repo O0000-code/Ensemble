@@ -303,3 +303,34 @@ pub struct ClaudeProjectConfig {
     #[serde(flatten)]
     pub other: HashMap<String, serde_json::Value>,
 }
+
+// ============================================================================
+// MCP Tools Fetch types (for runtime tool discovery)
+// ============================================================================
+
+/// MCP Tool detailed information (fetched from MCP Server at runtime)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct McpToolInfo {
+    pub name: String,
+    pub description: Option<String>,
+    pub input_schema: Option<serde_json::Value>,
+}
+
+/// Result of fetching MCP tools from a server
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FetchMcpToolsResult {
+    pub success: bool,
+    pub tools: Vec<McpToolInfo>,
+    pub error: Option<String>,
+    pub server_info: Option<McpServerRuntimeInfo>,
+}
+
+/// MCP Server runtime information (from initialize response)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct McpServerRuntimeInfo {
+    pub name: String,
+    pub version: Option<String>,
+}

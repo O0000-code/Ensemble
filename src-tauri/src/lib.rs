@@ -48,6 +48,7 @@ pub fn run() {
             mcps::get_mcp,
             mcps::update_mcp_metadata,
             mcps::delete_mcp,
+            mcps::fetch_mcp_tools,
             // Symlink commands
             symlink::create_symlink,
             symlink::remove_symlink,

@@ -159,3 +159,28 @@ export interface BackupInfo {
     mcps: number;
   };
 }
+
+// ==================== MCP Tools Fetch 类型 ====================
+
+/**
+ * MCP Tool 详细信息
+ * 从 MCP Server 运行时获取
+ */
+export interface McpToolInfo {
+  name: string;
+  description?: string;
+  inputSchema?: Record<string, unknown>;
+}
+
+/**
+ * 获取 MCP Tools 的结果
+ */
+export interface FetchMcpToolsResult {
+  success: boolean;
+  tools: McpToolInfo[];
+  error?: string;
+  serverInfo?: {
+    name: string;
+    version?: string;
+  };
+}

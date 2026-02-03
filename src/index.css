@@ -103,3 +103,18 @@ body {
 .icon-picker-scroll::-webkit-scrollbar-thumb:hover {
   background: #A1A1AA;
 }
+
+/* Success check animation */
+@keyframes scale-in {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
