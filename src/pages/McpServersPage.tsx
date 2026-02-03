@@ -713,6 +713,7 @@ export const McpServersPage: React.FC = () => {
                 onDelete={handleDelete}
                 onClick={handleMcpClick}
                 onIconClick={(ref) => handleIconClick(mcp.id, ref)}
+                usageCount={usageStats[mcp.id]?.total_calls ?? usageStats[mcp.name]?.total_calls}
               />
             ))}
           </div>
