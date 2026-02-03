@@ -42,10 +42,12 @@ pub fn run() {
             skills::scan_skills,
             skills::get_skill,
             skills::update_skill_metadata,
+            skills::delete_skill,
             // MCPs commands
             mcps::scan_mcps,
             mcps::get_mcp,
             mcps::update_mcp_metadata,
+            mcps::delete_mcp,
             // Symlink commands
             symlink::create_symlink,
             symlink::remove_symlink,
@@ -93,9 +95,12 @@ pub fn run() {
             // Import commands
             import::detect_existing_config,
             import::backup_before_import,
+            import::backup_claude_json,
             import::import_existing_config,
             import::update_skill_scope,
             import::update_mcp_scope,
+            import::remove_imported_skills,
+            import::remove_imported_mcps,
             import::install_quick_action,
             import::launch_claude_for_folder,
             import::get_launch_args,

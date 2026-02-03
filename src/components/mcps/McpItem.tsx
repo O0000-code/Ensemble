@@ -1,6 +1,5 @@
-import React, { useRef } from 'react';
-import { Database, FolderOpen, MessageSquare, Code, Globe, FileText, Zap } from 'lucide-react';
-import Toggle from '../common/Toggle';
+import React, { useRef, useState, useEffect } from 'react';
+import { Database, FolderOpen, MessageSquare, Code, Globe, FileText, Zap, MoreHorizontal, Trash2 } from 'lucide-react';
 import { ICON_MAP } from '@/components/common';
 import { McpServer } from '@/types';
 
@@ -45,22 +44,30 @@ const formatUsageCount = (count: number): string => {
 interface McpItemProps {
   mcp: McpServer;
   selected?: boolean;
-  onToggle: (id: string) => void;
+  onDelete?: (id: string) => void;
   onClick?: (id: string) => void;
   onIconClick?: (triggerRef: React.RefObject<HTMLDivElement>) => void;
 }
 
-export const McpItem: React.FC<McpItemProps> = ({ mcp, selected = false, onToggle, onClick, onIconClick }) => {
+export const McpItem: React.FC<McpItemProps> = ({ mcp, selected = false, onDelete, onClick, onIconClick }) => {
   const iconRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [showMenu, setShowMenu] = useState(false);
   const IconComponent = getMcpIcon(mcp);
 
   const handleClick = () => {
     onClick?.(mcp.id);
   };
 
-  const handleToggleClick = (e: React.MouseEvent) => {
+  const handleMoreClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onToggle(mcp.id);
+    setShowMenu(!showMenu);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    onDelete?.(mcp.id);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -69,6 +76,22 @@ export const McpItem: React.FC<McpItemProps> = ({ mcp, selected = false, onToggl
       onClick?.(mcp.id);
     }
   };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
 
   return (
     <div
@@ -140,21 +163,25 @@ export const McpItem: React.FC<McpItemProps> = ({ mcp, selected = false, onToggl
           </div>
         </div>
 
-        {/* Status Badge */}
-        {mcp.enabled && (
-          <div className="flex items-center gap-1 rounded bg-[#DCFCE7] px-2.5 py-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#16A34A]" />
-            <span className="text-[10px] font-semibold text-[#16A34A]">Active</span>
-          </div>
-        )}
-
-        {/* Toggle */}
-        <div onClick={handleToggleClick}>
-          <Toggle
-            checked={mcp.enabled}
-            onChange={() => onToggle(mcp.id)}
-            size="medium"
-          />
+        {/* More Menu */}
+        <div ref={menuRef} className="relative">
+          <button
+            onClick={handleMoreClick}
+            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-[#F4F4F5] transition-colors"
+          >
+            <MoreHorizontal className="w-4 h-4 text-[#71717A]" />
+          </button>
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg border border-[#E5E5E5] shadow-lg z-50 py-1">
+              <button
+                onClick={handleDelete}
+                className="w-full px-3 py-2 text-left text-sm text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-2 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -169,7 +196,7 @@ export const McpItem: React.FC<McpItemProps> = ({ mcp, selected = false, onToggl
 interface McpItemCompactProps {
   mcp: McpServer;
   selected?: boolean;
-  onToggle: (id: string) => void;
+  onDelete?: (id: string) => void;
   onClick?: (id: string) => void;
   onIconClick?: (triggerRef: React.RefObject<HTMLDivElement>) => void;
 }
@@ -177,20 +204,28 @@ interface McpItemCompactProps {
 export const McpItemCompact: React.FC<McpItemCompactProps> = ({
   mcp,
   selected = false,
-  onToggle,
+  onDelete,
   onClick,
   onIconClick,
 }) => {
   const iconRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [showMenu, setShowMenu] = useState(false);
   const IconComponent = getMcpIcon(mcp);
 
   const handleClick = () => {
     onClick?.(mcp.id);
   };
 
-  const handleToggleClick = (e: React.MouseEvent) => {
+  const handleMoreClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onToggle(mcp.id);
+    setShowMenu(!showMenu);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    onDelete?.(mcp.id);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -199,6 +234,22 @@ export const McpItemCompact: React.FC<McpItemCompactProps> = ({
       onClick?.(mcp.id);
     }
   };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
 
   return (
     <div
@@ -259,13 +310,25 @@ export const McpItemCompact: React.FC<McpItemCompactProps> = ({
         </span>
       </div>
 
-      {/* Toggle */}
-      <div onClick={handleToggleClick} className="shrink-0">
-        <Toggle
-          checked={mcp.enabled}
-          onChange={() => onToggle(mcp.id)}
-          size="small"
-        />
+      {/* More Menu */}
+      <div ref={menuRef} className="shrink-0 relative">
+        <button
+          onClick={handleMoreClick}
+          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#F4F4F5] transition-colors"
+        >
+          <MoreHorizontal className="w-3.5 h-3.5 text-[#71717A]" />
+        </button>
+        {showMenu && (
+          <div className="absolute right-0 top-full mt-1 w-28 bg-white rounded-lg border border-[#E5E5E5] shadow-lg z-50 py-1">
+            <button
+              onClick={handleDelete}
+              className="w-full px-2.5 py-1.5 text-left text-xs text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-1.5 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -22,8 +22,8 @@ export function CategoryPage() {
 
   // Get data from stores
   const { categories } = useAppStore();
-  const { skills, toggleSkill, autoClassify, isClassifying } = useSkillsStore();
-  const { mcpServers, toggleMcp } = useMcpsStore();
+  const { skills, deleteSkill, autoClassify, isClassifying } = useSkillsStore();
+  const { mcpServers, deleteMcp } = useMcpsStore();
 
   // Find current category
   const category = categories.find((c) => c.id === categoryId);
@@ -71,12 +71,12 @@ export function CategoryPage() {
     navigate(`/mcp-servers/${encodeURIComponent(mcpId)}`);
   };
 
-  const handleSkillToggle = (skillId: string, _enabled: boolean) => {
-    toggleSkill(skillId);
+  const handleSkillDelete = (skillId: string) => {
+    deleteSkill(skillId);
   };
 
-  const handleMcpToggle = (mcpId: string) => {
-    toggleMcp(mcpId);
+  const handleMcpDelete = (mcpId: string) => {
+    deleteMcp(mcpId);
   };
 
   const handleAutoClassify = async () => {
@@ -160,7 +160,7 @@ export function CategoryPage() {
                       skill={skill}
                       variant="full"
                       onClick={() => handleSkillClick(skill.id)}
-                      onToggle={(enabled) => handleSkillToggle(skill.id, enabled)}
+                      onDelete={() => handleSkillDelete(skill.id)}
                     />
                   ))}
                 </div>
@@ -184,7 +184,7 @@ export function CategoryPage() {
                       key={mcp.id}
                       mcp={mcp}
                       onClick={() => handleMcpClick(mcp.id)}
-                      onToggle={() => handleMcpToggle(mcp.id)}
+                      onDelete={() => handleMcpDelete(mcp.id)}
                     />
                   ))}
                 </div>

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   Code,
   Github,
@@ -13,9 +13,10 @@ import {
   TestTube,
   Layers,
   Wand2,
+  MoreHorizontal,
+  Trash2,
 } from 'lucide-react';
 import type { Skill } from '../../types';
-import Toggle from '../common/Toggle';
 import Badge from '../common/Badge';
 import { ICON_MAP } from '@/components/common';
 
@@ -28,7 +29,7 @@ export interface SkillItemProps {
   variant?: 'full' | 'compact';
   selected?: boolean;
   onClick?: () => void;
-  onToggle?: (enabled: boolean) => void;
+  onDelete?: () => void;
   onIconClick?: (triggerRef: React.RefObject<HTMLDivElement>) => void;
 }
 
@@ -102,20 +103,41 @@ export function SkillItem({
   variant = 'full',
   selected = false,
   onClick,
-  onToggle,
+  onDelete,
   onIconClick,
 }: SkillItemProps) {
   const iconRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [showMenu, setShowMenu] = useState(false);
   const Icon = getSkillIcon(skill);
   const categoryColor = categoryColors[skill.category] || '#71717A';
 
-  const handleToggleClick = (e: React.MouseEvent) => {
+  const handleMoreClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setShowMenu(!showMenu);
   };
 
-  const handleToggleChange = (checked: boolean) => {
-    onToggle?.(checked);
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    onDelete?.();
   };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
 
   // Full variant - for main list
   if (variant === 'full') {
@@ -168,13 +190,25 @@ export function SkillItem({
           ))}
         </div>
 
-        {/* Toggle */}
-        <div onClick={handleToggleClick} className="flex-shrink-0">
-          <Toggle
-            checked={skill.enabled}
-            onChange={handleToggleChange}
-            size="medium"
-          />
+        {/* More Menu */}
+        <div ref={menuRef} className="flex-shrink-0 relative">
+          <button
+            onClick={handleMoreClick}
+            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-[#F4F4F5] transition-colors"
+          >
+            <MoreHorizontal className="w-4 h-4 text-[#71717A]" />
+          </button>
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg border border-[#E5E5E5] shadow-lg z-50 py-1">
+              <button
+                onClick={handleDelete}
+                className="w-full px-3 py-2 text-left text-sm text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-2 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -226,13 +260,25 @@ export function SkillItem({
         </span>
       </div>
 
-      {/* Toggle */}
-      <div onClick={handleToggleClick} className="flex-shrink-0">
-        <Toggle
-          checked={skill.enabled}
-          onChange={handleToggleChange}
-          size="small"
-        />
+      {/* More Menu */}
+      <div ref={menuRef} className="flex-shrink-0 relative">
+        <button
+          onClick={handleMoreClick}
+          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#F4F4F5] transition-colors"
+        >
+          <MoreHorizontal className="w-3.5 h-3.5 text-[#71717A]" />
+        </button>
+        {showMenu && (
+          <div className="absolute right-0 top-full mt-1 w-28 bg-white rounded-lg border border-[#E5E5E5] shadow-lg z-50 py-1">
+            <button
+              onClick={handleDelete}
+              className="w-full px-2.5 py-1.5 text-left text-xs text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-1.5 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -129,3 +129,56 @@ fn load_mcp_metadata() -> std::collections::HashMap<String, McpMetadata> {
     }
     std::collections::HashMap::new()
 }
+
+/// Delete an MCP by moving it to the trash directory
+///
+/// Instead of permanently deleting, moves the MCP config to ~/.ensemble/trash/mcps/
+/// for easy recovery if needed.
+#[tauri::command]
+pub fn delete_mcp(mcp_id: String, ensemble_dir: String) -> Result<(), String> {
+    let ensemble_path = expand_path(&ensemble_dir);
+    let mcp_path = std::path::Path::new(&mcp_id);
+
+    // Verify the MCP config file exists
+    if !mcp_path.exists() {
+        return Err(format!("MCP config not found: {}", mcp_id));
+    }
+
+    // Get MCP name from path
+    let mcp_name = mcp_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or("Invalid MCP path")?;
+
+    // Create trash directory
+    let trash_dir = ensemble_path.join("trash").join("mcps");
+    fs::create_dir_all(&trash_dir)
+        .map_err(|e| format!("Failed to create trash directory: {}", e))?;
+
+    // Generate unique destination path (add timestamp if exists)
+    let mut dest_path = trash_dir.join(mcp_name);
+    if dest_path.exists() {
+        let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+        let name_without_ext = mcp_name.trim_end_matches(".json");
+        dest_path = trash_dir.join(format!("{}_{}.json", name_without_ext, timestamp));
+    }
+
+    // Move MCP config to trash
+    fs::rename(mcp_path, &dest_path)
+        .map_err(|e| format!("Failed to move MCP to trash: {}", e))?;
+
+    // Remove metadata for this MCP
+    let data_path = get_data_file_path();
+    if data_path.exists() {
+        if let Ok(content) = fs::read_to_string(&data_path) {
+            if let Ok(mut app_data) = serde_json::from_str::<crate::types::AppData>(&content) {
+                app_data.mcp_metadata.remove(&mcp_id);
+                if let Ok(json) = serde_json::to_string_pretty(&app_data) {
+                    let _ = fs::write(&data_path, json);
+                }
+            }
+        }
+    }
+
+    Ok(())
+}

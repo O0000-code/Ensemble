@@ -23,8 +23,8 @@ export function TagPage() {
 
   // Get data from stores
   const { tags } = useAppStore();
-  const { skills, toggleSkill, autoClassify, isClassifying } = useSkillsStore();
-  const { mcpServers, toggleMcp } = useMcpsStore();
+  const { skills, deleteSkill, autoClassify, isClassifying } = useSkillsStore();
+  const { mcpServers, deleteMcp } = useMcpsStore();
 
   // Find the current tag
   const tag = tags.find((t) => t.id === tagId);
@@ -62,16 +62,16 @@ export function TagPage() {
     navigate(`/skills/${encodeURIComponent(skillId)}`);
   };
 
-  const handleSkillToggle = (skillId: string) => {
-    toggleSkill(skillId);
+  const handleSkillDelete = (skillId: string) => {
+    deleteSkill(skillId);
   };
 
   const handleMcpClick = (mcpId: string) => {
     navigate(`/mcp-servers/${encodeURIComponent(mcpId)}`);
   };
 
-  const handleMcpToggle = (mcpId: string) => {
-    toggleMcp(mcpId);
+  const handleMcpDelete = (mcpId: string) => {
+    deleteMcp(mcpId);
   };
 
   const handleAutoClassify = async () => {
@@ -137,7 +137,7 @@ export function TagPage() {
                     skill={skill}
                     variant="full"
                     onClick={() => handleSkillClick(skill.id)}
-                    onToggle={() => handleSkillToggle(skill.id)}
+                    onDelete={() => handleSkillDelete(skill.id)}
                   />
                 ))}
               </div>
@@ -161,7 +161,7 @@ export function TagPage() {
                     key={mcp.id}
                     mcp={mcp}
                     onClick={() => handleMcpClick(mcp.id)}
-                    onToggle={() => handleMcpToggle(mcp.id)}
+                    onDelete={() => handleMcpDelete(mcp.id)}
                   />
                 ))}
               </div>

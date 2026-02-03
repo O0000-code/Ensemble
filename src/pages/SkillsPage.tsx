@@ -18,6 +18,7 @@ import {
   Plus,
   Copy,
   FolderOpen,
+  Download,
 } from 'lucide-react';
 import { PageHeader, SlidePanel } from '@/components/layout';
 import Badge from '@/components/common/Badge';
@@ -25,8 +26,10 @@ import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
 import { IconPicker, ICON_MAP, Dropdown, ScopeSelector } from '@/components/common';
 import { SkillListItem } from '@/components/skills/SkillListItem';
+import { ImportSkillsModal } from '@/components/modals';
 import { useSkillsStore } from '@/stores/skillsStore';
 import { useAppStore } from '@/stores/appStore';
+import { useImportStore } from '@/stores/importStore';
 import type { Skill } from '@/types';
 
 // ============================================================================
@@ -173,7 +176,7 @@ export function SkillsPage() {
     skills,
     filter,
     setFilter,
-    toggleSkill,
+    deleteSkill,
     updateSkillIcon,
     updateSkillCategory,
     updateSkillTags,
@@ -184,9 +187,17 @@ export function SkillsPage() {
     isClassifying,
     error,
     clearError,
+    loadSkills,
   } = useSkillsStore();
 
   const { categories, tags: appTags, addTag: addGlobalTag } = useAppStore();
+
+  const {
+    isSkillsModalOpen,
+    openSkillsModal,
+    closeSkillsModal,
+    isDetectingSkills
+  } = useImportStore();
 
   const filteredSkills = getFilteredSkills();
   const enabledCount = getEnabledCount();
@@ -250,8 +261,8 @@ export function SkillsPage() {
     setSelectedSkillId(null);
   };
 
-  const handleToggle = (skillId: string, _enabled?: boolean) => {
-    toggleSkill(skillId);
+  const handleDelete = (skillId: string) => {
+    deleteSkill(skillId);
   };
 
   const handleAutoClassify = async () => {
@@ -619,15 +630,26 @@ export function SkillsPage() {
         onSearchChange={handleSearchChange}
         searchPlaceholder="Search skills..."
         actions={
-          <Button
-            variant="secondary"
-            size="small"
-            icon={isClassifying ? <Loader2 className="animate-spin" /> : <Sparkles />}
-            onClick={handleAutoClassify}
-            disabled={isClassifying}
-          >
-            {isClassifying ? 'Classifying...' : 'Auto Classify'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="small"
+              icon={isDetectingSkills ? <Loader2 className="animate-spin" /> : <Download />}
+              onClick={() => openSkillsModal()}
+              disabled={isDetectingSkills}
+            >
+              {isDetectingSkills ? 'Detecting...' : 'Import'}
+            </Button>
+            <Button
+              variant="secondary"
+              size="small"
+              icon={isClassifying ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              onClick={handleAutoClassify}
+              disabled={isClassifying}
+            >
+              {isClassifying ? 'Classifying...' : 'Auto Classify'}
+            </Button>
+          </div>
         }
       />
 
@@ -672,7 +694,7 @@ export function SkillsPage() {
                 compact={!!selectedSkillId}
                 selected={skill.id === selectedSkillId}
                 onClick={() => handleSkillClick(skill.id)}
-                onToggle={(enabled) => handleToggle(skill.id, enabled)}
+                onDelete={() => handleDelete(skill.id)}
                 onIconClick={(ref) => handleIconClick(skill.id, ref)}
               />
             ))}
@@ -701,6 +723,16 @@ export function SkillsPage() {
           onClose={handleIconPickerClose}
         />
       )}
+
+      {/* Import Skills Modal */}
+      <ImportSkillsModal
+        isOpen={isSkillsModalOpen}
+        onClose={closeSkillsModal}
+        onImportComplete={() => {
+          // 刷新 skills 列表
+          loadSkills();
+        }}
+      />
     </div>
   );
 }

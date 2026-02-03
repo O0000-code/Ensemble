@@ -226,6 +226,8 @@ pub struct DetectedMcp {
     pub command: String,
     pub args: Vec<String>,
     pub env: Option<HashMap<String, String>>,
+    pub scope: Option<String>,        // "user" or "local"
+    pub project_path: Option<String>, // Project path when scope is "local"
 }
 
 /// Import item
@@ -262,4 +264,42 @@ pub struct BackupInfo {
     pub path: String,
     pub timestamp: String,
     pub items_count: ImportedCounts,
+}
+
+// ============================================================================
+// ~/.claude.json types (correct MCP configuration location)
+// ============================================================================
+
+/// ~/.claude.json complete structure
+///
+/// MCP configuration is stored here, NOT in ~/.claude/settings.json
+/// - User scope: top-level `mcpServers` field
+/// - Local scope: `projects[path].mcpServers` field
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeJson {
+    /// User-level MCP configuration (Global scope - available in all projects)
+    #[serde(default)]
+    pub mcp_servers: HashMap<String, ClaudeMcpConfig>,
+
+    /// Project-level configurations (Local scope - only in specific projects)
+    #[serde(default)]
+    pub projects: HashMap<String, ClaudeProjectConfig>,
+
+    /// Preserve all other fields (numStartups, theme, tipsHistory, etc.)
+    #[serde(flatten)]
+    pub other: HashMap<String, serde_json::Value>,
+}
+
+/// Project-level configuration within ~/.claude.json
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeProjectConfig {
+    /// Local-scope MCP configuration for this project
+    #[serde(default)]
+    pub mcp_servers: HashMap<String, ClaudeMcpConfig>,
+
+    /// Preserve all other project fields
+    #[serde(flatten)]
+    pub other: HashMap<String, serde_json::Value>,
 }

@@ -12,12 +12,16 @@ import {
   Pencil,
   X,
   Plus,
+  Download,
+  Loader2,
 } from 'lucide-react';
 import { PageHeader, SlidePanel } from '@/components/layout';
-import { Badge, EmptyState, IconPicker, ICON_MAP, Dropdown, ScopeSelector } from '@/components/common';
+import { Badge, EmptyState, IconPicker, ICON_MAP, Dropdown, ScopeSelector, Button } from '@/components/common';
 import { McpListItem } from '@/components/mcps/McpListItem';
+import { ImportMcpModal } from '@/components/modals/ImportMcpModal';
 import { useMcpsStore } from '@/stores/mcpsStore';
 import { useAppStore } from '@/stores/appStore';
+import { useImportStore } from '@/stores/importStore';
 import type { Tool } from '@/types';
 
 // ============================================================================
@@ -122,16 +126,24 @@ export const McpServersPage: React.FC = () => {
     mcpServers,
     filter,
     setFilter,
-    toggleMcp,
+    deleteMcp,
     updateMcpIcon,
     updateMcpCategory,
     updateMcpTags,
     updateMcpScope,
     getFilteredMcps,
     getEnabledCount,
+    loadMcps,
   } = useMcpsStore();
 
   const { categories, tags: appTags, addTag: addGlobalTag } = useAppStore();
+
+  const {
+    isMcpsModalOpen,
+    openMcpsModal,
+    closeMcpsModal,
+    isDetectingMcps
+  } = useImportStore();
 
   // Selected MCP ID state (replaces route navigation)
   const [selectedMcpId, setSelectedMcpId] = useState<string | null>(null);
@@ -195,8 +207,8 @@ export const McpServersPage: React.FC = () => {
     setSelectedMcpId(null);
   };
 
-  const handleToggle = (id: string) => {
-    toggleMcp(id);
+  const handleDelete = (id: string) => {
+    deleteMcp(id);
   };
 
   // Handle icon click
@@ -521,6 +533,17 @@ export const McpServersPage: React.FC = () => {
           searchValue={filter.search}
           onSearchChange={handleSearchChange}
           searchPlaceholder="Search servers..."
+          actions={
+            <Button
+              variant="secondary"
+              size="small"
+              icon={isDetectingMcps ? <Loader2 className="animate-spin" /> : <Download />}
+              onClick={() => openMcpsModal()}
+              disabled={isDetectingMcps}
+            >
+              {isDetectingMcps ? 'Detecting...' : 'Import'}
+            </Button>
+          }
         />
         <div className="flex flex-1 items-center justify-center">
           <EmptyState
@@ -529,6 +552,15 @@ export const McpServersPage: React.FC = () => {
             description="Add servers to extend capabilities"
           />
         </div>
+
+        {/* Import MCP Modal - Must be included in empty state too! */}
+        <ImportMcpModal
+          isOpen={isMcpsModalOpen}
+          onClose={closeMcpsModal}
+          onImportComplete={() => {
+            loadMcps();
+          }}
+        />
       </div>
     );
   }
@@ -546,6 +578,17 @@ export const McpServersPage: React.FC = () => {
         searchValue={filter.search}
         onSearchChange={handleSearchChange}
         searchPlaceholder="Search servers..."
+        actions={
+          <Button
+            variant="secondary"
+            size="small"
+            icon={isDetectingMcps ? <Loader2 className="animate-spin" /> : <Download />}
+            onClick={() => openMcpsModal()}
+            disabled={isDetectingMcps}
+          >
+            {isDetectingMcps ? 'Detecting...' : 'Import'}
+          </Button>
+        }
       />
 
       {/* Main Content Area - with shrink animation */}
@@ -574,7 +617,7 @@ export const McpServersPage: React.FC = () => {
                 mcp={mcp}
                 compact={!!selectedMcpId}
                 selected={mcp.id === selectedMcpId}
-                onToggle={handleToggle}
+                onDelete={handleDelete}
                 onClick={handleMcpClick}
                 onIconClick={(ref) => handleIconClick(mcp.id, ref)}
               />
@@ -604,6 +647,16 @@ export const McpServersPage: React.FC = () => {
           onClose={handleIconPickerClose}
         />
       )}
+
+      {/* Import MCP Modal */}
+      <ImportMcpModal
+        isOpen={isMcpsModalOpen}
+        onClose={closeMcpsModal}
+        onImportComplete={() => {
+          // 刷新 MCPs 列表
+          loadMcps();
+        }}
+      />
     </div>
   );
 };

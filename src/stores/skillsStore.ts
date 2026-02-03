@@ -52,7 +52,7 @@ interface SkillsState {
   loadSkills: () => Promise<void>;
   setSkills: (skills: Skill[]) => void;
   selectSkill: (id: string | null) => void;
-  toggleSkill: (id: string) => Promise<void>;
+  deleteSkill: (id: string) => Promise<void>;
   updateSkillCategory: (id: string, category: string) => Promise<void>;
   updateSkillTags: (id: string, tags: string[]) => Promise<void>;
   updateSkillIcon: (id: string, icon: string) => Promise<void>;
@@ -113,39 +113,35 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
 
   selectSkill: (id) => set({ selectedSkillId: id }),
 
-  toggleSkill: async (id) => {
+  deleteSkill: async (id) => {
     // Skip in non-Tauri environment
     if (!isTauri()) {
-      console.warn('SkillsStore: Cannot toggle skill in browser mode');
+      console.warn('SkillsStore: Cannot delete skill in browser mode');
       return;
     }
 
     const skill = get().skills.find((s) => s.id === id);
     if (!skill) return;
 
-    const newEnabled = !skill.enabled;
-
-    // Optimistic update
+    // Optimistic update - remove from list
     set((state) => ({
-      skills: state.skills.map((s) =>
-        s.id === id ? { ...s, enabled: newEnabled } : s
-      ),
+      skills: state.skills.filter((s) => s.id !== id),
+      selectedSkillId: state.selectedSkillId === id ? null : state.selectedSkillId,
     }));
 
+    const { skillSourceDir } = useSettingsStore.getState();
+    const ensembleDir = skillSourceDir.replace('/skills', '');
+
     try {
-      await safeInvoke('update_skill_metadata', {
+      await safeInvoke('delete_skill', {
         skillId: id,
-        enabled: newEnabled,
+        ensembleDir,
       });
     } catch (error) {
-      // Rollback on error
+      // Rollback on error - reload skills
       const message = typeof error === 'string' ? error : String(error);
-      set((state) => ({
-        skills: state.skills.map((s) =>
-          s.id === id ? { ...s, enabled: skill.enabled } : s
-        ),
-        error: message,
-      }));
+      set({ error: message });
+      await get().loadSkills();
     }
   },
 

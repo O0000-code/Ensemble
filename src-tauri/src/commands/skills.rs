@@ -1,13 +1,14 @@
 use crate::types::{Skill, SkillMetadata};
 use crate::utils::{expand_path, get_data_file_path, parse_skill_md};
 use std::fs;
-use walkdir::WalkDir;
 
 /// Scan skills directory and return list of skills
+///
+/// Supports both regular directories and symlinked skill directories
 #[tauri::command]
 pub fn scan_skills(source_dir: String) -> Result<Vec<Skill>, String> {
     let path = expand_path(&source_dir);
-    
+
     if !path.exists() {
         return Ok(Vec::new());
     }
@@ -15,23 +16,32 @@ pub fn scan_skills(source_dir: String) -> Result<Vec<Skill>, String> {
     let mut skills = Vec::new();
     let metadata_map = load_skill_metadata();
 
-    for entry in WalkDir::new(&path)
-        .min_depth(1)
-        .max_depth(2)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
-        let skill_md_path = if entry.file_type().is_dir() {
-            entry.path().join("SKILL.md")
-        } else if entry.file_name() == "SKILL.md" {
-            entry.path().to_path_buf()
-        } else {
-            continue;
-        };
+    // Use fs::read_dir to properly handle symlinks and avoid duplicates
+    // WalkDir with max_depth(2) would process both the directory and SKILL.md file,
+    // causing each skill to be added twice
+    if let Ok(entries) = fs::read_dir(&path) {
+        for entry in entries.filter_map(|e| e.ok()) {
+            let entry_path = entry.path();
 
-        if skill_md_path.exists() {
-            if let Ok(skill) = parse_skill_file(&skill_md_path, &metadata_map) {
-                skills.push(skill);
+            // Skip hidden files/directories
+            if entry_path.file_name()
+                .map(|n| n.to_string_lossy().starts_with('.'))
+                .unwrap_or(true)
+            {
+                continue;
+            }
+
+            // Check if it's a directory (follows symlinks)
+            if !entry_path.is_dir() {
+                continue;
+            }
+
+            // Check for SKILL.md in the directory
+            let skill_md_path = entry_path.join("SKILL.md");
+            if skill_md_path.exists() {
+                if let Ok(skill) = parse_skill_file(&skill_md_path, &metadata_map) {
+                    skills.push(skill);
+                }
             }
         }
     }
@@ -149,4 +159,56 @@ fn load_skill_metadata() -> std::collections::HashMap<String, SkillMetadata> {
         }
     }
     std::collections::HashMap::new()
+}
+
+/// Delete a skill by moving it to the trash directory
+///
+/// Instead of permanently deleting, moves the skill to ~/.ensemble/trash/skills/
+/// for easy recovery if needed.
+#[tauri::command]
+pub fn delete_skill(skill_id: String, ensemble_dir: String) -> Result<(), String> {
+    let ensemble_path = expand_path(&ensemble_dir);
+    let skill_path = std::path::Path::new(&skill_id);
+
+    // Verify the skill exists
+    if !skill_path.exists() {
+        return Err(format!("Skill not found: {}", skill_id));
+    }
+
+    // Get skill name from path
+    let skill_name = skill_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .ok_or("Invalid skill path")?;
+
+    // Create trash directory
+    let trash_dir = ensemble_path.join("trash").join("skills");
+    fs::create_dir_all(&trash_dir)
+        .map_err(|e| format!("Failed to create trash directory: {}", e))?;
+
+    // Generate unique destination path (add timestamp if exists)
+    let mut dest_path = trash_dir.join(skill_name);
+    if dest_path.exists() {
+        let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+        dest_path = trash_dir.join(format!("{}_{}", skill_name, timestamp));
+    }
+
+    // Move skill to trash
+    fs::rename(skill_path, &dest_path)
+        .map_err(|e| format!("Failed to move skill to trash: {}", e))?;
+
+    // Remove metadata for this skill
+    let data_path = get_data_file_path();
+    if data_path.exists() {
+        if let Ok(content) = fs::read_to_string(&data_path) {
+            if let Ok(mut app_data) = serde_json::from_str::<crate::types::AppData>(&content) {
+                app_data.skill_metadata.remove(&skill_id);
+                if let Ok(json) = serde_json::to_string_pretty(&app_data) {
+                    let _ = fs::write(&data_path, json);
+                }
+            }
+        }
+    }
+
+    Ok(())
 }

@@ -12,7 +12,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { ListDetailLayout } from '@/components/layout/ListDetailLayout';
-import { SearchInput, Badge, Toggle, EmptyState, IconPicker, ICON_MAP } from '@/components/common';
+import { SearchInput, Badge, EmptyState, IconPicker, ICON_MAP } from '@/components/common';
 import { McpItemCompact } from '@/components/mcps/McpItem';
 import { useMcpsStore } from '@/stores/mcpsStore';
 import { Tool } from '@/types';
@@ -83,7 +83,7 @@ export const McpDetailPage: React.FC = () => {
     filter,
     setFilter,
     selectMcp,
-    toggleMcp,
+    deleteMcp,
     updateMcpIcon,
     getFilteredMcps,
     getEnabledCount,
@@ -112,8 +112,8 @@ export const McpDetailPage: React.FC = () => {
     navigate(`/mcp-servers/${encodeURIComponent(mcpId)}`);
   };
 
-  const handleToggle = (mcpId: string) => {
-    toggleMcp(mcpId);
+  const handleDelete = (mcpId: string) => {
+    deleteMcp(mcpId);
   };
 
   // Icon Picker state
@@ -168,7 +168,7 @@ export const McpDetailPage: React.FC = () => {
           key={mcp.id}
           mcp={mcp}
           selected={mcp.id === id}
-          onToggle={handleToggle}
+          onDelete={handleDelete}
           onClick={handleMcpClick}
           onIconClick={(ref) => handleIconClick(mcp.id, ref)}
         />
@@ -215,12 +215,6 @@ export const McpDetailPage: React.FC = () => {
           <Pencil className="h-3.5 w-3.5" />
           Edit
         </button>
-        {/* Toggle */}
-        <Toggle
-          checked={selectedMcp.enabled}
-          onChange={() => handleToggle(selectedMcp.id)}
-          size="large"
-        />
       </div>
     </>
   );

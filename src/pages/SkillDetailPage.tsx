@@ -25,7 +25,6 @@ import ListDetailLayout from '../components/layout/ListDetailLayout';
 import { SearchInput } from '../components/common/SearchInput';
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
-import Toggle from '../components/common/Toggle';
 import EmptyState from '../components/common/EmptyState';
 import { IconPicker, ICON_MAP, ScopeSelector } from '@/components/common';
 import SkillItem from '../components/skills/SkillItem';
@@ -140,7 +139,7 @@ export function SkillDetailPage() {
     setFilter,
     selectSkill,
     selectedSkillId,
-    toggleSkill,
+    deleteSkill,
     updateSkillIcon,
     updateSkillScope,
     getFilteredSkills,
@@ -181,8 +180,8 @@ export function SkillDetailPage() {
     navigate(`/skills/${encodeURIComponent(id)}`);
   };
 
-  const handleToggle = (id: string) => {
-    toggleSkill(id);
+  const handleDelete = (id: string) => {
+    deleteSkill(id);
   };
 
   const handleCopyInvocation = () => {
@@ -242,7 +241,7 @@ export function SkillDetailPage() {
           variant="compact"
           selected={skill.id === selectedSkillId}
           onClick={() => handleSkillClick(skill.id)}
-          onToggle={() => handleToggle(skill.id)}
+          onDelete={() => handleDelete(skill.id)}
           onIconClick={(ref) => handleIconClick(skill.id, ref)}
         />
       ))}
@@ -284,11 +283,6 @@ export function SkillDetailPage() {
         <Button variant="secondary" size="small" icon={<Pencil />}>
           Edit
         </Button>
-        <Toggle
-          checked={selectedSkill.enabled}
-          onChange={() => handleToggle(selectedSkill.id)}
-          size="large"
-        />
       </div>
     </>
   );

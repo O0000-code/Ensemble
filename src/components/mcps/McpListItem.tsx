@@ -1,6 +1,5 @@
-import React, { useRef } from 'react';
-import { Code, Zap } from 'lucide-react';
-import Toggle from '../common/Toggle';
+import React, { useRef, useState, useEffect } from 'react';
+import { Code, Zap, MoreHorizontal, Trash2 } from 'lucide-react';
 import { ICON_MAP } from '@/components/common';
 import { McpServer } from '@/types';
 
@@ -48,7 +47,7 @@ interface McpListItemProps {
   mcp: McpServer;
   compact?: boolean;
   selected?: boolean;
-  onToggle: (id: string) => void;
+  onDelete?: (id: string) => void;
   onClick?: (id: string) => void;
   onIconClick?: (triggerRef: React.RefObject<HTMLDivElement>) => void;
 }
@@ -56,8 +55,8 @@ interface McpListItemProps {
 /**
  * Unified MCP list item with smooth transition between full and compact modes.
  *
- * Full mode (compact=false): Shows tools count, calls count, Active badge
- * Compact mode (compact=true): Shows only icon, name, description, toggle
+ * Full mode (compact=false): Shows tools count, calls count
+ * Compact mode (compact=true): Shows only icon, name, description
  *
  * Key animation behavior:
  * - When collapsing (full → compact): right section fades out immediately
@@ -68,21 +67,45 @@ export const McpListItem: React.FC<McpListItemProps> = ({
   mcp,
   compact = false,
   selected = false,
-  onToggle,
+  onDelete,
   onClick,
   onIconClick,
 }) => {
   const iconRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [showMenu, setShowMenu] = useState(false);
   const IconComponent = getMcpIcon(mcp);
 
   const handleClick = () => {
     onClick?.(mcp.id);
   };
 
-  const handleToggleClick = (e: React.MouseEvent) => {
+  const handleMoreClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onToggle(mcp.id);
+    setShowMenu(!showMenu);
   };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    onDelete?.(mcp.id);
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showMenu]);
 
   // Right section transition: immediate hide, delayed show
   const rightSectionStyle = {
@@ -176,25 +199,32 @@ export const McpListItem: React.FC<McpListItemProps> = ({
           </div>
         </div>
 
-        {/* Status Badge */}
-        {mcp.enabled && (
-          <div className="flex items-center gap-1 rounded bg-[#DCFCE7] px-2.5 py-1 whitespace-nowrap">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#16A34A]" />
-            <span className="text-[10px] font-semibold text-[#16A34A]">Active</span>
-          </div>
-        )}
       </div>
 
-      {/* Toggle - Always visible */}
+      {/* More Menu - Always visible */}
       <div
-        onClick={handleToggleClick}
-        className="shrink-0 ml-4"
+        ref={menuRef}
+        className="shrink-0 ml-4 relative"
       >
-        <Toggle
-          checked={mcp.enabled}
-          onChange={() => onToggle(mcp.id)}
-          size="medium"
-        />
+        <button
+          onClick={handleMoreClick}
+          className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-[#F4F4F5] transition-colors"
+        >
+          <MoreHorizontal className="w-4 h-4 text-[#71717A]" />
+        </button>
+
+        {/* Dropdown Menu */}
+        {showMenu && (
+          <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg border border-[#E5E5E5] shadow-lg z-50 py-1">
+            <button
+              onClick={handleDelete}
+              className="w-full px-3 py-2 text-left text-sm text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-2 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

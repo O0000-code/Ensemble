@@ -19,7 +19,7 @@ interface McpsState {
   // Actions
   setMcpServers: (servers: McpServer[]) => void;
   selectMcp: (id: string | null) => void;
-  toggleMcp: (id: string) => Promise<void>;
+  deleteMcp: (id: string) => Promise<void>;
   setFilter: (filter: Partial<McpsFilter>) => void;
   loadMcps: () => Promise<void>;
   updateMcpCategory: (id: string, category: string) => Promise<void>;
@@ -68,36 +68,35 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
     }
   },
 
-  toggleMcp: async (id) => {
+  deleteMcp: async (id) => {
     // Skip in non-Tauri environment
     if (!isTauri()) {
-      console.warn('McpsStore: Cannot toggle MCP in browser mode');
+      console.warn('McpsStore: Cannot delete MCP in browser mode');
       return;
     }
 
     const mcp = get().mcpServers.find((m) => m.id === id);
     if (!mcp) return;
 
-    // Optimistic update
+    // Optimistic update - remove from list
     set((state) => ({
-      mcpServers: state.mcpServers.map((m) =>
-        m.id === id ? { ...m, enabled: !m.enabled } : m
-      ),
+      mcpServers: state.mcpServers.filter((m) => m.id !== id),
+      selectedMcpId: state.selectedMcpId === id ? null : state.selectedMcpId,
     }));
 
+    const { mcpSourceDir } = useSettingsStore.getState();
+    const ensembleDir = mcpSourceDir.replace('/mcps', '');
+
     try {
-      await safeInvoke('update_mcp_metadata', {
+      await safeInvoke('delete_mcp', {
         mcpId: id,
-        enabled: !mcp.enabled,
+        ensembleDir,
       });
     } catch (error) {
-      // Rollback on error
-      set((state) => ({
-        mcpServers: state.mcpServers.map((m) =>
-          m.id === id ? { ...m, enabled: mcp.enabled } : m
-        ),
-        error: String(error),
-      }));
+      // Rollback on error - reload mcps
+      const message = typeof error === 'string' ? error : String(error);
+      set({ error: message });
+      await get().loadMcps();
     }
   },
 

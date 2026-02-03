@@ -2,83 +2,229 @@
 #![allow(unused_variables)]
 
 use crate::types::{
-    AppData, BackupInfo, ClaudeMcpConfig, ClaudeSettings, DetectedMcp, DetectedSkill,
+    AppData, BackupInfo, ClaudeJson, ClaudeMcpConfig, ClaudeSettings, DetectedMcp, DetectedSkill,
     ExistingConfig, ImportItem, ImportResult, ImportedCounts, McpConfigFile, McpMetadata,
     SkillMetadata,
 };
 use crate::utils::path::{expand_tilde, get_data_file_path};
 use chrono::Utc;
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
+/// Claude JSON project config structure (for parsing ~/.claude.json projects)
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ClaudeProjectConfig {
+    #[serde(default)]
+    mcp_servers: HashMap<String, ClaudeMcpConfig>,
+    // Other fields are ignored
+}
+
+/// Root structure of ~/.claude.json (for parsing only)
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ClaudeJsonRoot {
+    #[serde(default)]
+    mcp_servers: HashMap<String, ClaudeMcpConfig>,
+    #[serde(default)]
+    projects: HashMap<String, ClaudeProjectConfig>,
+}
+
+// ============================================================================
+// ~/.claude.json helper functions
+// ============================================================================
+
+/// Get path to ~/.claude.json (the correct MCP configuration location)
+fn get_claude_json_path() -> Result<PathBuf, String> {
+    dirs::home_dir()
+        .map(|h| h.join(".claude.json"))
+        .ok_or_else(|| "Cannot find home directory".to_string())
+}
+
+/// Read and parse ~/.claude.json
+fn read_claude_json() -> Result<ClaudeJson, String> {
+    let path = get_claude_json_path()?;
+    if !path.exists() {
+        return Ok(ClaudeJson::default());
+    }
+    let content = fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read ~/.claude.json: {}", e))?;
+    serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse ~/.claude.json: {}", e))
+}
+
+/// Write ~/.claude.json (preserves other fields via #[serde(flatten)])
+fn write_claude_json(config: &ClaudeJson) -> Result<(), String> {
+    let path = get_claude_json_path()?;
+    let json = serde_json::to_string_pretty(config)
+        .map_err(|e| format!("Failed to serialize config: {}", e))?;
+    fs::write(&path, json)
+        .map_err(|e| format!("Failed to write ~/.claude.json: {}", e))
+}
+
+/// Remove specified MCPs from ~/.claude.json after successful import
+fn remove_mcps_from_claude_json(mcp_names: &[String]) -> Result<(), String> {
+    let mut claude_json = read_claude_json()?;
+
+    for name in mcp_names {
+        claude_json.mcp_servers.remove(name);
+    }
+
+    write_claude_json(&claude_json)
+}
+
+// ============================================================================
+
 /// Detect existing Claude Code configuration
+///
+/// Skills: from ~/.claude/skills/ directory (supports symlinks from npx skill)
+/// MCPs: from ~/.claude.json (NOT ~/.claude/settings.json)
 #[tauri::command]
 pub fn detect_existing_config(claude_config_dir: String) -> Result<ExistingConfig, String> {
     let claude_dir = expand_tilde(&claude_config_dir);
 
-    // 1. Detect Skills in ~/.claude/skills/ directory
+    // ========================================================================
+    // 1. Detect Skills in ~/.claude/skills/ directory (supports symlinks)
+    // ========================================================================
     let skills_dir = claude_dir.join("skills");
     let mut detected_skills = Vec::new();
 
     if skills_dir.exists() && skills_dir.is_dir() {
-        // Iterate through skills directory
-        for entry in WalkDir::new(&skills_dir)
-            .min_depth(1)
-            .max_depth(2)
-            .into_iter()
-            .filter_map(|e| e.ok())
-        {
-            let path = entry.path();
+        // Use fs::read_dir to properly handle symlinks
+        // WalkDir by default doesn't follow symlinks, so we handle them manually
+        if let Ok(entries) = fs::read_dir(&skills_dir) {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let entry_path = entry.path();
 
-            // Look for SKILL.md files
-            if path.is_file() && path.file_name().map_or(false, |n| n == "SKILL.md") {
-                if let Some(skill_dir) = path.parent() {
-                    let skill_name = skill_dir
-                        .file_name()
-                        .map(|n| n.to_string_lossy().to_string())
-                        .unwrap_or_default();
+                // Get skill name from entry
+                let skill_name = entry_path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_default();
 
-                    // Get the real path if it's a symlink
-                    let real_path = if skill_dir.symlink_metadata().map_or(false, |m| m.file_type().is_symlink()) {
-                        fs::read_link(skill_dir)
-                            .unwrap_or_else(|_| skill_dir.to_path_buf())
-                            .to_string_lossy()
-                            .to_string()
-                    } else {
-                        skill_dir.to_string_lossy().to_string()
-                    };
+                // Skip hidden directories
+                if skill_name.starts_with('.') {
+                    continue;
+                }
 
-                    // Read and parse SKILL.md to extract description
-                    let description = fs::read_to_string(path)
-                        .ok()
-                        .and_then(|content| parse_skill_description(&content));
+                // Check if it's a symlink or directory
+                let metadata = entry_path.symlink_metadata().ok();
+                let is_symlink = metadata.as_ref().map_or(false, |m| m.file_type().is_symlink());
 
-                    detected_skills.push(DetectedSkill {
-                        name: skill_name,
-                        path: real_path,
-                        description,
-                    });
+                // For symlinks, check if the target is a directory
+                let is_dir = if is_symlink {
+                    entry_path.is_dir() // This follows the symlink
+                } else {
+                    metadata.as_ref().map_or(false, |m| m.is_dir())
+                };
+
+                if !is_dir {
+                    continue;
+                }
+
+                // Check for SKILL.md in the directory (follows symlink automatically)
+                let skill_md_path = entry_path.join("SKILL.md");
+                if !skill_md_path.exists() {
+                    continue;
+                }
+
+                // Get the real path (resolve symlink if needed)
+                let real_path = if is_symlink {
+                    fs::read_link(&entry_path)
+                        .map(|target| {
+                            // Handle relative symlinks (e.g., ../../.agents/skills/xxx)
+                            if target.is_relative() {
+                                entry_path
+                                    .parent()
+                                    .map(|p| p.join(&target))
+                                    .and_then(|p| fs::canonicalize(&p).ok())
+                                    .unwrap_or(target)
+                            } else {
+                                target
+                            }
+                        })
+                        .unwrap_or_else(|_| entry_path.clone())
+                        .to_string_lossy()
+                        .to_string()
+                } else {
+                    entry_path.to_string_lossy().to_string()
+                };
+
+                // Read and parse SKILL.md to extract description
+                let description = fs::read_to_string(&skill_md_path)
+                    .ok()
+                    .and_then(|content| parse_skill_description(&content));
+
+                detected_skills.push(DetectedSkill {
+                    name: skill_name,
+                    path: real_path,
+                    description,
+                });
+            }
+        }
+    }
+
+    // 2. Detect MCPs from ~/.claude.json (NOT ~/.claude/settings.json)
+    // MCP configuration is stored in ~/.claude.json, not ~/.claude/settings.json
+    let mut detected_mcps = Vec::new();
+
+    // Get home directory and construct path to ~/.claude.json
+    if let Some(home_dir) = dirs::home_dir() {
+        let claude_json_path = home_dir.join(".claude.json");
+
+        if claude_json_path.exists() {
+            if let Ok(content) = fs::read_to_string(&claude_json_path) {
+                if let Ok(claude_json) = serde_json::from_str::<ClaudeJsonRoot>(&content) {
+                    // 2a. User scope MCPs (top-level mcpServers)
+                    for (name, config) in claude_json.mcp_servers {
+                        detected_mcps.push(DetectedMcp {
+                            name,
+                            command: config.command,
+                            args: config.args.unwrap_or_default(),
+                            env: config.env,
+                            scope: Some("user".to_string()),
+                            project_path: None,
+                        });
+                    }
+
+                    // 2b. Local scope MCPs (projects[path].mcpServers)
+                    for (project_path, project_config) in claude_json.projects {
+                        for (name, config) in project_config.mcp_servers {
+                            detected_mcps.push(DetectedMcp {
+                                name,
+                                command: config.command,
+                                args: config.args.unwrap_or_default(),
+                                env: config.env,
+                                scope: Some("local".to_string()),
+                                project_path: Some(project_path.clone()),
+                            });
+                        }
+                    }
                 }
             }
         }
     }
 
-    // 2. Detect MCPs in ~/.claude/settings.json
+    // Also check ~/.claude/settings.json for backward compatibility
     let settings_path = claude_dir.join("settings.json");
-    let mut detected_mcps = Vec::new();
-
     if settings_path.exists() {
         if let Ok(content) = fs::read_to_string(&settings_path) {
             if let Ok(settings) = serde_json::from_str::<ClaudeSettings>(&content) {
                 for (name, config) in settings.mcp_servers {
-                    detected_mcps.push(DetectedMcp {
-                        name,
-                        command: config.command,
-                        args: config.args.unwrap_or_default(),
-                        env: config.env,
-                    });
+                    // Only add if not already detected (avoid duplicates)
+                    if !detected_mcps.iter().any(|m| m.name == name) {
+                        detected_mcps.push(DetectedMcp {
+                            name,
+                            command: config.command,
+                            args: config.args.unwrap_or_default(),
+                            env: config.env,
+                            scope: Some("user".to_string()),
+                            project_path: None,
+                        });
+                    }
                 }
             }
         }
@@ -117,6 +263,65 @@ fn parse_skill_description(content: &str) -> Option<String> {
         }
     }
     None
+}
+
+/// Backup ~/.claude.json before import
+///
+/// Creates a timestamped backup of the claude.json file in the ensemble backups directory
+#[tauri::command]
+pub fn backup_claude_json(ensemble_dir: String) -> Result<BackupInfo, String> {
+    let ensemble_path = expand_tilde(&ensemble_dir);
+
+    // Get home directory
+    let home_dir = dirs::home_dir().ok_or("Cannot find home directory")?;
+    let claude_json_path = home_dir.join(".claude.json");
+
+    if !claude_json_path.exists() {
+        return Err("~/.claude.json does not exist".to_string());
+    }
+
+    // Create backup directory with timestamp
+    let timestamp = Utc::now().format("%Y%m%d_%H%M%S").to_string();
+    let backup_dir = ensemble_path.join("backups").join(&timestamp);
+    fs::create_dir_all(&backup_dir)
+        .map_err(|e| format!("Failed to create backup directory: {}", e))?;
+
+    // Copy claude.json to backup directory
+    let backup_file = backup_dir.join("claude.json");
+    fs::copy(&claude_json_path, &backup_file)
+        .map_err(|e| format!("Failed to backup claude.json: {}", e))?;
+
+    // Count MCPs in the backed up file
+    let mut mcp_count = 0u32;
+    if let Ok(content) = fs::read_to_string(&claude_json_path) {
+        if let Ok(claude_json) = serde_json::from_str::<ClaudeJsonRoot>(&content) {
+            // Count user scope MCPs
+            mcp_count += claude_json.mcp_servers.len() as u32;
+            // Count local scope MCPs from all projects
+            for project_config in claude_json.projects.values() {
+                mcp_count += project_config.mcp_servers.len() as u32;
+            }
+        }
+    }
+
+    // Create backup info
+    let backup_info = BackupInfo {
+        path: backup_dir.to_string_lossy().to_string(),
+        timestamp: Utc::now().to_rfc3339(),
+        items_count: ImportedCounts {
+            skills: 0,
+            mcps: mcp_count,
+        },
+    };
+
+    // Write backup-info.json
+    let info_path = backup_dir.join("backup-info.json");
+    let info_json = serde_json::to_string_pretty(&backup_info)
+        .map_err(|e| format!("Failed to serialize backup info: {}", e))?;
+    fs::write(&info_path, info_json)
+        .map_err(|e| format!("Failed to write backup-info.json: {}", e))?;
+
+    Ok(backup_info)
 }
 
 /// Backup existing configuration before import
@@ -287,20 +492,33 @@ pub fn import_existing_config(
     })
 }
 
-/// Copy a skill directory to the ensemble skills directory
+/// Import a skill to the ensemble skills directory
 ///
-/// If the source is a symlink, copies the actual content (not the symlink itself)
+/// Strategy B: Create symlinks instead of copying files
+/// - If source is from ~/.agents/skills/ (npx skill installed), create symlink
+/// - Otherwise, copy the files
 fn copy_skill(item: &ImportItem, dest_dir: &Path) -> Result<(), String> {
     let source = Path::new(&item.source_path);
 
-    // If source is a symlink, get the real path
-    let real_source = if source
+    // Resolve the source path (handle symlinks)
+    let is_source_symlink = source
         .symlink_metadata()
-        .map_or(false, |m| m.file_type().is_symlink())
-    {
-        fs::read_link(source).map_err(|e| format!("Failed to read symlink: {}", e))?
+        .map_or(false, |m| m.file_type().is_symlink());
+
+    let real_source = if is_source_symlink {
+        let target = fs::read_link(source).map_err(|e| format!("Failed to read symlink: {}", e))?;
+        // Handle relative symlinks
+        if target.is_relative() {
+            source
+                .parent()
+                .map(|p| p.join(&target))
+                .and_then(|p| fs::canonicalize(&p).ok())
+                .unwrap_or(target)
+        } else {
+            fs::canonicalize(&target).unwrap_or(target)
+        }
     } else {
-        source.to_path_buf()
+        fs::canonicalize(source).unwrap_or_else(|_| source.to_path_buf())
     };
 
     // Check if source exists
@@ -314,17 +532,36 @@ fn copy_skill(item: &ImportItem, dest_dir: &Path) -> Result<(), String> {
     // Destination directory for this skill
     let skill_dest = dest_dir.join(&item.name);
 
-    // If destination already exists, report error but don't fail the entire import
-    if skill_dest.exists() {
+    // Check if destination already exists (including broken symlinks)
+    if skill_dest.exists() || skill_dest.symlink_metadata().is_ok() {
         return Err(format!(
             "Skill '{}' already exists in destination",
             item.name
         ));
     }
 
-    // Recursively copy the entire skill directory
-    copy_dir_recursive(&real_source, &skill_dest)
-        .map_err(|e| format!("Failed to copy skill directory: {}", e))?;
+    // Determine if we should create a symlink (Strategy B)
+    // Create symlink if the source is in ~/.agents/skills/
+    let agents_skills_dir = dirs::home_dir()
+        .map(|h| h.join(".agents").join("skills"))
+        .ok_or("Cannot find home directory")?;
+
+    let should_symlink = real_source.starts_with(&agents_skills_dir);
+
+    if should_symlink {
+        // Strategy B: Create symlink pointing to ~/.agents/skills/<name>
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&real_source, &skill_dest)
+            .map_err(|e| format!("Failed to create symlink: {}", e))?;
+
+        #[cfg(windows)]
+        std::os::windows::fs::symlink_dir(&real_source, &skill_dest)
+            .map_err(|e| format!("Failed to create symlink: {}", e))?;
+    } else {
+        // Fallback: Copy the files for skills not from ~/.agents/skills/
+        copy_dir_recursive(&real_source, &skill_dest)
+            .map_err(|e| format!("Failed to copy skill directory: {}", e))?;
+    }
 
     Ok(())
 }
@@ -484,16 +721,18 @@ fn update_skill_scope_in_metadata(skill_id: &str, scope: &str) -> Result<(), Str
     Ok(())
 }
 
-/// Update MCP scope and sync to corresponding location
+/// Update MCP scope and sync to ~/.claude.json
+///
+/// - global: Add MCP to ~/.claude.json mcpServers (User scope)
+/// - project: Remove MCP from ~/.claude.json mcpServers
 #[tauri::command]
 pub fn update_mcp_scope(
     mcp_id: String,
     scope: String,
     ensemble_dir: String,
-    claude_config_dir: String,
+    _claude_config_dir: String, // Not used anymore, kept for API compatibility
 ) -> Result<(), String> {
     let ensemble_path = expand_tilde(&ensemble_dir);
-    let claude_path = expand_tilde(&claude_config_dir);
 
     // Extract MCP name from mcp_id (mcp_id is the full path, e.g., ~/.ensemble/mcps/postgres.json)
     let mcp_path = Path::new(&mcp_id);
@@ -503,7 +742,7 @@ pub fn update_mcp_scope(
         .ok_or("Invalid MCP ID")?;
     let mcp_name = mcp_filename.trim_end_matches(".json");
 
-    // Read MCP configuration
+    // Read MCP configuration from Ensemble
     let mcp_config_path = ensemble_path.join("mcps").join(mcp_filename);
     if !mcp_config_path.exists() {
         return Err(format!("MCP config not found: {}", mcp_name));
@@ -513,43 +752,34 @@ pub fn update_mcp_scope(
     let mcp_config: McpConfigFile =
         serde_json::from_str(&mcp_content).map_err(|e| e.to_string())?;
 
-    // Read Claude settings.json
-    let claude_settings_path = claude_path.join("settings.json");
-    let mut claude_settings: ClaudeSettings = if claude_settings_path.exists() {
-        let content = fs::read_to_string(&claude_settings_path).map_err(|e| e.to_string())?;
-        serde_json::from_str(&content).unwrap_or_default()
-    } else {
-        ClaudeSettings::default()
-    };
+    // ========================================================================
+    // Read and modify ~/.claude.json (the correct MCP configuration location)
+    // ========================================================================
+    let mut claude_json = read_claude_json()?;
 
     match scope.as_str() {
         "global" => {
-            // Add to ~/.claude/settings.json mcpServers
+            // Add to ~/.claude.json mcpServers (User scope = global)
             let claude_mcp_config = ClaudeMcpConfig {
                 command: mcp_config.command.clone(),
                 args: mcp_config.args.clone(),
                 env: mcp_config.env.clone(),
             };
-            claude_settings
+            claude_json
                 .mcp_servers
                 .insert(mcp_name.to_string(), claude_mcp_config);
         }
         "project" => {
-            // Remove from ~/.claude/settings.json mcpServers
-            claude_settings.mcp_servers.remove(mcp_name);
+            // Remove from ~/.claude.json mcpServers
+            claude_json.mcp_servers.remove(mcp_name);
         }
         _ => {
             return Err(format!("Invalid scope: {}", scope));
         }
     }
 
-    // Write back Claude settings.json
-    // Ensure directory exists
-    if let Some(parent) = claude_settings_path.parent() {
-        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
-    let json = serde_json::to_string_pretty(&claude_settings).map_err(|e| e.to_string())?;
-    fs::write(&claude_settings_path, json).map_err(|e| e.to_string())?;
+    // Write back ~/.claude.json
+    write_claude_json(&claude_json)?;
 
     // Update scope field in metadata
     update_mcp_scope_in_metadata(&mcp_id, &scope)?;
@@ -1060,4 +1290,85 @@ pub fn open_accessibility_settings() -> Result<(), String> {
         .spawn()
         .map_err(|e| format!("Failed to open System Settings: {}", e))?;
     Ok(())
+}
+
+/// Remove imported skills from source directory (~/.claude/skills/)
+///
+/// After successfully importing skills to ~/.ensemble/skills/, this function
+/// removes the original symlinks/directories from ~/.claude/skills/
+#[tauri::command]
+pub fn remove_imported_skills(
+    claude_config_dir: String,
+    skill_names: Vec<String>,
+) -> Result<u32, String> {
+    let claude_path = expand_tilde(&claude_config_dir);
+    let skills_dir = claude_path.join("skills");
+
+    if !skills_dir.exists() {
+        return Ok(0);
+    }
+
+    let mut removed_count = 0u32;
+
+    for name in skill_names {
+        let skill_path = skills_dir.join(&name);
+
+        if skill_path.exists() || skill_path.symlink_metadata().is_ok() {
+            // Check if it's a symlink
+            if skill_path.symlink_metadata().map_or(false, |m| m.file_type().is_symlink()) {
+                // Remove symlink
+                fs::remove_file(&skill_path)
+                    .map_err(|e| format!("Failed to remove symlink '{}': {}", name, e))?;
+            } else if skill_path.is_dir() {
+                // Remove directory
+                fs::remove_dir_all(&skill_path)
+                    .map_err(|e| format!("Failed to remove directory '{}': {}", name, e))?;
+            }
+            removed_count += 1;
+        }
+    }
+
+    Ok(removed_count)
+}
+
+/// Remove imported MCPs from ~/.claude.json
+///
+/// After successfully importing MCPs to ~/.ensemble/mcps/, this function
+/// removes the original entries from ~/.claude.json mcpServers
+#[tauri::command]
+pub fn remove_imported_mcps(mcp_names: Vec<String>) -> Result<u32, String> {
+    let home_dir = dirs::home_dir().ok_or("Cannot find home directory")?;
+    let claude_json_path = home_dir.join(".claude.json");
+
+    if !claude_json_path.exists() {
+        return Ok(0);
+    }
+
+    // Read existing config
+    let content = fs::read_to_string(&claude_json_path)
+        .map_err(|e| format!("Failed to read ~/.claude.json: {}", e))?;
+
+    let mut claude_json: serde_json::Value = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse ~/.claude.json: {}", e))?;
+
+    let mut removed_count = 0u32;
+
+    // Remove from top-level mcpServers (User scope)
+    if let Some(mcp_servers) = claude_json.get_mut("mcpServers") {
+        if let Some(obj) = mcp_servers.as_object_mut() {
+            for name in &mcp_names {
+                if obj.remove(name).is_some() {
+                    removed_count += 1;
+                }
+            }
+        }
+    }
+
+    // Write back
+    let json = serde_json::to_string_pretty(&claude_json)
+        .map_err(|e| format!("Failed to serialize config: {}", e))?;
+    fs::write(&claude_json_path, json)
+        .map_err(|e| format!("Failed to write ~/.claude.json: {}", e))?;
+
+    Ok(removed_count)
 }

@@ -121,6 +121,8 @@ export interface DetectedMcp {
   command: string;
   args: string[];
   env?: Record<string, string>;
+  scope?: 'user' | 'local';  // 来源范围: user=用户全局配置, local=项目本地配置
+  projectPath?: string;       // Local scope 时的项目路径
 }
 
 /**
