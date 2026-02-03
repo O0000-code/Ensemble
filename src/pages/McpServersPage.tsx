@@ -25,6 +25,7 @@ import { ImportMcpModal } from '@/components/modals/ImportMcpModal';
 import { useMcpsStore } from '@/stores/mcpsStore';
 import { useAppStore } from '@/stores/appStore';
 import { useImportStore } from '@/stores/importStore';
+import { useScenesStore } from '@/stores/scenesStore';
 import type { Tool } from '@/types';
 
 // ============================================================================
@@ -68,12 +69,6 @@ const getToolIcon = (toolName: string): React.ElementType => {
   }
   return Wrench;
 };
-
-// Mock scenes data for "Used in Scenes" section
-const mockScenes = [
-  { id: '1', name: 'Development', icon: Code },
-  { id: '2', name: 'Research', icon: Globe },
-];
 
 // ============================================================================
 // ToolItem Component (from McpDetailPage.tsx)
@@ -151,6 +146,8 @@ export const McpServersPage: React.FC = () => {
     isDetectingMcps
   } = useImportStore();
 
+  const { scenes } = useScenesStore();
+
   // Selected MCP ID state (replaces route navigation)
   const [selectedMcpId, setSelectedMcpId] = useState<string | null>(null);
 
@@ -162,6 +159,12 @@ export const McpServersPage: React.FC = () => {
     () => mcpServers.find((mcp) => mcp.id === selectedMcpId) || null,
     [mcpServers, selectedMcpId]
   );
+
+  // Get scenes that use the selected MCP
+  const usedInScenes = useMemo(() => {
+    if (!selectedMcpId) return [];
+    return scenes.filter((scene) => scene.mcpIds.includes(selectedMcpId));
+  }, [scenes, selectedMcpId]);
 
   // Auto-fetch tools when selecting an MCP that has no tools yet
   // Pass false for showSuccessAnimation since this is automatic, not user-initiated
@@ -552,18 +555,29 @@ export const McpServersPage: React.FC = () => {
       {/* Used in Scenes Section */}
       <section className="flex flex-col gap-4">
         <h3 className="text-sm font-semibold text-[#18181B]">Used in Scenes</h3>
-        <div className="flex flex-wrap gap-2">
-          {mockScenes.map((scene) => (
-            <button
-              key={scene.id}
-              type="button"
-              className="flex items-center gap-2 rounded-md border border-[#E5E5E5] px-3.5 py-2 text-xs font-medium text-[#18181B] transition-colors hover:bg-[#FAFAFA]"
-            >
-              <Layers className="h-3.5 w-3.5 text-[#52525B]" />
-              {scene.name}
-            </button>
-          ))}
-        </div>
+        {usedInScenes.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {usedInScenes.map((scene) => (
+              <button
+                key={scene.id}
+                type="button"
+                className="flex items-center gap-2 rounded-md border border-[#E5E5E5] px-3.5 py-2 text-xs font-medium text-[#18181B] transition-colors hover:bg-[#FAFAFA]"
+              >
+                <Layers className="h-3.5 w-3.5 text-[#52525B]" />
+                {scene.name}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 rounded-lg border border-[#E5E5E5] px-3.5 py-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#F4F4F5]">
+              <Layers className="h-3.5 w-3.5 text-[#A1A1AA]" />
+            </div>
+            <span className="text-[13px] text-[#71717A]">
+              Not used in any scenes yet
+            </span>
+          </div>
+        )}
       </section>
     </div>
   );

@@ -29,6 +29,7 @@ import EmptyState from '../components/common/EmptyState';
 import { IconPicker, ICON_MAP, ScopeSelector } from '@/components/common';
 import SkillItem from '../components/skills/SkillItem';
 import { useSkillsStore } from '../stores/skillsStore';
+import { useScenesStore } from '../stores/scenesStore';
 import type { Skill } from '../types';
 
 // ============================================================================
@@ -147,12 +148,20 @@ export function SkillDetailPage() {
     getSelectedSkill,
   } = useSkillsStore();
 
+  const { scenes } = useScenesStore();
+
   // Decode the URL-encoded skill ID
   const skillId = encodedSkillId ? decodeURIComponent(encodedSkillId) : null;
 
   const filteredSkills = getFilteredSkills();
   const enabledCount = getEnabledCount();
   const selectedSkill = getSelectedSkill();
+
+  // Get scenes that use the selected skill
+  const usedInScenes = React.useMemo(() => {
+    if (!skillId) return [];
+    return scenes.filter((scene) => scene.skillIds.includes(skillId));
+  }, [scenes, skillId]);
 
   // Detail header icon ref
   const detailIconRef = useRef<HTMLDivElement>(null);
@@ -439,11 +448,22 @@ export function SkillDetailPage() {
       {/* Used in Scenes Section */}
       <div className="flex flex-col gap-4">
         <h3 className="text-sm font-semibold text-[#18181B]">Used in Scenes</h3>
-        <div className="flex flex-wrap gap-2">
-          {/* Mock scene chips */}
-          <SceneChip name="Frontend Development" />
-          <SceneChip name="Code Review" />
-        </div>
+        {usedInScenes.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {usedInScenes.map((scene) => (
+              <SceneChip key={scene.id} name={scene.name} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 rounded-lg border border-[#E5E5E5] px-3.5 py-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#F4F4F5]">
+              <Layers className="h-3.5 w-3.5 text-[#A1A1AA]" />
+            </div>
+            <span className="text-[13px] text-[#71717A]">
+              Not used in any scenes yet
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

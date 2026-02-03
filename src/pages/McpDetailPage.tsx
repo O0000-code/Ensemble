@@ -16,6 +16,7 @@ import { ListDetailLayout } from '@/components/layout/ListDetailLayout';
 import { SearchInput, Badge, EmptyState, IconPicker, ICON_MAP } from '@/components/common';
 import { McpItemCompact } from '@/components/mcps/McpItem';
 import { useMcpsStore } from '@/stores/mcpsStore';
+import { useScenesStore } from '@/stores/scenesStore';
 import { Tool } from '@/types';
 
 // Icon mapping for MCP servers
@@ -56,12 +57,6 @@ const getToolIcon = (toolName: string): React.ElementType => {
   return Wrench;
 };
 
-// Mock scenes data for "Used in Scenes" section
-const mockScenes = [
-  { id: '1', name: 'Development', icon: Code },
-  { id: '2', name: 'Research', icon: Globe },
-];
-
 /**
  * McpDetailPage - MCP Server Detail Page
  *
@@ -91,12 +86,20 @@ export const McpDetailPage: React.FC = () => {
     getSelectedMcp,
   } = useMcpsStore();
 
+  const { scenes } = useScenesStore();
+
   // Decode the URL-encoded MCP ID
   const id = encodedId ? decodeURIComponent(encodedId) : null;
 
   const filteredMcps = getFilteredMcps();
   const enabledCount = getEnabledCount();
   const selectedMcp = getSelectedMcp();
+
+  // Get scenes that use the selected MCP
+  const usedInScenes = React.useMemo(() => {
+    if (!id) return [];
+    return scenes.filter((scene) => scene.mcpIds.includes(id));
+  }, [scenes, id]);
 
   // Sync URL param with store selection (useEffect is the correct place for side effects)
   useEffect(() => {
@@ -315,18 +318,29 @@ export const McpDetailPage: React.FC = () => {
       {/* Used in Scenes Section */}
       <section className="flex flex-col gap-4">
         <h3 className="text-sm font-semibold text-[#18181B]">Used in Scenes</h3>
-        <div className="flex flex-wrap gap-2">
-          {mockScenes.map((scene) => (
-            <button
-              key={scene.id}
-              type="button"
-              className="flex items-center gap-2 rounded-md border border-[#E5E5E5] px-3.5 py-2 text-xs font-medium text-[#18181B] transition-colors hover:bg-[#FAFAFA]"
-            >
-              <Layers className="h-3.5 w-3.5 text-[#52525B]" />
-              {scene.name}
-            </button>
-          ))}
-        </div>
+        {usedInScenes.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {usedInScenes.map((scene) => (
+              <button
+                key={scene.id}
+                type="button"
+                className="flex items-center gap-2 rounded-md border border-[#E5E5E5] px-3.5 py-2 text-xs font-medium text-[#18181B] transition-colors hover:bg-[#FAFAFA]"
+              >
+                <Layers className="h-3.5 w-3.5 text-[#52525B]" />
+                {scene.name}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 rounded-lg border border-[#E5E5E5] px-3.5 py-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#F4F4F5]">
+              <Layers className="h-3.5 w-3.5 text-[#A1A1AA]" />
+            </div>
+            <span className="text-[13px] text-[#71717A]">
+              Not used in any scenes yet
+            </span>
+          </div>
+        )}
       </section>
     </div>
   );
