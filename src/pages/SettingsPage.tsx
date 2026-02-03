@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShieldCheck, Github, BookOpen, FileText } from 'lucide-react';
+import { ShieldCheck, Github, BookOpen, FileText, ChevronDown } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import Toggle from '@/components/common/Toggle';
 import Modal from '@/components/common/Modal';
@@ -25,10 +25,10 @@ interface SectionHeaderProps {
 
 function SectionHeader({ title, description }: SectionHeaderProps) {
   return (
-    <div className="mb-4">
+    <div className="flex flex-col gap-1 mb-4">
       <h2 className="text-sm font-semibold text-[#18181B]">{title}</h2>
       {description && (
-        <p className="text-xs text-[#71717A] mt-1">{description}</p>
+        <p className="text-xs text-[#71717A]">{description}</p>
       )}
     </div>
   );
@@ -156,7 +156,7 @@ function ApiKeyModal({ isOpen, onClose, currentKey, onSave }: ApiKeyModalProps) 
 export function SettingsPage() {
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [quickActionStatus, setQuickActionStatus] = useState<'idle' | 'installing' | 'success' | 'error'>('idle');
-  const [quickActionMessage, setQuickActionMessage] = useState('');
+  const [_quickActionMessage, setQuickActionMessage] = useState('');
 
   const {
     skillSourceDir,
@@ -364,26 +364,29 @@ export function SettingsPage() {
               description="Configure how Claude Code is launched from Finder"
             />
             <Card>
-              {/* Terminal App */}
+              {/* Terminal Application */}
               <Row>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[13px] font-medium text-[#18181B]">
                     Terminal Application
                   </span>
                   <span className="text-xs text-[#71717A]">
-                    The terminal app to use when launching Claude Code
+                    Select your preferred terminal app
                   </span>
                 </div>
-                <select
-                  value={terminalApp}
-                  onChange={(e) => setTerminalApp(e.target.value)}
-                  className="rounded-md border border-[#E5E5E5] px-3 py-1.5 text-sm text-[#18181B] focus:border-[#18181B] focus:outline-none"
-                >
-                  <option value="Terminal">Terminal</option>
-                  <option value="iTerm">iTerm</option>
-                  <option value="Warp">Warp</option>
-                  <option value="Alacritty">Alacritty</option>
-                </select>
+                <div className="relative">
+                  <select
+                    value={terminalApp}
+                    onChange={(e) => setTerminalApp(e.target.value)}
+                    className="h-9 appearance-none rounded-md border border-[#E5E5E5] pl-3 pr-8 text-[13px] text-[#18181B] focus:border-[#18181B] focus:outline-none cursor-pointer"
+                  >
+                    <option value="Terminal">Terminal.app</option>
+                    <option value="iTerm">iTerm2</option>
+                    <option value="Warp">Warp</option>
+                    <option value="Alacritty">Alacritty</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#A1A1AA] pointer-events-none" />
+                </div>
               </Row>
 
               {/* Warp Open Mode - Only shown when Warp is selected */}
@@ -391,31 +394,34 @@ export function SettingsPage() {
                 <Row>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-[13px] font-medium text-[#18181B]">
-                      Open Mode
+                      Warp Open Mode
                     </span>
                     <span className="text-xs text-[#71717A]">
-                      How Warp opens when launching Claude Code
+                      How to open new sessions in Warp
                     </span>
                   </div>
-                  <select
-                    value={warpOpenMode}
-                    onChange={(e) => setWarpOpenMode(e.target.value as 'tab' | 'window')}
-                    className="rounded-md border border-[#E5E5E5] px-3 py-1.5 text-sm text-[#18181B] focus:border-[#18181B] focus:outline-none"
-                  >
-                    <option value="tab">New Tab</option>
-                    <option value="window">New Window</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={warpOpenMode}
+                      onChange={(e) => setWarpOpenMode(e.target.value as 'tab' | 'window')}
+                      className="h-9 appearance-none rounded-md border border-[#E5E5E5] pl-3 pr-8 text-[13px] text-[#18181B] focus:border-[#18181B] focus:outline-none cursor-pointer"
+                    >
+                      <option value="window">New Window</option>
+                      <option value="tab">New Tab</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#A1A1AA] pointer-events-none" />
+                  </div>
                 </Row>
               )}
 
-              {/* Claude Command */}
+              {/* Launch Command */}
               <Row>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[13px] font-medium text-[#18181B]">
                     Launch Command
                   </span>
                   <span className="text-xs text-[#71717A]">
-                    The command to run when launching Claude Code
+                    Command to execute in the terminal
                   </span>
                 </div>
                 <input
@@ -423,39 +429,42 @@ export function SettingsPage() {
                   value={claudeCommand}
                   onChange={(e) => setClaudeCommand(e.target.value)}
                   placeholder="claude"
-                  className="w-48 rounded-md border border-[#E5E5E5] px-3 py-1.5 text-sm text-[#18181B] focus:border-[#18181B] focus:outline-none"
+                  className="h-9 w-[180px] px-3 rounded-md border border-[#E5E5E5] text-[13px] font-mono text-[#18181B] focus:outline-none focus:ring-1 focus:ring-[#18181B]"
                 />
               </Row>
 
-              {/* Quick Action Install */}
+              {/* Finder Integration */}
               <Row noBorder>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-[13px] font-medium text-[#18181B]">
                     Finder Integration
                   </span>
                   <span className="text-xs text-[#71717A]">
-                    Install Quick Action for right-click menu in Finder
+                    Right-click 'Open with Ensemble' in Finder
                   </span>
-                  {quickActionStatus === 'success' && (
-                    <span className="text-xs text-green-600 mt-1">
-                      ✓ {quickActionMessage}
-                    </span>
-                  )}
-                  {quickActionStatus === 'error' && (
-                    <span className="text-xs text-red-600 mt-1">
-                      ✗ {quickActionMessage}
-                    </span>
-                  )}
                 </div>
-                <Button
-                  variant="secondary"
-                  size="small"
-                  onClick={handleInstallQuickAction}
-                  disabled={quickActionStatus === 'installing'}
-                  loading={quickActionStatus === 'installing'}
-                >
-                  {quickActionStatus === 'installing' ? 'Installing...' : 'Install Quick Action'}
-                </Button>
+                <div className="flex items-center gap-2.5">
+                  {/* Status Badge */}
+                  {quickActionStatus === 'success' || quickActionStatus === 'idle' ? (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#DCFCE7]">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#16A34A]" />
+                      <span className="text-[11px] font-semibold text-[#16A34A]">Installed</span>
+                    </div>
+                  ) : quickActionStatus === 'error' ? (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#FEE2E2]">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#DC2626]" />
+                      <span className="text-[11px] font-semibold text-[#DC2626]">Error</span>
+                    </div>
+                  ) : null}
+                  {/* Reinstall Button */}
+                  <button
+                    onClick={handleInstallQuickAction}
+                    disabled={quickActionStatus === 'installing'}
+                    className="text-xs font-medium text-[#71717A] hover:text-[#18181B] transition-colors disabled:opacity-50"
+                  >
+                    {quickActionStatus === 'installing' ? 'Installing...' : 'Reinstall'}
+                  </button>
+                </div>
               </Row>
             </Card>
           </section>

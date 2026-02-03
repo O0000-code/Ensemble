@@ -1,8 +1,8 @@
+import { useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useImportStore } from '@/stores/importStore';
-import Modal from './Modal';
 import Button from './Button';
-import { Checkbox } from './Checkbox';
-import { AlertTriangle, CheckCircle, Package, Server } from 'lucide-react';
+import { X, Check, Sparkles, Plug, Info, CheckCircle } from 'lucide-react';
 
 /**
  * ImportDialog Component
@@ -10,13 +10,30 @@ import { AlertTriangle, CheckCircle, Package, Server } from 'lucide-react';
  * First-time startup dialog for importing existing Claude Code configurations.
  * Displays detected Skills and MCPs from ~/.claude/ directory with selection capability.
  *
- * Features:
- * - Shows warning about import behavior (copy, not move)
- * - Lists detected Skills and MCPs with checkboxes
- * - Select all / Deselect all functionality
- * - Import progress indicator
- * - Import result display with backup path
+ * Design Spec: V1 (560x580px Modal)
+ * - Custom checkbox styling (16x16, rounded-4px)
+ * - Grouped display (SKILLS + MCP SERVERS)
+ * - Skills: name + path format
+ * - MCPs: name + scope/path format (User scope purple, Local grey)
  */
+
+// Custom Checkbox Component
+function CustomCheckbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onChange}
+      className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-colors ${
+        checked
+          ? 'bg-[#18181B]'
+          : 'border-[1.5px] border-[#D4D4D8]'
+      }`}
+    >
+      {checked && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+    </button>
+  );
+}
+
 export function ImportDialog() {
   const {
     showImportDialog,
@@ -31,6 +48,39 @@ export function ImportDialog() {
     deselectAllItems,
     importConfig,
   } = useImportStore();
+
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  // Handle Escape key press
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isImporting) {
+        closeImportDialog();
+      }
+    },
+    [closeImportDialog, isImporting]
+  );
+
+  // Disable body scroll when modal is open
+  useEffect(() => {
+    if (showImportDialog) {
+      document.body.style.overflow = 'hidden';
+      document.addEventListener('keydown', handleKeyDown);
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showImportDialog, handleKeyDown]);
+
+  // Handle overlay click
+  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === overlayRef.current && !isImporting) {
+      closeImportDialog();
+    }
+  };
 
   // Don't render if dialog is closed or no config detected
   if (!showImportDialog || !detectedConfig) return null;
@@ -59,236 +109,306 @@ export function ImportDialog() {
       isSuccess = false;
     }
 
-    return (
-      <Modal isOpen={true} onClose={closeImportDialog} title={title}>
-        <div className="p-6">
-          {/* Status indicator */}
-          <div className="flex items-center gap-3 mb-4">
-            <CheckCircle className={`w-8 h-8 flex-shrink-0 ${isSuccess ? 'text-green-500' : 'text-[#71717A]'}`} />
-            <div>
-              <h3 className="font-medium text-[#18181B]">
-                {isSuccess ? (totalImported > 0 ? 'Import Successful' : 'No Changes Needed') : 'Import Failed'}
-              </h3>
-              <p className="text-sm text-[#71717A]">{message}</p>
+    // Result dialog uses similar custom styling
+    const resultContent = (
+      <div
+        ref={overlayRef}
+        onClick={handleOverlayClick}
+        className="modal-overlay-animate fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      >
+        <div className="modal-dialog-animate w-[560px] bg-white rounded-2xl shadow-[0_25px_50px_rgba(0,0,0,0.1)] overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between py-5 px-6 border-b border-[#E5E5E5]">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-[18px] font-semibold text-[#18181B]">{title}</h2>
             </div>
+            <button
+              onClick={closeImportDialog}
+              className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-[#F4F4F5] transition-colors"
+              aria-label="Close modal"
+            >
+              <X className="w-[18px] h-[18px] text-[#A1A1AA]" />
+            </button>
           </div>
 
-          {/* Backup path information */}
-          {importResult.backupPath && (
-            <div className="bg-[#EFF6FF] p-4 rounded-lg mb-4">
-              <p className="text-sm text-[#1E40AF]">
-                <strong>Backup created at:</strong>
-              </p>
-              <code className="text-xs text-[#1E40AF] break-all">
-                {importResult.backupPath}
-              </code>
+          {/* Body */}
+          <div className="p-6">
+            {/* Status indicator */}
+            <div className="flex items-center gap-3 mb-4">
+              <CheckCircle className={`w-8 h-8 flex-shrink-0 ${isSuccess ? 'text-green-500' : 'text-[#71717A]'}`} />
+              <div>
+                <h3 className="font-medium text-[#18181B]">
+                  {isSuccess ? (totalImported > 0 ? 'Import Successful' : 'No Changes Needed') : 'Import Failed'}
+                </h3>
+                <p className="text-sm text-[#71717A]">{message}</p>
+              </div>
             </div>
-          )}
 
-          {/* Skipped items info */}
-          {skippedCount > 0 && totalImported > 0 && (
-            <div className="bg-[#F5F5F5] p-4 rounded-lg mb-4">
-              <p className="text-sm text-[#71717A]">
-                {skippedCount} item{skippedCount > 1 ? 's were' : ' was'} skipped because {skippedCount > 1 ? 'they' : 'it'} already exist{skippedCount === 1 ? 's' : ''} in Ensemble.
-              </p>
-            </div>
-          )}
+            {/* Backup path information */}
+            {importResult.backupPath && (
+              <div className="bg-[#EFF6FF] p-4 rounded-lg mb-4">
+                <p className="text-sm text-[#1E40AF]">
+                  <strong>Backup created at:</strong>
+                </p>
+                <code className="text-xs text-[#1E40AF] break-all">
+                  {importResult.backupPath}
+                </code>
+              </div>
+            )}
 
-          {/* Other errors if any */}
-          {otherErrors.length > 0 && (
-            <div className="bg-[#FEF3C7] p-4 rounded-lg mb-4">
-              <p className="text-sm font-medium text-[#92400E] mb-2">
-                Some items could not be imported:
-              </p>
-              <ul className="text-sm text-[#B45309] list-disc list-inside">
-                {otherErrors.map((err, i) => (
-                  <li key={i}>{err}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+            {/* Skipped items info */}
+            {skippedCount > 0 && totalImported > 0 && (
+              <div className="bg-[#F5F5F5] p-4 rounded-lg mb-4">
+                <p className="text-sm text-[#71717A]">
+                  {skippedCount} item{skippedCount > 1 ? 's were' : ' was'} skipped because {skippedCount > 1 ? 'they' : 'it'} already exist{skippedCount === 1 ? 's' : ''} in Ensemble.
+                </p>
+              </div>
+            )}
 
-          <Button onClick={closeImportDialog} className="w-full">
-            Continue
-          </Button>
+            {/* Other errors if any */}
+            {otherErrors.length > 0 && (
+              <div className="bg-[#FEF3C7] p-4 rounded-lg mb-4">
+                <p className="text-sm font-medium text-[#92400E] mb-2">
+                  Some items could not be imported:
+                </p>
+                <ul className="text-sm text-[#B45309] list-disc list-inside">
+                  {otherErrors.map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <Button onClick={closeImportDialog} className="w-full">
+              Continue
+            </Button>
+          </div>
         </div>
-      </Modal>
+      </div>
     );
+
+    return createPortal(resultContent, document.body);
   }
 
-  // Build item lists for display
-  const skillItems = detectedConfig.skills.map((s) => ({
-    type: 'skill' as const,
-    name: s.name,
-    sourcePath: s.path,
-  }));
-  const mcpItems = detectedConfig.mcps.map((m) => ({
-    type: 'mcp' as const,
-    name: m.name,
-    sourcePath: '',
-  }));
-  const allItems = [...skillItems, ...mcpItems];
+  // Calculate totals
+  const totalSkills = detectedConfig.skills.length;
+  const totalMcps = detectedConfig.mcps.length;
+  const totalItems = totalSkills + totalMcps;
 
   // Check if an item is selected
-  const isItemSelected = (type: string, name: string) =>
-    selectedItems.some((i) => i.type === type && i.name === name);
+  const isItemSelected = (type: string, name: string, sourcePath: string = '') =>
+    selectedItems.some((i) => i.type === type && i.name === name && i.sourcePath === sourcePath);
+
+  // Check if all items are selected
+  const allSelected = selectedItems.length === totalItems && totalItems > 0;
+
+  // Toggle select all
+  const handleSelectAllToggle = () => {
+    if (allSelected) {
+      deselectAllItems();
+    } else {
+      selectAllItems();
+    }
+  };
 
   // Main import dialog
-  return (
-    <Modal
-      isOpen={true}
-      onClose={closeImportDialog}
-      title="Import Existing Configuration"
-      maxWidth="560px"
+  const modalContent = (
+    <div
+      ref={overlayRef}
+      onClick={handleOverlayClick}
+      className="modal-overlay-animate fixed inset-0 z-50 flex items-center justify-center bg-black/40"
     >
-      <div className="p-6">
-        {/* Warning message */}
-        <div className="flex gap-3 p-4 bg-[#FFFBEB] rounded-lg mb-6">
-          <AlertTriangle className="w-5 h-5 text-[#D97706] flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm text-[#92400E] font-medium mb-1">
-              Existing Claude Code configuration detected
-            </p>
-            <p className="text-sm text-[#B45309]">
-              Ensemble will <strong>copy</strong> (not move) your existing Skills
-              and MCP configurations to its own directory. Your original{' '}
-              <code className="bg-[#FEF3C7] px-1 rounded">~/.claude</code> folder
-              will not be modified. A backup will be created before import.
+      <div className="modal-dialog-animate w-[560px] h-[580px] bg-white rounded-2xl shadow-[0_25px_50px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden">
+        {/* Modal Header */}
+        <div className="flex items-center justify-between py-5 px-6 border-b border-[#E5E5E5] flex-shrink-0">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-[18px] font-semibold text-[#18181B]">
+              Import Existing Configuration
+            </h2>
+            <p className="text-[13px] text-[#71717A]">
+              We found Skills and MCP servers on your system
             </p>
           </div>
+          <button
+            onClick={closeImportDialog}
+            disabled={isImporting}
+            className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-[#F4F4F5] transition-colors disabled:opacity-50"
+            aria-label="Close modal"
+          >
+            <X className="w-[18px] h-[18px] text-[#A1A1AA]" />
+          </button>
         </div>
 
-        {/* Selection controls */}
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-sm text-[#71717A]">
-            {selectedItems.length} of {allItems.length} items selected
-          </span>
-          <div className="flex gap-2">
-            <button
-              onClick={selectAllItems}
-              className="text-sm text-[#2563EB] hover:text-[#1D4ED8] transition-colors"
-            >
-              Select All
-            </button>
-            <span className="text-[#D4D4D4]">|</span>
-            <button
-              onClick={deselectAllItems}
-              className="text-sm text-[#2563EB] hover:text-[#1D4ED8] transition-colors"
-            >
-              Deselect All
-            </button>
+        {/* Modal Body */}
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* List Header */}
+          <div className="flex items-center justify-between py-3 px-6 border-b border-[#E5E5E5] flex-shrink-0">
+            <div className="flex items-center gap-2.5">
+              <CustomCheckbox checked={allSelected} onChange={handleSelectAllToggle} />
+              <span className="text-[13px] font-medium text-[#18181B]">Select All</span>
+            </div>
+            <span className="text-xs text-[#A1A1AA]">
+              {selectedItems.length} of {totalItems} selected
+            </span>
+          </div>
+
+          {/* List Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto py-4 px-6">
+            <div className="flex flex-col gap-4">
+              {/* Skills Group */}
+              {totalSkills > 0 && (
+                <div className="flex flex-col gap-2">
+                  {/* Group Header */}
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-3 h-3 text-[#A1A1AA]" />
+                    <span className="text-[10px] font-semibold tracking-[0.8px] text-[#A1A1AA] uppercase">
+                      SKILLS
+                    </span>
+                  </div>
+                  {/* Skills List */}
+                  <div className="flex flex-col gap-0.5">
+                    {detectedConfig.skills.map((skill) => {
+                      const selected = isItemSelected('skill', skill.name, skill.path);
+                      return (
+                        <div
+                          key={skill.name}
+                          onClick={() =>
+                            toggleItemSelection({
+                              type: 'skill',
+                              name: skill.name,
+                              sourcePath: skill.path,
+                            })
+                          }
+                          className="flex items-center gap-3 py-2.5 px-3 rounded-md hover:bg-[#FAFAFA] cursor-pointer transition-colors"
+                        >
+                          <CustomCheckbox
+                            checked={selected}
+                            onChange={() =>
+                              toggleItemSelection({
+                                type: 'skill',
+                                name: skill.name,
+                                sourcePath: skill.path,
+                              })
+                            }
+                          />
+                          <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                            <span className="text-[13px] font-medium text-[#18181B] truncate">
+                              {skill.name}
+                            </span>
+                            <span className="text-[11px] text-[#A1A1AA] truncate">
+                              ~/.claude/skills/{skill.name}/
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* MCP Group */}
+              {totalMcps > 0 && (
+                <div className="flex flex-col gap-2">
+                  {/* Group Header */}
+                  <div className="flex items-center gap-2">
+                    <Plug className="w-3 h-3 text-[#A1A1AA]" />
+                    <span className="text-[10px] font-semibold tracking-[0.8px] text-[#A1A1AA] uppercase">
+                      MCP SERVERS
+                    </span>
+                  </div>
+                  {/* MCP List */}
+                  <div className="flex flex-col gap-0.5">
+                    {detectedConfig.mcps.map((mcp) => {
+                      // For MCPs, sourcePath is empty string by default
+                      const sourcePath = mcp.scope === 'local' && mcp.projectPath ? mcp.projectPath : '';
+                      const selected = isItemSelected('mcp', mcp.name, sourcePath);
+                      return (
+                        <div
+                          key={`${mcp.name}-${mcp.scope || 'user'}-${mcp.projectPath || ''}`}
+                          onClick={() =>
+                            toggleItemSelection({
+                              type: 'mcp',
+                              name: mcp.name,
+                              sourcePath,
+                            })
+                          }
+                          className="flex items-center gap-3 py-2.5 px-3 rounded-md hover:bg-[#FAFAFA] cursor-pointer transition-colors"
+                        >
+                          <CustomCheckbox
+                            checked={selected}
+                            onChange={() =>
+                              toggleItemSelection({
+                                type: 'mcp',
+                                name: mcp.name,
+                                sourcePath,
+                              })
+                            }
+                          />
+                          <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                            <span className="text-[13px] font-medium text-[#18181B] truncate">
+                              {mcp.name}
+                            </span>
+                            {mcp.scope === 'user' ? (
+                              <span className="text-[11px] font-medium text-[#8B5CF6]">
+                                User scope
+                              </span>
+                            ) : mcp.scope === 'local' && mcp.projectPath ? (
+                              <span className="text-[11px] text-[#71717A] truncate">
+                                Local · {mcp.projectPath}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-[#71717A] truncate">
+                                {mcp.command}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Skills list */}
-        {detectedConfig.skills.length > 0 && (
-          <div className="mb-4">
-            <h4 className="text-sm font-medium text-[#18181B] mb-2 flex items-center gap-2">
-              <Package className="w-4 h-4" />
-              Skills ({detectedConfig.skills.length})
-            </h4>
-            <div className="border border-[#E5E5E5] rounded-lg divide-y divide-[#E5E5E5] max-h-40 overflow-y-auto">
-              {detectedConfig.skills.map((skill) => (
-                <label
-                  key={skill.name}
-                  className="flex items-center gap-3 p-3 hover:bg-[#FAFAFA] cursor-pointer transition-colors"
-                >
-                  <Checkbox
-                    checked={isItemSelected('skill', skill.name)}
-                    onChange={() =>
-                      toggleItemSelection({
-                        type: 'skill',
-                        name: skill.name,
-                        sourcePath: skill.path,
-                      })
-                    }
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[#18181B] truncate">
-                      {skill.name}
-                    </p>
-                    {skill.description && (
-                      <p className="text-xs text-[#71717A] truncate">
-                        {skill.description}
-                      </p>
-                    )}
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* MCPs list */}
-        {detectedConfig.mcps.length > 0 && (
-          <div className="mb-6">
-            <h4 className="text-sm font-medium text-[#18181B] mb-2 flex items-center gap-2">
-              <Server className="w-4 h-4" />
-              MCP Servers ({detectedConfig.mcps.length})
-            </h4>
-            <div className="border border-[#E5E5E5] rounded-lg divide-y divide-[#E5E5E5] max-h-40 overflow-y-auto">
-              {detectedConfig.mcps.map((mcp) => (
-                <label
-                  key={mcp.name}
-                  className="flex items-center gap-3 p-3 hover:bg-[#FAFAFA] cursor-pointer transition-colors"
-                >
-                  <Checkbox
-                    checked={isItemSelected('mcp', mcp.name)}
-                    onChange={() =>
-                      toggleItemSelection({
-                        type: 'mcp',
-                        name: mcp.name,
-                        sourcePath: '',
-                      })
-                    }
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[#18181B] truncate">
-                      {mcp.name}
-                    </p>
-                    <p className="text-xs text-[#71717A] truncate font-mono">
-                      {mcp.command}
-                    </p>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Error display */}
         {error && (
-          <div className="mb-4 p-3 bg-[#FEF2F2] text-[#DC2626] text-sm rounded-lg">
+          <div className="mx-6 mb-2 p-3 bg-[#FEF2F2] text-[#DC2626] text-sm rounded-lg flex-shrink-0">
             {error}
           </div>
         )}
 
-        {/* Action buttons */}
-        <div className="flex gap-3">
-          <Button
-            variant="secondary"
-            onClick={closeImportDialog}
-            className="flex-1"
-            disabled={isImporting}
-          >
-            Skip
-          </Button>
-          <Button
-            onClick={importConfig}
-            className="flex-1"
-            disabled={isImporting || selectedItems.length === 0}
-            loading={isImporting}
-          >
-            {isImporting ? (
-              'Importing...'
-            ) : (
-              `Import ${selectedItems.length} Items`
-            )}
-          </Button>
+        {/* Modal Footer */}
+        <div className="flex items-center justify-between py-4 px-6 border-t border-[#E5E5E5] flex-shrink-0">
+          {/* Info Icon */}
+          <div className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#FAFAFA] cursor-pointer">
+            <Info className="w-4 h-4 text-[#A1A1AA]" />
+          </div>
+
+          {/* Buttons */}
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={closeImportDialog}
+              disabled={isImporting}
+              className="h-9 px-4 rounded-md border border-[#E5E5E5] text-[13px] font-medium text-[#71717A] hover:bg-[#FAFAFA] transition-colors disabled:opacity-50"
+            >
+              Skip
+            </button>
+            <button
+              onClick={importConfig}
+              disabled={isImporting || selectedItems.length === 0}
+              className="h-9 px-5 rounded-md bg-[#18181B] text-[13px] font-medium text-white hover:bg-[#27272A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isImporting ? 'Importing...' : 'Import Selected'}
+            </button>
+          </div>
         </div>
       </div>
-    </Modal>
+    </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
 
 export default ImportDialog;
