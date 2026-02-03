@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Wrench, Zap, MoreHorizontal, Trash2, Puzzle } from 'lucide-react';
 import { ICON_MAP } from '@/components/common';
+import { truncateToFirstSentence } from '@/utils/text';
 import { McpServer } from '@/types';
 
 // ============================================================================
@@ -189,8 +190,8 @@ export const McpListItem: React.FC<McpListItemProps> = ({
           >
             {mcp.name}
           </span>
-          <span className="text-xs font-normal text-[#71717A] truncate">
-            {mcp.description}
+          <span className="text-xs font-normal text-[#71717A] max-w-[600px]">
+            {truncateToFirstSentence(mcp.description, 100)}
           </span>
         </div>
       </div>

@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Sparkles, MoreHorizontal, Trash2, Puzzle } from 'lucide-react';
 import Badge from '../common/Badge';
 import { ICON_MAP } from '@/components/common';
+import { truncateToFirstSentence } from '@/utils/text';
 import { Skill } from '@/types';
 
 // ============================================================================
@@ -175,8 +176,8 @@ export const SkillListItem: React.FC<SkillListItemProps> = ({
           >
             {skill.name}
           </span>
-          <span className="text-xs font-normal text-[#71717A] truncate max-w-[500px]">
-            {skill.description}
+          <span className="text-xs font-normal text-[#71717A] max-w-[600px]">
+            {truncateToFirstSentence(skill.description, 100)}
           </span>
         </div>
       </div>

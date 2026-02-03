@@ -3,49 +3,9 @@ import { createPortal } from 'react-dom';
 import { X, Check, Info, Puzzle, HardDrive, Store } from 'lucide-react';
 import { useImportStore } from '@/stores/importStore';
 import { usePluginsStore } from '@/stores/pluginsStore';
+import { truncateToFirstSentence } from '@/utils/text';
 import type { DetectedSkill } from '@/types';
 import type { DetectedPluginSkill, PluginImportItem } from '@/types/plugin';
-
-interface ImportSkillsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onImportComplete?: () => void;
-}
-
-/**
- * Truncate text to first sentence (ending with . or 。)
- */
-function truncateToFirstSentence(text: string, maxLength: number = 100): string {
-  if (!text) return '';
-
-  // Find first sentence ending
-  let sentenceEnd = -1;
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-    // Chinese period - always ends sentence
-    if (char === '。') {
-      sentenceEnd = i + 1;
-      break;
-    }
-    // English period - only ends sentence if followed by space, newline, or end
-    if (char === '.') {
-      const nextChar = text[i + 1];
-      if (!nextChar || nextChar === ' ' || nextChar === '\n' || nextChar === '\t') {
-        sentenceEnd = i + 1;
-        break;
-      }
-    }
-  }
-
-  const result = sentenceEnd > 0 ? text.slice(0, sentenceEnd) : text;
-
-  // Apply max length limit
-  if (result.length > maxLength) {
-    return result.slice(0, maxLength) + '...';
-  }
-
-  return result;
-}
 
 type TabType = 'claude' | 'plugin';
 
