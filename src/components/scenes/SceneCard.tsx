@@ -9,6 +9,8 @@ import {
   BookOpen,
   Smartphone,
   MoreHorizontal,
+  Sparkles,
+  Plug,
 } from 'lucide-react';
 import { Scene } from '@/types';
 
@@ -127,17 +129,17 @@ export const SceneCard: React.FC<SceneCardProps> = ({
         <div className="flex items-center gap-5">
           {/* Skills Count */}
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-medium text-[#A1A1AA]">Skills</span>
-            <span className="text-[11px] font-semibold text-[#52525B]">
-              {scene.skillIds.length}
+            <Sparkles className="h-3 w-3 text-[#A1A1AA]" />
+            <span className="text-[11px] font-normal text-[#71717A]">
+              {scene.skillIds.length} Skills
             </span>
           </div>
 
           {/* MCPs Count */}
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-medium text-[#A1A1AA]">MCPs</span>
-            <span className="text-[11px] font-semibold text-[#52525B]">
-              {scene.mcpIds.length}
+            <Plug className="h-3 w-3 text-[#A1A1AA]" />
+            <span className="text-[11px] font-normal text-[#71717A]">
+              {scene.mcpIds.length} MCPs
             </span>
           </div>
         </div>

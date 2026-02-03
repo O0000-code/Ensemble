@@ -10,6 +10,8 @@ import {
   Smartphone,
   MoreHorizontal,
   Trash2,
+  Sparkles,
+  Plug,
 } from 'lucide-react';
 import { Scene } from '@/types';
 
@@ -154,14 +156,8 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
           />
         </div>
 
-        {/* Info - with smooth vertical position transition */}
-        <div
-          className="flex flex-col gap-1"
-          style={{
-            marginTop: compact ? 0 : '3px',
-            transition: `margin-top ${TRANSITION_BASE}`,
-          }}
-        >
+        {/* Info */}
+        <div className="flex flex-col gap-1">
           {/* Name */}
           <span
             className={`
@@ -226,13 +222,13 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
               className="flex items-center overflow-hidden whitespace-nowrap"
               style={{
                 gap: compact ? 0 : '6px',
-                maxWidth: compact ? 0 : '100px',
+                maxWidth: compact ? 0 : '120px',
                 transition: `gap ${TRANSITION_BASE}, max-width ${TRANSITION_BASE}`,
               }}
             >
-              <span className="text-[11px] font-medium text-[#A1A1AA]">Skills</span>
-              <span className="text-[11px] font-semibold text-[#52525B]">
-                {scene.skillIds.length}
+              <Sparkles className="h-3 w-3 text-[#A1A1AA] shrink-0" />
+              <span className="text-[11px] font-normal text-[#71717A]">
+                {scene.skillIds.length} Skills
               </span>
             </div>
 
@@ -241,13 +237,13 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
               className="flex items-center overflow-hidden whitespace-nowrap"
               style={{
                 gap: compact ? 0 : '6px',
-                maxWidth: compact ? 0 : '100px',
+                maxWidth: compact ? 0 : '120px',
                 transition: `gap ${TRANSITION_BASE}, max-width ${TRANSITION_BASE}`,
               }}
             >
-              <span className="text-[11px] font-medium text-[#A1A1AA]">MCPs</span>
-              <span className="text-[11px] font-semibold text-[#52525B]">
-                {scene.mcpIds.length}
+              <Plug className="h-3 w-3 text-[#A1A1AA] shrink-0" />
+              <span className="text-[11px] font-normal text-[#71717A]">
+                {scene.mcpIds.length} MCPs
               </span>
             </div>
           </div>

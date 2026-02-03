@@ -65,16 +65,16 @@ fn write_claude_json(config: &ClaudeJson) -> Result<(), String> {
         .map_err(|e| format!("Failed to write ~/.claude.json: {}", e))
 }
 
-/// Remove specified MCPs from ~/.claude.json after successful import
-fn remove_mcps_from_claude_json(mcp_names: &[String]) -> Result<(), String> {
-    let mut claude_json = read_claude_json()?;
-
-    for name in mcp_names {
-        claude_json.mcp_servers.remove(name);
-    }
-
-    write_claude_json(&claude_json)
-}
+// /// Remove specified MCPs from ~/.claude.json after successful import
+// fn remove_mcps_from_claude_json(mcp_names: &[String]) -> Result<(), String> {
+//     let mut claude_json = read_claude_json()?;
+//
+//     for name in mcp_names {
+//         claude_json.mcp_servers.remove(name);
+//     }
+//
+//     write_claude_json(&claude_json)
+// }
 
 // ============================================================================
 

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Folder, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Folder, MoreHorizontal, Trash2, Layers, Sparkles, Plug } from 'lucide-react';
 import type { Project, Scene } from '../../types';
 
 // ============================================================================
@@ -124,23 +124,59 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
 
       {/* Right Section */}
       <div className="flex items-center gap-6">
-        {/* Meta Info - Scene */}
+        {/* Meta Info - hidden in compact mode */}
         {scene && (
-          <div className="flex items-center gap-5">
-            <div className="flex flex-col items-end gap-1.5">
-              <span className="text-[11px] font-medium text-[#A1A1AA]">Scene</span>
-              <span className="text-[11px] font-semibold text-[#52525B]">
+          <div
+            className="flex items-center overflow-hidden"
+            style={{
+              opacity: compact ? 0 : 1,
+              maxWidth: compact ? 0 : '400px',
+              gap: compact ? 0 : '20px',
+              transition: 'opacity 250ms cubic-bezier(0.4, 0, 0.2, 1), max-width 250ms cubic-bezier(0.4, 0, 0.2, 1), gap 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+          >
+            {/* Scene */}
+            <div
+              className="flex items-center overflow-hidden whitespace-nowrap"
+              style={{
+                gap: compact ? 0 : '6px',
+                transition: 'gap 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            >
+              <Layers className="h-3 w-3 text-[#A1A1AA] shrink-0" />
+              <span className="text-[11px] font-normal text-[#71717A]">
                 {scene.name}
               </span>
             </div>
-          </div>
-        )}
 
-        {/* Status Badge */}
-        {isConfigured && (
-          <span className="rounded px-2.5 py-1 text-[10px] font-semibold text-[#16A34A] bg-[#DCFCE7]">
-            Configured
-          </span>
+            {/* Skills Count */}
+            <div
+              className="flex items-center overflow-hidden whitespace-nowrap"
+              style={{
+                gap: compact ? 0 : '6px',
+                transition: 'gap 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            >
+              <Sparkles className="h-3 w-3 text-[#A1A1AA] shrink-0" />
+              <span className="text-[11px] font-normal text-[#71717A]">
+                {scene.skillIds.length} Skills
+              </span>
+            </div>
+
+            {/* MCPs Count */}
+            <div
+              className="flex items-center overflow-hidden whitespace-nowrap"
+              style={{
+                gap: compact ? 0 : '6px',
+                transition: 'gap 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            >
+              <Plug className="h-3 w-3 text-[#A1A1AA] shrink-0" />
+              <span className="text-[11px] font-normal text-[#71717A]">
+                {scene.mcpIds.length} MCPs
+              </span>
+            </div>
+          </div>
         )}
 
         {/* Action Button - Always visible */}

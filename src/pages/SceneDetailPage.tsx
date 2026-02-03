@@ -357,6 +357,16 @@ export const SceneDetailPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Description Section */}
+              <div className="flex flex-col gap-3">
+                <h3 className="text-sm font-semibold text-[#18181B]">Description</h3>
+                <div className="rounded-lg border border-[#E5E5E5] p-4">
+                  <p className="text-xs text-[#52525B] leading-[1.6]">
+                    {selectedScene.description || <span className="text-[#A1A1AA] italic">No description</span>}
+                  </p>
+                </div>
+              </div>
+
               {/* Included Skills Section */}
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">

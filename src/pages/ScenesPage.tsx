@@ -336,11 +336,7 @@ export const ScenesPage: React.FC = () => {
         {filteredScenes.length > 0 ? (
           /* Scene List - Unified SceneListItem with animated compact mode */
           <div
-            className="flex flex-col"
-            style={{
-              gap: selectedSceneId ? '4px' : '12px',
-              transition: 'gap 250ms cubic-bezier(0.4, 0, 0.2, 1)',
-            }}
+            className="flex flex-col gap-3"
           >
             {filteredScenes.map((scene) => (
               <SceneListItem
@@ -459,6 +455,16 @@ export const ScenesPage: React.FC = () => {
                     {usingProjects.length} projects
                   </span>
                 </div>
+              </div>
+            </div>
+
+            {/* Description Section */}
+            <div className="flex flex-col gap-3">
+              <h3 className="text-sm font-semibold text-[#18181B]">Description</h3>
+              <div className="rounded-lg border border-[#E5E5E5] p-4">
+                <p className="text-xs text-[#52525B] leading-[1.6]">
+                  {selectedScene.description || <span className="text-[#A1A1AA] italic">No description</span>}
+                </p>
               </div>
             </div>
 
