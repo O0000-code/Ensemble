@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Sparkles, Plug, Layers, Folder, Plus, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Category, Tag } from '@/types';
 import { CategoryInlineInput, TagInlineInput } from '@/components/sidebar';
+import { ColorPicker } from '@/components/common';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 // Helper to start window dragging
@@ -50,6 +51,7 @@ export interface SidebarProps {
   onAddCategory?: () => void;
   onAddTag?: () => void;
   onCategoryContextMenu?: (category: Category, position: { x: number; y: number }) => void;
+  onCategoryColorChange?: (categoryId: string, color: string) => void;
 
   // 编辑状态 props
   editingCategoryId?: string | null;
@@ -95,6 +97,7 @@ export function Sidebar({
   onAddCategory,
   onAddTag,
   onCategoryContextMenu,
+  onCategoryColorChange,
   // 编辑状态 props
   editingCategoryId,
   isAddingCategory,
@@ -259,8 +262,13 @@ export function Sidebar({
 
                   // 普通模式
                   return (
-                    <button
+                    <div
                       key={category.id}
+                      className={`
+                        h-8 px-2.5 flex items-center gap-2.5 rounded-[6px] cursor-pointer
+                        transition-colors duration-150
+                        ${isActive ? 'bg-[#F4F4F5]' : 'hover:bg-[#F4F4F5]'}
+                      `}
                       onClick={() => {
                         if (isActive) {
                           navigate('/skills'); // 取消选择时回到 Skills 页面
@@ -270,16 +278,25 @@ export function Sidebar({
                       }}
                       onDoubleClick={() => onCategoryDoubleClick?.(category.id)}
                       onContextMenu={(e) => handleCategoryContextMenu(e, category)}
-                      className={`
-                        h-8 px-2.5 flex items-center gap-2.5 rounded-[6px] cursor-pointer
-                        transition-colors duration-150
-                        ${isActive ? 'bg-[#F4F4F5]' : 'hover:bg-[#F4F4F5]'}
-                      `}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          if (isActive) {
+                            navigate('/skills');
+                          } else {
+                            navigate(`/category/${category.id}`);
+                          }
+                        }
+                      }}
                     >
-                      {/* Category Dot */}
-                      <span
-                        className="w-2 h-2 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: category.color }}
+                      {/* Category Dot - ColorPicker 触发器 */}
+                      <ColorPicker
+                        value={category.color}
+                        onChange={(color) => {
+                          onCategoryColorChange?.(category.id, color);
+                        }}
                       />
                       {/* Category Name */}
                       <span
@@ -297,7 +314,7 @@ export function Sidebar({
                       <span className="text-[11px] font-medium text-[#A1A1AA]">
                         {category.count}
                       </span>
-                    </button>
+                    </div>
                   );
                 })}
 

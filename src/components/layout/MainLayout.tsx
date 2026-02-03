@@ -339,6 +339,15 @@ export default function MainLayout() {
     stopAddingCategory();
   };
 
+  // 处理分类颜色变更
+  const handleCategoryColorChange = async (categoryId: string, color: string) => {
+    try {
+      await updateCategory(categoryId, undefined, color);
+    } catch (error) {
+      console.error('Failed to update category color:', error);
+    }
+  };
+
   const handleRenameCategory = () => {
     if (contextMenu?.category) {
       startEditingCategory(contextMenu.category.id);
@@ -465,6 +474,7 @@ export default function MainLayout() {
           onCategoryChange={setActiveCategory}
           onTagToggle={toggleActiveTag}
           onCategoryContextMenu={handleCategoryContextMenu}
+          onCategoryColorChange={handleCategoryColorChange}
           // Add/Edit handlers
           onAddCategory={handleAddCategory}
           onAddTag={handleAddTag}

@@ -23,3 +23,5 @@ export { Tooltip } from './Tooltip';
 export type { TooltipProps } from './Tooltip';
 export { TagsWithTooltip } from './TagsWithTooltip';
 export type { TagsWithTooltipProps } from './TagsWithTooltip';
+export { ColorPicker, PRESET_COLORS } from './ColorPicker';
+export type { ColorPickerProps } from './ColorPicker';

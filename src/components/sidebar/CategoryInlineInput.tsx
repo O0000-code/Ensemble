@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { Category } from '@/types';
+import { ColorPicker } from '@/components/common';
 
 interface CategoryInlineInputProps {
   mode: 'add' | 'edit';
   category?: Category;  // 编辑模式必需
   onSave: (name: string) => void;
   onCancel: () => void;
+  onColorChange?: (color: string) => void;  // 颜色变更回调
 }
 
 export const CategoryInlineInput: React.FC<CategoryInlineInputProps> = ({
@@ -13,8 +15,10 @@ export const CategoryInlineInput: React.FC<CategoryInlineInputProps> = ({
   category,
   onSave,
   onCancel,
+  onColorChange,
 }) => {
   const [value, setValue] = useState(mode === 'edit' ? category?.name || '' : '');
+  const [currentColor, setCurrentColor] = useState(mode === 'edit' ? category?.color || '#A1A1AA' : '#A1A1AA');
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -51,17 +55,21 @@ export const CategoryInlineInput: React.FC<CategoryInlineInputProps> = ({
     }
   };
 
-  const dotColor = mode === 'edit' ? category?.color : '#A1A1AA';
+  // 颜色变更处理
+  const handleColorChange = (color: string) => {
+    setCurrentColor(color);
+    onColorChange?.(color);
+  };
 
   return (
     <div
       ref={containerRef}
       className="flex items-center h-8 px-2.5 gap-2.5 rounded-[6px] bg-[#F4F4F5]"
     >
-      {/* 圆点 */}
-      <div
-        className="w-2 h-2 rounded-full flex-shrink-0"
-        style={{ backgroundColor: dotColor }}
+      {/* 颜色圆点 - ColorPicker 触发器 */}
+      <ColorPicker
+        value={currentColor}
+        onChange={handleColorChange}
       />
 
       {/* 输入框 */}
