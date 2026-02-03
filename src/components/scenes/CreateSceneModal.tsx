@@ -14,7 +14,6 @@ import {
   Globe,
   FileCode,
   Zap,
-  Info,
 } from 'lucide-react';
 import { Skill, McpServer } from '@/types';
 import { Dropdown } from '@/components/common/Dropdown';
@@ -535,22 +534,6 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
     () => mcpServers.filter((m) => selectedMcpIds.includes(m.id)),
     [mcpServers, selectedMcpIds]
   );
-
-  // Check if all filtered items are selected (excluding disabled items)
-  const allFilteredSelected = useMemo(() => {
-    if (activeTab === 'skills') {
-      const selectableItems = filteredItems.filter(
-        (item) => !isSkillDisabled(item as Skill)
-      );
-      if (selectableItems.length === 0) return false;
-      return selectableItems.every((item) => selectedSkillIds.includes(item.id));
-    }
-    const selectableItems = filteredItems.filter(
-      (item) => !isMcpDisabled(item as McpServer)
-    );
-    if (selectableItems.length === 0) return false;
-    return selectableItems.every((item) => selectedMcpIds.includes(item.id));
-  }, [activeTab, filteredItems, selectedSkillIds, selectedMcpIds, isSkillDisabled, isMcpDisabled]);
 
   if (!isOpen) return null;
 

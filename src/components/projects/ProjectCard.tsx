@@ -12,7 +12,6 @@ export interface ProjectCardProps {
   compact?: boolean;
   selected?: boolean;
   onClick: () => void;
-  onMoreClick?: (e: React.MouseEvent) => void;
   onDelete?: () => void;
 }
 
@@ -49,7 +48,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   compact = false,
   selected = false,
   onClick,
-  onMoreClick,
   onDelete,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
@@ -82,9 +80,6 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
     if (segments.length <= 3) return path;
     return '~/' + segments.slice(-2).join('/');
   };
-
-  // Check if project is configured (has an assigned scene)
-  const isConfigured = !!scene;
 
   return (
     <div

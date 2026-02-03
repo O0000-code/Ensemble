@@ -11,7 +11,7 @@ import Button from '../components/common/Button';
 import { useAppStore } from '../stores/appStore';
 import { useSkillsStore } from '../stores/skillsStore';
 import { useMcpsStore } from '../stores/mcpsStore';
-import type { Skill, McpServer } from '../types';
+import type { Skill } from '../types';
 
 // ============================================================================
 // CategoryPage Component

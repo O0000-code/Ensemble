@@ -9,6 +9,12 @@ import type { DetectedPluginSkill, PluginImportItem } from '@/types/plugin';
 
 type TabType = 'claude' | 'plugin';
 
+interface ImportSkillsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onImportComplete?: () => void;
+}
+
 /**
  * ImportSkillsModal Component
  *

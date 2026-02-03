@@ -3,11 +3,16 @@ import { createPortal } from 'react-dom';
 import { X, Check, Info, Puzzle, HardDrive, Store } from 'lucide-react';
 import { useImportStore } from '@/stores/importStore';
 import { usePluginsStore } from '@/stores/pluginsStore';
-import { truncateToFirstSentence } from '@/utils/text';
 import type { DetectedMcp } from '@/types';
 import type { DetectedPluginMcp, PluginImportItem } from '@/types/plugin';
 
 type TabType = 'claude' | 'plugin';
+
+interface ImportMcpModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onImportComplete?: () => void;
+}
 
 /**
  * ImportMcpModal Component
