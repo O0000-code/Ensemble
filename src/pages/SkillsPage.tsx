@@ -33,6 +33,7 @@ import { useAppStore } from '@/stores/appStore';
 import { useImportStore } from '@/stores/importStore';
 import { useScenesStore } from '@/stores/scenesStore';
 import { usePluginsStore } from '@/stores/pluginsStore';
+import { safeInvoke } from '@/utils/tauri';
 import type { Skill } from '@/types';
 
 // ============================================================================
@@ -305,9 +306,10 @@ export function SkillsPage() {
     }
   };
 
-  const handleOpenInFinder = () => {
-    // TODO: Implement open in finder functionality
-    console.log('Open in Finder:', selectedSkill?.sourcePath);
+  const handleOpenInFinder = async () => {
+    if (selectedSkill?.sourcePath) {
+      await safeInvoke('reveal_in_finder', { path: selectedSkill.sourcePath });
+    }
   };
 
   // Handle icon click
@@ -596,16 +598,6 @@ export function SkillsPage() {
                   <span className="text-xs text-[#A1A1AA]">All tools</span>
                 )}
               </div>
-            }
-          />
-
-          {/* Context */}
-          <ConfigItem
-            label="Context"
-            value={
-              <span className="rounded bg-[#EEF2FF] px-2 py-0.5 text-[11px] font-medium text-[#4F46E5]">
-                Inline
-              </span>
             }
           />
 

@@ -27,6 +27,7 @@ import { useAppStore } from '@/stores/appStore';
 import { useImportStore } from '@/stores/importStore';
 import { useScenesStore } from '@/stores/scenesStore';
 import { usePluginsStore } from '@/stores/pluginsStore';
+import { safeInvoke } from '@/utils/tauri';
 import type { Tool } from '@/types';
 
 // ============================================================================
@@ -331,6 +332,12 @@ export const McpServersPage: React.FC = () => {
     setTimeout(() => tagInputRef.current?.focus(), 0);
   };
 
+  const handleOpenInFinder = async () => {
+    if (selectedMcp?.sourcePath) {
+      await safeInvoke('reveal_in_finder', { path: selectedMcp.sourcePath });
+    }
+  };
+
   // Get the appropriate icon for the selected MCP
   const SelectedMcpIcon = selectedMcp ? getMcpIcon(selectedMcp) : Database;
 
@@ -588,6 +595,15 @@ export const McpServersPage: React.FC = () => {
               />
             )}
           </div>
+          {/* Open in Finder Button */}
+          <Button
+            variant="secondary"
+            size="small"
+            icon={<FolderOpen />}
+            onClick={handleOpenInFinder}
+          >
+            Open in Finder
+          </Button>
         </div>
       </section>
 

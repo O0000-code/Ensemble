@@ -13,10 +13,11 @@ import {
   Info,
 } from 'lucide-react';
 import { ListDetailLayout } from '@/components/layout/ListDetailLayout';
-import { SearchInput, Badge, EmptyState, IconPicker, ICON_MAP } from '@/components/common';
+import { SearchInput, Badge, Button, EmptyState, IconPicker, ICON_MAP } from '@/components/common';
 import { McpItemCompact } from '@/components/mcps/McpItem';
 import { useMcpsStore } from '@/stores/mcpsStore';
 import { useScenesStore } from '@/stores/scenesStore';
+import { safeInvoke } from '@/utils/tauri';
 import { Tool } from '@/types';
 
 // Icon mapping for MCP servers
@@ -168,6 +169,13 @@ export const McpDetailPage: React.FC = () => {
   // Handle icon picker close
   const handleIconPickerClose = () => {
     setIconPickerState({ isOpen: false, mcpId: null, triggerRef: null });
+  };
+
+  // Handle open in Finder
+  const handleOpenInFinder = async () => {
+    if (selectedMcp?.sourcePath) {
+      await safeInvoke('reveal_in_finder', { path: selectedMcp.sourcePath });
+    }
   };
 
   // List Panel Header
@@ -348,6 +356,15 @@ export const McpDetailPage: React.FC = () => {
               </span>
             )}
           </div>
+          {/* Open in Finder Button */}
+          <Button
+            variant="secondary"
+            size="small"
+            icon={<FolderOpen />}
+            onClick={handleOpenInFinder}
+          >
+            Open in Finder
+          </Button>
         </div>
       </section>
 

@@ -90,6 +90,7 @@ pub fn run() {
             // Dialog
             dialog::select_folder,
             dialog::select_file,
+            dialog::reveal_in_finder,
             // Classify (Anthropic API)
             classify::auto_classify,
             classify::validate_api_key,
