@@ -354,26 +354,28 @@ body {
   100% { filter: brightness(1) saturate(1); }
 }
 
-/* Rainbow gradient check icon */
+/* Rainbow gradient check icon - animated rainbow color */
 .classify-success-icon {
-  animation: classify-success-icon 400ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation:
+    classify-success-icon 400ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+    classify-icon-rainbow 1.5s ease-in-out forwards;
   transform-origin: center center;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(
-    135deg,
-    #ef4444 0%,
-    #f97316 16%,
-    #eab308 33%,
-    #22c55e 50%,
-    #06b6d4 66%,
-    #3b82f6 83%,
-    #8b5cf6 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #8b5cf6;
+}
+
+/* Animate through rainbow colors */
+@keyframes classify-icon-rainbow {
+  0% { color: #ef4444; }      /* Red */
+  15% { color: #f97316; }     /* Orange */
+  30% { color: #eab308; }     /* Yellow */
+  45% { color: #22c55e; }     /* Green */
+  60% { color: #06b6d4; }     /* Cyan */
+  75% { color: #3b82f6; }     /* Blue */
+  90% { color: #8b5cf6; }     /* Purple */
+  100% { color: #a855f7; }    /* End Purple */
 }
 
 /* Success text styling - rainbow gradient */
