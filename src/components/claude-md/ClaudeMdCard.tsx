@@ -1,7 +1,8 @@
 // src/components/claude-md/ClaudeMdCard.tsx
 
 import React, { useRef, useState } from 'react';
-import { FileText, MoreHorizontal, Trash2 } from 'lucide-react';
+import { FileText, MoreHorizontal, Trash2, LucideIcon } from 'lucide-react';
+import { ICON_MAP } from '@/components/common';
 import { ClaudeMdBadge } from './ClaudeMdBadge';
 import { TagsWithTooltip } from '@/components/common/TagsWithTooltip';
 import Badge from '@/components/common/Badge';
@@ -35,6 +36,8 @@ interface ClaudeMdCardProps {
   onClick?: () => void;
   /** Delete handler */
   onDelete?: () => void;
+  /** Icon click handler for IconPicker */
+  onIconClick?: (ref: React.RefObject<HTMLDivElement>) => void;
 }
 
 /**
@@ -63,10 +66,20 @@ export const ClaudeMdCard: React.FC<ClaudeMdCardProps> = ({
   compact = false,
   onClick,
   onDelete,
+  onIconClick,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
+  const iconRef = useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = useState(false);
   const { tags: appTags, categories } = useAppStore();
+
+  // Get file icon - use custom icon if set, otherwise default to FileText
+  const FileIcon: LucideIcon = file.icon && ICON_MAP[file.icon] ? ICON_MAP[file.icon] : FileText;
+
+  const handleIconClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onIconClick?.(iconRef as React.RefObject<HTMLDivElement>);
+  };
 
   // Get category name and color from category ID
   const category = file.categoryId
@@ -138,9 +151,15 @@ export const ClaudeMdCard: React.FC<ClaudeMdCardProps> = ({
     >
       {/* Icon Container - 40x40, layout none for badge positioning */}
       <div className="relative h-10 w-10 flex-shrink-0">
-        {/* Icon Wrap - 40x40, bg #FAFAFA, cornerRadius 8px */}
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#FAFAFA]">
-          <FileText className="h-5 w-5 text-[#52525B]" />
+        {/* Icon Wrap - 40x40, bg #FAFAFA, cornerRadius 8px, clickable for icon change */}
+        <div
+          ref={iconRef}
+          onClick={handleIconClick}
+          className={`flex h-10 w-10 items-center justify-center rounded-lg bg-[#FAFAFA] ${
+            onIconClick ? 'cursor-pointer hover:ring-2 hover:ring-[#18181B]/10 transition-shadow' : ''
+          }`}
+        >
+          <FileIcon className="h-5 w-5 text-[#52525B]" />
         </div>
         {/* Badge - positioned at top-right */}
         {/* If isGlobal=true: purple globe (current global) */}

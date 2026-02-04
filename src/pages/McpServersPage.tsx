@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Server,
   Database,
+  Plug,
   FolderOpen,
   Code,
   MessageSquare,
@@ -41,7 +42,7 @@ const iconMap: Record<string, React.ElementType> = {
   Communication: MessageSquare,
   Research: Globe,
   Productivity: FileText,
-  default: FolderOpen,
+  default: Plug,
 };
 
 const getIcon = (category: string): React.ElementType => {

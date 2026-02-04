@@ -262,12 +262,13 @@ export function IconPicker({
   const [searchQuery, setSearchQuery] = useState('');
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [isPositioned, setIsPositioned] = useState(false);
 
   const popupRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // ========== Position Calculation ==========
-  const updatePosition = useCallback(() => {
+  const updatePosition = useCallback((initialCalc = false) => {
     if (!triggerRef.current) return;
 
     const rect = triggerRef.current.getBoundingClientRect();
@@ -295,6 +296,11 @@ export function IconPicker({
     }
 
     setPosition({ top, left });
+
+    // 初次计算完成后标记为已定位
+    if (initialCalc) {
+      setIsPositioned(true);
+    }
   }, [triggerRef]);
 
   // ========== Filtering ==========
@@ -311,22 +317,28 @@ export function IconPicker({
   // 打开时更新位置和重置状态
   useEffect(() => {
     if (isOpen) {
-      updatePosition();
+      updatePosition(true); // 初次计算位置
       setSearchQuery('');
       setFocusedIndex(-1);
       // 聚焦搜索框
       setTimeout(() => searchInputRef.current?.focus(), 0);
+    } else {
+      // 关闭时重置定位状态，为下次打开做准备
+      setIsPositioned(false);
     }
   }, [isOpen, updatePosition]);
 
   // 监听滚动和窗口大小变化
   useEffect(() => {
     if (isOpen) {
-      window.addEventListener('scroll', updatePosition, true);
-      window.addEventListener('resize', updatePosition);
+      const handleScroll = () => updatePosition();
+      const handleResize = () => updatePosition();
+
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleResize);
       return () => {
-        window.removeEventListener('scroll', updatePosition, true);
-        window.removeEventListener('resize', updatePosition);
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', handleResize);
       };
     }
   }, [isOpen, updatePosition]);
@@ -409,8 +421,10 @@ export function IconPicker({
         left: position.left,
         width: 260,
         zIndex: 9999,
+        opacity: isPositioned ? 1 : 0,
+        pointerEvents: isPositioned ? 'auto' : 'none',
       }}
-      className="bg-white border border-[#E5E5E5] rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.0625)]"
+      className="bg-white border border-[#E5E5E5] rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.0625)] transition-opacity duration-75"
       role="listbox"
       aria-label="Icon picker"
     >

@@ -7,6 +7,7 @@ import { ClaudeMdCard } from '@/components/claude-md/ClaudeMdCard';
 import { ClaudeMdDetailPanel } from '@/components/claude-md/ClaudeMdDetailPanel';
 import { ImportClaudeMdModal } from '@/components/modals/ImportClaudeMdModal';
 import { ScanClaudeMdModal } from '@/components/modals/ScanClaudeMdModal';
+import { IconPicker } from '@/components/common';
 import { useClaudeMdStore } from '@/stores/claudeMdStore';
 
 // ============================================================================
@@ -110,6 +111,7 @@ export function ClaudeMdPage() {
     selectFile,
     deleteFile,
     loadFiles,
+    updateFile,
     isLoading,
     isScanning,
     error,
@@ -119,6 +121,13 @@ export function ClaudeMdPage() {
   // Local state
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isScanModalOpen, setIsScanModalOpen] = useState(false);
+
+  // Icon Picker state
+  const [iconPickerState, setIconPickerState] = useState<{
+    isOpen: boolean;
+    fileId: string | null;
+    triggerRef: React.RefObject<HTMLDivElement> | null;
+  }>({ isOpen: false, fileId: null, triggerRef: null });
 
   // Get filtered files - compute in component to ensure reactivity
   const filteredFiles = useMemo(() => {
@@ -199,6 +208,24 @@ export function ClaudeMdPage() {
 
   const handleImportComplete = () => {
     loadFiles();
+  };
+
+  // Handle icon click from list
+  const handleIconClick = (fileId: string, ref: React.RefObject<HTMLDivElement>) => {
+    setIconPickerState({ isOpen: true, fileId, triggerRef: ref });
+  };
+
+  // Handle icon change
+  const handleIconChange = async (iconName: string) => {
+    if (iconPickerState.fileId) {
+      await updateFile(iconPickerState.fileId, { icon: iconName });
+    }
+    setIconPickerState({ isOpen: false, fileId: null, triggerRef: null });
+  };
+
+  // Handle icon picker close
+  const handleIconPickerClose = () => {
+    setIconPickerState({ isOpen: false, fileId: null, triggerRef: null });
   };
 
   // ============================================================================
@@ -324,6 +351,7 @@ export function ClaudeMdPage() {
                 compact={!!selectedFileId}
                 onClick={() => handleFileClick(file.id)}
                 onDelete={() => handleDelete(file.id)}
+                onIconClick={(ref) => handleIconClick(file.id, ref)}
               />
             ))}
           </div>
@@ -350,6 +378,17 @@ export function ClaudeMdPage() {
         onClose={() => setIsScanModalOpen(false)}
         onImportComplete={handleImportComplete}
       />
+
+      {/* Icon Picker */}
+      {iconPickerState.triggerRef && (
+        <IconPicker
+          value={files.find((f) => f.id === iconPickerState.fileId)?.icon || 'file-text'}
+          onChange={handleIconChange}
+          triggerRef={iconPickerState.triggerRef}
+          isOpen={iconPickerState.isOpen}
+          onClose={handleIconPickerClose}
+        />
+      )}
     </div>
   );
 }
