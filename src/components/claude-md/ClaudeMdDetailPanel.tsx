@@ -71,9 +71,9 @@ interface InfoItemProps {
 
 function InfoItem({ label, value }: InfoItemProps) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-1 flex-col gap-1">
       <span className="text-[11px] font-medium text-[#71717A]">{label}</span>
-      <span className="text-[13px] font-normal text-[#18181B]">{value}</span>
+      <span className="text-[13px] font-medium text-[#18181B]">{value}</span>
     </div>
   );
 }
@@ -405,13 +405,13 @@ export function ClaudeMdDetailPanel({ file, isOpen, onClose }: ClaudeMdDetailPan
         </div>
       </section>
 
-      {/* Preview Section - gap 12px */}
+      {/* Content Section - gap 12px */}
       <section className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-[#18181B]">Preview</h3>
-        <div className="overflow-hidden rounded-lg border border-[#E5E5E5] bg-[#FAFAFA] p-4">
-          <pre className="max-h-[300px] overflow-auto whitespace-pre-wrap font-mono text-xs leading-relaxed text-[#18181B]">
+        <h3 className="text-sm font-semibold text-[#18181B]">Content</h3>
+        <div className="overflow-hidden rounded-lg border border-[#E5E5E5] bg-white p-4">
+          <div className="max-h-[300px] overflow-auto whitespace-pre-wrap text-xs font-normal leading-relaxed text-[#52525B]">
             {selectedFile.content || 'No content available'}
-          </pre>
+          </div>
         </div>
       </section>
 
