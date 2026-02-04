@@ -1,5 +1,32 @@
 @import "tailwindcss";
 
+/* 全局滚动条样式 - 精致极简风格 */
+@layer base {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+  }
+}
+
 :root {
   --color-primary: #18181B;
   --color-secondary: #71717A;
@@ -37,24 +64,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-tertiary);
-}
-
 /* Modal Animations */
 @keyframes modal-overlay-fade-in {
   from {
@@ -84,23 +93,52 @@ body {
   animation: modal-dialog-zoom-in 200ms ease-out;
 }
 
-/* Icon Picker Scrollbar */
-.icon-picker-scroll::-webkit-scrollbar {
-  width: 4px;
-}
+/* 自定义滚动条样式 - 放在@layer utilities确保高优先级 */
+@layer utilities {
+  /* Icon Picker Scrollbar */
+  .icon-picker-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
 
-.icon-picker-scroll::-webkit-scrollbar-track {
-  background: transparent;
-  margin: 4px 0;
-}
+  .icon-picker-scroll::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 4px 0;
+  }
 
-.icon-picker-scroll::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.08);
-  border-radius: 2px;
-}
+  .icon-picker-scroll::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 2px;
+  }
 
-.icon-picker-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.15);
+  .icon-picker-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.15);
+  }
+
+  /* Sidebar scroll style - 极简精致，右侧留出更多空间 */
+  .sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.04) transparent;
+    padding-right: 12px;
+    margin-right: -12px;
+  }
+
+  .sidebar-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 8px 0;
+  }
+
+  .sidebar-scroll::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 2px;
+  }
+
+  .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.08);
+  }
 }
 
 /* Refresh button animation - natural physics-based rotation */

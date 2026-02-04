@@ -172,10 +172,10 @@ export const McpItem: React.FC<McpItemProps> = ({ mcp, selected = false, onDelet
             <MoreHorizontal className="w-4 h-4 text-[#71717A]" />
           </button>
           {showMenu && (
-            <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg border border-[#E5E5E5] shadow-lg z-50 py-1">
+            <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg border border-[#E5E5E5] shadow-lg z-50 p-1">
               <button
                 onClick={handleDelete}
-                className="w-full px-3 py-2 text-left text-sm text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-2 transition-colors"
+                className="w-full px-3 py-2 text-left text-sm text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-2 transition-colors rounded"
               >
                 <Trash2 className="w-4 h-4" />
                 Delete
@@ -319,10 +319,10 @@ export const McpItemCompact: React.FC<McpItemCompactProps> = ({
           <MoreHorizontal className="w-3.5 h-3.5 text-[#71717A]" />
         </button>
         {showMenu && (
-          <div className="absolute right-0 top-full mt-1 w-28 bg-white rounded-lg border border-[#E5E5E5] shadow-lg z-50 py-1">
+          <div className="absolute right-0 top-full mt-1 w-28 bg-white rounded-lg border border-[#E5E5E5] shadow-lg z-50 p-1">
             <button
               onClick={handleDelete}
-              className="w-full px-2.5 py-1.5 text-left text-xs text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-1.5 transition-colors"
+              className="w-full px-2.5 py-1.5 text-left text-xs text-[#DC2626] hover:bg-[#FEF2F2] flex items-center gap-1.5 transition-colors rounded"
             >
               <Trash2 className="w-3.5 h-3.5" />
               Delete

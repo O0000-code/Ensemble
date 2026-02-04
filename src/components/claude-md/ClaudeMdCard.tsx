@@ -217,10 +217,10 @@ export const ClaudeMdCard: React.FC<ClaudeMdCardProps> = ({
 
         {/* Dropdown Menu */}
         {showMenu && (
-          <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg border border-[#E5E5E5] shadow-lg z-50 py-1">
+          <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg border border-[#E5E5E5] shadow-lg z-50 p-1">
             <button
               onClick={handleDelete}
-              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors text-[#DC2626] hover:bg-[#FEF2F2]"
+              className="w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors text-[#DC2626] hover:bg-[#FEF2F2] rounded"
             >
               <Trash2 className="w-4 h-4" />
               Delete

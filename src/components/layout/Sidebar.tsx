@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Plug, FileText, Layers, Folder, Plus, Settings, Repeat } from 'lucide-react';
+import { Sparkles, Plug, FileText, Layers, Folder, Plus, Settings, Repeat, ChevronDown, ChevronUp } from 'lucide-react';
 import { Category, Tag } from '@/types';
 import { CategoryInlineInput, TagInlineInput } from '@/components/sidebar';
 import { ColorPicker } from '@/components/common';
@@ -84,8 +84,11 @@ const navItems = [
   { id: 'projects', label: 'Projects', icon: Folder, countKey: 'projects' as const },
 ];
 
+// Maximum categories to display before showing "Show X more"
+const MAX_VISIBLE_CATEGORIES = 9;
+
 // Maximum tags to display before showing "+N"
-const MAX_VISIBLE_TAGS = 6;
+const MAX_VISIBLE_TAGS = 10;
 
 export function Sidebar({
   activeNav,
@@ -120,6 +123,8 @@ export function Sidebar({
 }: SidebarProps) {
   const navigate = useNavigate();
   const [isClickAnimating, setIsClickAnimating] = useState(false);
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [showAllTags, setShowAllTags] = useState(false);
 
   // Handle refresh button click with animation
   const handleRefreshClick = useCallback(() => {
@@ -167,7 +172,11 @@ export function Sidebar({
   };
 
   // Calculate visible tags and remaining count
-  const visibleTags = tags.slice(0, MAX_VISIBLE_TAGS);
+  // Calculate visible categories and remaining count
+  const visibleCategories = showAllCategories ? categories : categories.slice(0, MAX_VISIBLE_CATEGORIES);
+  const remainingCategoriesCount = categories.length - MAX_VISIBLE_CATEGORIES;
+
+  const visibleTags = showAllTags ? tags : tags.slice(0, MAX_VISIBLE_TAGS);
   const remainingTagsCount = tags.length - MAX_VISIBLE_TAGS;
 
   return (
@@ -196,11 +205,9 @@ export function Sidebar({
       </header>
 
       {/* Sidebar Content */}
-      <div className="flex-1 flex flex-col justify-between p-4 pb-2 overflow-hidden">
-        {/* Top Content */}
-        <div className="flex flex-col gap-6 overflow-y-auto">
-          {/* Navigation Section */}
-          <nav className="flex flex-col gap-0.5">
+      <div className="flex-1 flex flex-col p-4 pb-2 overflow-hidden">
+        {/* Navigation Section - 固定，不滚动 */}
+        <nav className="flex flex-col gap-0.5 flex-shrink-0">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeNav === item.id;
@@ -242,31 +249,31 @@ export function Sidebar({
             })}
           </nav>
 
-          {/* Divider */}
-          <div className="h-px bg-[#E4E4E7]" />
+        {/* Divider - 固定，不参与滚动 */}
+        <div className="h-px bg-[#E4E4E7] my-4 flex-shrink-0" />
 
-          {/* Categories Section */}
-          <section className="flex flex-col gap-3">
-            {/* Section Header */}
-            <div className="flex items-center justify-between">
-              <h3 className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.8px]">
-                Categories
-              </h3>
-              {onAddCategory && (
-                <button
-                  onClick={onAddCategory}
-                  className="w-5 h-5 flex items-center justify-center rounded hover:bg-[#F4F4F5] transition-colors"
-                  aria-label="Add category"
-                >
-                  <Plus size={12} className="text-[#A1A1AA]" />
-                </button>
-              )}
-            </div>
+        {/* Categories Section Header - 固定，不参与滚动 */}
+        <div className="flex items-center justify-between flex-shrink-0 mb-3">
+          <h3 className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.8px]">
+            Categories
+          </h3>
+          {onAddCategory && (
+            <button
+              onClick={onAddCategory}
+              className="w-5 h-5 flex items-center justify-center rounded hover:bg-[#F4F4F5] transition-colors"
+              aria-label="Add category"
+            >
+              <Plus size={12} className="text-[#A1A1AA]" />
+            </button>
+          )}
+        </div>
 
-            {/* Categories List */}
+        {/* Scrollable Area - Categories列表 + Tags 自适应高度，整体滚动 */}
+        <div className="flex-1 overflow-y-auto sidebar-scroll min-h-0">
+          {/* Categories List */}
             {categories.length > 0 ? (
               <div className="flex flex-col gap-0.5">
-                {categories.map((category) => {
+                {visibleCategories.map((category) => {
                   const isActive = activeCategory === category.id;
                   const isEditing = editingCategoryId === category.id;
 
@@ -349,6 +356,26 @@ export function Sidebar({
                     onCancel={() => onCategoryEditCancel?.()}
                   />
                 )}
+
+                {/* Show more / Show less 按钮 */}
+                {remainingCategoriesCount > 0 && (
+                  <button
+                    onClick={() => setShowAllCategories(!showAllCategories)}
+                    className="w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-[12px] font-medium text-[#A1A1AA] hover:bg-[#F4F4F5] transition-colors"
+                  >
+                    {showAllCategories ? (
+                      <>
+                        <ChevronUp size={12} />
+                        <span>Show less</span>
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown size={12} />
+                        <span>Show {remainingCategoriesCount} more</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             ) : (
               <div className="flex flex-col gap-0.5">
@@ -363,13 +390,9 @@ export function Sidebar({
                 )}
               </div>
             )}
-          </section>
-
-          {/* Divider */}
-          <div className="h-px bg-[#E4E4E7]" />
 
           {/* Tags Section */}
-          <section className="flex flex-col gap-3">
+          <section className="flex flex-col gap-3 pt-4 border-t border-[#E4E4E7] mt-4">
             {/* Section Header */}
             <div className="flex items-center justify-between">
               <h3 className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.8px]">
@@ -436,13 +459,14 @@ export function Sidebar({
                   );
                 })}
 
-                {/* Show "+N" button if there are more tags */}
+                {/* Show "+N" button if there are more tags, or "Collapse" when expanded */}
                 {remainingTagsCount > 0 && (
                   <button
+                    onClick={() => setShowAllTags(!showAllTags)}
                     className="px-2.5 py-[5px] rounded text-[11px] font-medium text-[#A1A1AA] border border-[#E5E5E5] hover:bg-[#F4F4F5] transition-colors"
-                    aria-label={`Show ${remainingTagsCount} more tags`}
+                    aria-label={showAllTags ? 'Show less tags' : `Show ${remainingTagsCount} more tags`}
                   >
-                    +{remainingTagsCount}
+                    {showAllTags ? 'Less' : `+${remainingTagsCount}`}
                   </button>
                 )}
 
@@ -471,8 +495,8 @@ export function Sidebar({
           </section>
         </div>
 
-        {/* Sidebar Footer */}
-        <footer className="pt-4 -ml-1.5">
+        {/* Sidebar Footer - 固定 */}
+        <footer className="pt-4 -ml-1.5 flex-shrink-0">
           <button
             onClick={handleSettingsClick}
             className={`
