@@ -207,18 +207,6 @@ export function ClaudeMdPage() {
   // Header Buttons
   // ============================================================================
 
-  // Track if we've completed initial load
-  const [hasInitialLoaded, setHasInitialLoaded] = useState(false);
-
-  // Mark initial load complete when loading finishes
-  useEffect(() => {
-    if (!isLoading && !hasInitialLoaded) {
-      setHasInitialLoaded(true);
-    }
-  }, [isLoading, hasInitialLoaded]);
-
-  // Check if we're in empty state (no files, not loading, and initial load complete)
-  const isEmpty = files.length === 0 && !isLoading && hasInitialLoaded;
 
   // Header actions - always show both Scan System and Import buttons
   const headerActions = (
@@ -266,58 +254,16 @@ export function ClaudeMdPage() {
   );
 
   // ============================================================================
-  // Render
+  // Render - Single JSX structure to prevent flickering
   // ============================================================================
 
-  // Empty state (no files and no search filter)
-  if (isEmpty && !filter.search) {
-    return (
-      <div className="relative flex h-full flex-col overflow-hidden">
-        {/* Header - Empty state: only Scan System button */}
-        <PageHeader
-          title="CLAUDE.md Files"
-          searchValue={filter.search}
-          onSearchChange={handleSearchChange}
-          searchPlaceholder="Search files..."
-          actions={headerActions}
-        />
-
-        {/* Error notification */}
-        {error && (
-          <div className="mx-7 mt-4 flex items-center justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3">
-            <p className="text-sm text-red-700">{error}</p>
-            <button
-              onClick={clearError}
-              className="text-sm font-medium text-red-700 hover:text-red-800"
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
-
-        {/* Empty State - No buttons, just icon and text */}
-        <ClaudeMdEmptyState />
-
-        {/* Import Modal */}
-        <ImportClaudeMdModal
-          isOpen={isImportModalOpen}
-          onClose={() => setIsImportModalOpen(false)}
-          onImportComplete={handleImportComplete}
-        />
-
-        {/* Scan Modal */}
-        <ScanClaudeMdModal
-          isOpen={isScanModalOpen}
-          onClose={() => setIsScanModalOpen(false)}
-          onImportComplete={handleImportComplete}
-        />
-      </div>
-    );
-  }
+  // Determine content to show
+  const showEmptyState = files.length === 0 && !filter.search;
+  const showNoResults = !isLoading && filteredFiles.length === 0 && filter.search;
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden">
-      {/* Header - List state: Scan System + Import buttons */}
+      {/* Header */}
       <PageHeader
         title="CLAUDE.md Files"
         searchValue={filter.search}
@@ -352,7 +298,10 @@ export function ClaudeMdPage() {
           <div className="flex h-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-[#71717A]" />
           </div>
-        ) : filteredFiles.length === 0 ? (
+        ) : showEmptyState ? (
+          /* Empty state - no files imported yet */
+          <ClaudeMdEmptyState />
+        ) : showNoResults ? (
           /* No results for search */
           <div className="flex h-full flex-col items-center justify-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F4F4F5]">
