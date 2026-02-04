@@ -136,9 +136,17 @@ export const ClaudeMdCard: React.FC<ClaudeMdCardProps> = ({
         </div>
         {/* Badge - positioned at top-right */}
         {/* If isGlobal=true: purple globe (current global) */}
-        {/* If isGlobal=false: show based on sourceType */}
+        {/* If isGlobal=false: show based on sourceType, but 'global' sourceType shows as 'project' */}
         <div className="absolute -right-1 -top-1">
-          <ClaudeMdBadge type={file.isGlobal ? 'global' : file.sourceType} />
+          <ClaudeMdBadge
+            type={
+              file.isGlobal
+                ? 'global'
+                : file.sourceType === 'global'
+                  ? 'project'
+                  : file.sourceType
+            }
+          />
         </div>
       </div>
 
