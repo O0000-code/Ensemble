@@ -11,7 +11,10 @@ import {
   ClaudeMdDistributionResult,
   SetGlobalResult,
 } from '@/types/claudeMd';
+import { ClassifyItem, ClassifyResult } from '@/types';
+import { ICON_NAMES } from '@/components/common/IconPicker';
 import { isTauri, safeInvoke } from '@/utils/tauri';
+import { useAppStore } from './appStore';
 
 // ============================================================================
 // Types
@@ -44,6 +47,7 @@ interface ClaudeMdState {
   isImporting: boolean;
   isSetting: boolean;
   isDistributing: boolean;
+  isAutoClassifying: boolean;
 
   // Error state
   error: string | null;
@@ -70,6 +74,9 @@ interface ClaudeMdState {
 
   // Distribution actions
   distributeToProject: (options: ClaudeMdDistributionOptions) => Promise<ClaudeMdDistributionResult | null>;
+
+  // Auto-classify actions
+  autoClassify: () => Promise<void>;
 
   // Filter actions
   setFilter: (filter: Partial<ClaudeMdFilter>) => void;
@@ -113,6 +120,7 @@ export const useClaudeMdStore = create<ClaudeMdState>((set, get) => ({
   isImporting: false,
   isSetting: false,
   isDistributing: false,
+  isAutoClassifying: false,
   error: null,
 
   // ========================================================================
@@ -395,6 +403,120 @@ export const useClaudeMdStore = create<ClaudeMdState>((set, get) => ({
       const message = typeof error === 'string' ? error : String(error);
       set({ error: message, isDistributing: false });
       return null;
+    }
+  },
+
+  // ========================================================================
+  // Auto-classify
+  // ========================================================================
+  autoClassify: async () => {
+    if (!isTauri()) {
+      console.warn('ClaudeMdStore: Cannot auto-classify in browser mode');
+      set({ error: 'Auto-classification is not available in browser mode' });
+      return;
+    }
+
+    const { files } = get();
+    const { categories, tags } = useAppStore.getState();
+
+    if (files.length === 0) {
+      set({ error: 'No CLAUDE.md files to classify.' });
+      return;
+    }
+
+    set({ isAutoClassifying: true, error: null });
+
+    try {
+      // Prepare all files for classification
+      // Use content summary (first 500 chars) to avoid too large prompts
+      const items: ClassifyItem[] = files.map((f) => ({
+        id: f.id,
+        name: f.name,
+        description: f.description,
+        content: f.content.substring(0, 500),
+      }));
+
+      const existingCategories = categories.map((c) => c.name);
+      const existingTags = tags.map((t) => t.name);
+
+      const results = await safeInvoke<ClassifyResult[]>('auto_classify', {
+        items,
+        existingCategories,
+        existingTags,
+        availableIcons: ICON_NAMES,
+      });
+
+      if (!results) {
+        set({ error: 'Classification failed', isAutoClassifying: false });
+        return;
+      }
+
+      // Collect new categories and tags that need to be created
+      const { addCategory, addTag, loadCategories, loadTags } = useAppStore.getState();
+      const existingCategoryNames = new Set(categories.map(c => c.name));
+      const existingTagNames = new Set(tags.map(t => t.name));
+
+      const newCategories = new Set<string>();
+      const newTags = new Set<string>();
+
+      for (const result of results) {
+        if (!existingCategoryNames.has(result.suggested_category)) {
+          newCategories.add(result.suggested_category);
+        }
+        for (const tag of result.suggested_tags) {
+          if (!existingTagNames.has(tag)) {
+            newTags.add(tag);
+          }
+        }
+      }
+
+      // Create new categories
+      const categoryColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
+      let colorIndex = categories.length;
+      for (const categoryName of newCategories) {
+        await addCategory(categoryName, categoryColors[colorIndex % categoryColors.length]);
+        colorIndex++;
+      }
+
+      // Create new tags
+      for (const tagName of newTags) {
+        await addTag(tagName);
+      }
+
+      // Reload categories and tags to get the newly created entities
+      await loadCategories();
+      await loadTags();
+      const updatedState = useAppStore.getState();
+      const updatedCategories = updatedState.categories;
+      const updatedTags = updatedState.tags;
+
+      // Apply results - use updated categories/tags to find IDs
+      for (const result of results) {
+        const file = files.find((f) => f.id === result.id);
+        if (file) {
+          // Find category ID by name
+          const categoryId = updatedCategories.find(c => c.name === result.suggested_category)?.id;
+
+          // Find tag IDs by names
+          const tagIds = result.suggested_tags
+            .map(tagName => updatedTags.find(t => t.name === tagName)?.id)
+            .filter((id): id is string => id !== undefined);
+
+          await safeInvoke('update_claude_md', {
+            id: file.id,
+            categoryId: categoryId,
+            tagIds: tagIds,
+            icon: result.suggested_icon,
+          });
+        }
+      }
+
+      // Reload files
+      await get().loadFiles();
+      set({ isAutoClassifying: false });
+    } catch (error) {
+      const message = typeof error === 'string' ? error : String(error);
+      set({ error: message, isAutoClassifying: false });
     }
   },
 

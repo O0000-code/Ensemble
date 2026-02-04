@@ -18,6 +18,7 @@ import {
   Info,
   RefreshCw,
   Check,
+  Sparkles,
 } from 'lucide-react';
 import { PageHeader, SlidePanel } from '@/components/layout';
 import { EmptyState, IconPicker, ICON_MAP, Dropdown, ScopeSelector, Button } from '@/components/common';
@@ -154,6 +155,8 @@ export const McpServersPage: React.FC = () => {
     fetchToolsSuccessMcp,
     usageStats,
     loadUsageStats,
+    autoClassify,
+    isClassifying,
   } = useMcpsStore();
 
   const { categories, tags: appTags, addTag: addGlobalTag } = useAppStore();
@@ -652,15 +655,26 @@ export const McpServersPage: React.FC = () => {
           onSearchChange={handleSearchChange}
           searchPlaceholder="Search servers..."
           actions={
-            <Button
-              variant="secondary"
-              size="small"
-              icon={isDetectingMcps ? <Loader2 className="animate-spin" /> : <Download />}
-              onClick={() => openMcpsModal()}
-              disabled={isDetectingMcps}
-            >
-              {isDetectingMcps ? 'Detecting...' : 'Import'}
-            </Button>
+            <div className="flex items-center gap-2.5">
+              <Button
+                variant="secondary"
+                size="small"
+                icon={isClassifying ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                onClick={() => autoClassify()}
+                disabled={isClassifying}
+              >
+                {isClassifying ? 'Classifying...' : 'Auto Classify'}
+              </Button>
+              <Button
+                variant="secondary"
+                size="small"
+                icon={isDetectingMcps ? <Loader2 className="animate-spin" /> : <Download />}
+                onClick={() => openMcpsModal()}
+                disabled={isDetectingMcps}
+              >
+                {isDetectingMcps ? 'Detecting...' : 'Import'}
+              </Button>
+            </div>
           }
         />
         <div className="flex flex-1 items-center justify-center">
@@ -692,15 +706,26 @@ export const McpServersPage: React.FC = () => {
         onSearchChange={handleSearchChange}
         searchPlaceholder="Search servers..."
         actions={
-          <Button
-            variant="secondary"
-            size="small"
-            icon={isDetectingMcps ? <Loader2 className="animate-spin" /> : <Download />}
-            onClick={() => openMcpsModal()}
-            disabled={isDetectingMcps}
-          >
-            {isDetectingMcps ? 'Detecting...' : 'Import'}
-          </Button>
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="secondary"
+              size="small"
+              icon={isClassifying ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              onClick={() => autoClassify()}
+              disabled={isClassifying}
+            >
+              {isClassifying ? 'Classifying...' : 'Auto Classify'}
+            </Button>
+            <Button
+              variant="secondary"
+              size="small"
+              icon={isDetectingMcps ? <Loader2 className="animate-spin" /> : <Download />}
+              onClick={() => openMcpsModal()}
+              disabled={isDetectingMcps}
+            >
+              {isDetectingMcps ? 'Detecting...' : 'Import'}
+            </Button>
+          </div>
         }
       />
 

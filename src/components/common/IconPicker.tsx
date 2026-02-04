@@ -442,6 +442,9 @@ export const ICON_MAP: Record<string, LucideIcon> = PRESET_ICONS.reduce(
   {} as Record<string, LucideIcon>
 );
 
+// 导出图标名称列表，供自动分类功能使用
+export const ICON_NAMES: string[] = PRESET_ICONS.map(icon => icon.name);
+
 // ============================================================================
 // IconPicker Component
 // ============================================================================

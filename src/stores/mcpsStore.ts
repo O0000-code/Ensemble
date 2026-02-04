@@ -1,8 +1,10 @@
 import { create } from 'zustand';
-import { McpServer, FetchMcpToolsResult, McpUsage, UsageStats } from '@/types';
+import { McpServer, FetchMcpToolsResult, McpUsage, UsageStats, ClassifyItem, ClassifyResult } from '@/types';
 import { useSettingsStore } from './settingsStore';
 import { usePluginsStore } from './pluginsStore';
+import { useAppStore } from './appStore';
 import { isTauri, safeInvoke } from '@/utils/tauri';
+import { ICON_NAMES } from '@/components/common/IconPicker';
 
 interface McpsFilter {
   search: string;
@@ -23,6 +25,9 @@ interface McpsState {
   usageStats: Record<string, McpUsage>;
   isLoadingUsage: boolean;
 
+  // Classification
+  isClassifying: boolean;
+
   // Actions
   setMcpServers: (servers: McpServer[]) => void;
   selectMcp: (id: string | null) => void;
@@ -35,6 +40,7 @@ interface McpsState {
   updateMcpScope: (id: string, scope: 'global' | 'project') => Promise<void>;
   fetchMcpTools: (mcpId: string, showSuccessAnimation?: boolean) => Promise<FetchMcpToolsResult>;
   loadUsageStats: () => Promise<void>;
+  autoClassify: () => Promise<void>;
 
   // Computed getters (via selectors)
   getFilteredMcps: () => McpServer[];
@@ -56,6 +62,7 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
   fetchToolsSuccessMcp: null,
   usageStats: {},
   isLoadingUsage: false,
+  isClassifying: false,
 
   setMcpServers: (servers) => set({ mcpServers: servers }),
 
@@ -319,6 +326,101 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
       const message = typeof error === 'string' ? error : String(error);
       console.error('Failed to load MCP usage stats:', error);
       set({ usageStats: {}, isLoadingUsage: false, error: message });
+    }
+  },
+
+  autoClassify: async () => {
+    if (!isTauri()) {
+      console.warn('McpsStore: Cannot auto-classify in browser mode');
+      set({ error: 'Auto-classification is not available in browser mode' });
+      return;
+    }
+
+    const { mcpServers } = get();
+    const { categories, tags } = useAppStore.getState();
+
+    if (mcpServers.length === 0) {
+      set({ error: 'No MCP servers to classify.' });
+      return;
+    }
+
+    set({ isClassifying: true, error: null });
+
+    try {
+      // Prepare all MCPs for classification
+      const items: ClassifyItem[] = mcpServers.map((m) => ({
+        id: m.id,
+        name: m.name,
+        description: m.description,
+        tools: m.providedTools.map(t => t.name),
+      }));
+
+      const existingCategories = categories.map((c) => c.name);
+      const existingTags = tags.map((t) => t.name);
+
+      const results = await safeInvoke<ClassifyResult[]>('auto_classify', {
+        items,
+        existingCategories,
+        existingTags,
+        availableIcons: ICON_NAMES,
+      });
+
+      if (!results) {
+        set({ error: 'Classification failed', isClassifying: false });
+        return;
+      }
+
+      // Collect new categories and tags that need to be created
+      const { addCategory, addTag, loadCategories, loadTags } = useAppStore.getState();
+      const existingCategoryNames = new Set(categories.map(c => c.name));
+      const existingTagNames = new Set(tags.map(t => t.name));
+
+      const newCategories = new Set<string>();
+      const newTags = new Set<string>();
+
+      for (const result of results) {
+        if (result.suggested_category && !existingCategoryNames.has(result.suggested_category)) {
+          newCategories.add(result.suggested_category);
+        }
+        for (const tag of result.suggested_tags) {
+          if (!existingTagNames.has(tag)) {
+            newTags.add(tag);
+          }
+        }
+      }
+
+      // Create new categories (using predefined colors)
+      const categoryColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
+      let colorIndex = categories.length;
+      for (const categoryName of newCategories) {
+        await addCategory(categoryName, categoryColors[colorIndex % categoryColors.length]);
+        colorIndex++;
+      }
+
+      // Create new tags
+      for (const tagName of newTags) {
+        await addTag(tagName);
+      }
+
+      // Apply results
+      for (const result of results) {
+        const mcp = mcpServers.find((m) => m.id === result.id);
+        if (mcp) {
+          await safeInvoke('update_mcp_metadata', {
+            mcpId: result.id,
+            category: result.suggested_category,
+            tags: result.suggested_tags,
+            icon: result.suggested_icon,
+          });
+        }
+      }
+
+      // Reload categories, tags, and MCPs
+      await Promise.all([loadCategories(), loadTags(), get().loadMcps()]);
+      set({ isClassifying: false });
+    } catch (error) {
+      const message = typeof error === 'string' ? error : String(error);
+      set({ error: message, isClassifying: false });
     }
   },
 

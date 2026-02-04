@@ -115,6 +115,32 @@ export interface ConfigStatus {
   mcpsConfigured: boolean;
 }
 
+// ==================== 分类相关类型 ====================
+
+/**
+ * 用于自动分类的项目信息
+ * 传递给后端进行 AI 分类
+ */
+export interface ClassifyItem {
+  id: string;
+  name: string;
+  description: string;
+  content?: string;  // For CLAUDE.md files
+  instructions?: string;  // For Skills
+  tools?: string[];  // For MCPs - tool names
+}
+
+/**
+ * 自动分类结果
+ * 从后端返回的 AI 分类建议
+ */
+export interface ClassifyResult {
+  id: string;
+  suggested_category: string;
+  suggested_tags: string[];
+  suggested_icon?: string;
+}
+
 // ==================== 导入相关类型 ====================
 
 /**
