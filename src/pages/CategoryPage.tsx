@@ -1,16 +1,19 @@
 import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Sparkles, Plug, Loader2 } from 'lucide-react';
+import { Sparkles, Plug, FileText, Loader2 } from 'lucide-react';
 import PageHeader from '../components/layout/PageHeader';
 import { SkillListItem } from '../components/skills/SkillListItem';
 import { SkillDetailPanel } from '../components/skills/SkillDetailPanel';
 import { McpListItem } from '../components/mcps/McpListItem';
 import { McpDetailPanel } from '../components/mcps/McpDetailPanel';
+import { ClaudeMdCard } from '../components/claude-md/ClaudeMdCard';
+import { ClaudeMdDetailPanel } from '../components/claude-md/ClaudeMdDetailPanel';
 import { FilteredEmptyState } from '../components/common/FilteredEmptyState';
 import Button from '../components/common/Button';
 import { useAppStore } from '../stores/appStore';
 import { useSkillsStore } from '../stores/skillsStore';
 import { useMcpsStore } from '../stores/mcpsStore';
+import { useClaudeMdStore } from '../stores/claudeMdStore';
 import type { Skill } from '../types';
 
 // ============================================================================
@@ -25,18 +28,20 @@ export function CategoryPage() {
   // Selected item state for detail panels - track ID only
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
   const [selectedMcpId, setSelectedMcpId] = useState<string | null>(null);
+  const [selectedClaudeMdId, setSelectedClaudeMdId] = useState<string | null>(null);
 
   // Get data from stores
   const { categories } = useAppStore();
   const { skills, deleteSkill, autoClassify, isClassifying } = useSkillsStore();
   const { mcpServers, deleteMcp } = useMcpsStore();
+  const { files: claudeMdFiles, deleteFile: deleteClaudeMd } = useClaudeMdStore();
 
   // Find current category
   const category = categories.find((c) => c.id === categoryId);
   // Get category name for filtering (skill.category stores name, not id)
   const categoryName = category?.name;
 
-  // Get selected skill/mcp objects
+  // Get selected skill/mcp/claudeMd objects
   const selectedSkill = useMemo(
     () => skills.find((s) => s.id === selectedSkillId) || null,
     [skills, selectedSkillId]
@@ -45,18 +50,25 @@ export function CategoryPage() {
     () => mcpServers.find((m) => m.id === selectedMcpId) || null,
     [mcpServers, selectedMcpId]
   );
+  const selectedClaudeMd = useMemo(
+    () => claudeMdFiles.find((f) => f.id === selectedClaudeMdId) || null,
+    [claudeMdFiles, selectedClaudeMdId]
+  );
 
-  // Filter skills and mcps by category name, then by search
+  // Filter skills, mcps, and claudeMd by category, then by search
   const filteredData = useMemo(() => {
     // First filter by category name (skill.category stores the category name, not id)
+    // For claudeMd, filter by categoryId (claudeMd uses ID, not name)
     const categorySkills = skills.filter((s) => s.category === categoryName);
     const categoryMcps = mcpServers.filter((m) => m.category === categoryName);
+    const categoryClaudeMd = claudeMdFiles.filter((f) => f.categoryId === categoryId);
 
     // Then filter by search if search is active
     if (!search) {
       return {
         skills: categorySkills,
         mcps: categoryMcps,
+        claudeMd: categoryClaudeMd,
       };
     }
 
@@ -72,8 +84,13 @@ export function CategoryPage() {
           mcp.name.toLowerCase().includes(searchLower) ||
           mcp.description.toLowerCase().includes(searchLower)
       ),
+      claudeMd: categoryClaudeMd.filter(
+        (file) =>
+          file.name.toLowerCase().includes(searchLower) ||
+          file.description.toLowerCase().includes(searchLower)
+      ),
     };
-  }, [skills, mcpServers, categoryName, search]);
+  }, [skills, mcpServers, claudeMdFiles, categoryName, categoryId, search]);
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -81,12 +98,20 @@ export function CategoryPage() {
 
   const handleSkillClick = (skill: Skill) => {
     setSelectedSkillId(skill.id);
-    setSelectedMcpId(null); // Close MCP panel if open
+    setSelectedMcpId(null);
+    setSelectedClaudeMdId(null);
   };
 
   const handleMcpClick = (mcpId: string) => {
     setSelectedMcpId(mcpId);
-    setSelectedSkillId(null); // Close Skill panel if open
+    setSelectedSkillId(null);
+    setSelectedClaudeMdId(null);
+  };
+
+  const handleClaudeMdClick = (fileId: string) => {
+    setSelectedClaudeMdId(fileId);
+    setSelectedSkillId(null);
+    setSelectedMcpId(null);
   };
 
   const handleSkillDelete = (skillId: string) => {
@@ -103,6 +128,13 @@ export function CategoryPage() {
     }
   };
 
+  const handleClaudeMdDelete = (fileId: string) => {
+    deleteClaudeMd(fileId);
+    if (selectedClaudeMdId === fileId) {
+      setSelectedClaudeMdId(null);
+    }
+  };
+
   const handleAutoClassify = async () => {
     await autoClassify();
   };
@@ -115,11 +147,15 @@ export function CategoryPage() {
     setSelectedMcpId(null);
   };
 
-  const isEmpty = filteredData.skills.length === 0 && filteredData.mcps.length === 0;
+  const handleCloseClaudeMdPanel = () => {
+    setSelectedClaudeMdId(null);
+  };
+
+  const isEmpty = filteredData.skills.length === 0 && filteredData.mcps.length === 0 && filteredData.claudeMd.length === 0;
   const displayCategoryName = categoryName || 'Unknown Category';
 
   // Check if any panel is open for layout adjustment
-  const isPanelOpen = !!selectedSkillId || !!selectedMcpId;
+  const isPanelOpen = !!selectedSkillId || !!selectedMcpId || !!selectedClaudeMdId;
 
   // Empty state
   if (isEmpty && !search) {
@@ -234,6 +270,31 @@ export function CategoryPage() {
                 </div>
               </section>
             )}
+
+            {/* CLAUDE.md Section */}
+            {filteredData.claudeMd.length > 0 && (
+              <section className="flex flex-col gap-3">
+                {/* Section Header */}
+                <div className="flex items-center gap-2 pb-2">
+                  <FileText size={14} className="text-[#71717A]" />
+                  <span className="text-xs font-semibold text-[#71717A]">
+                    CLAUDE.md Files ({filteredData.claudeMd.length})
+                  </span>
+                </div>
+                {/* CLAUDE.md Items */}
+                <div className="flex flex-col gap-3">
+                  {filteredData.claudeMd.map((file) => (
+                    <ClaudeMdCard
+                      key={file.id}
+                      file={file}
+                      compact={isPanelOpen}
+                      onClick={() => handleClaudeMdClick(file.id)}
+                      onDelete={() => handleClaudeMdDelete(file.id)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         )}
       </div>
@@ -250,6 +311,13 @@ export function CategoryPage() {
         mcp={selectedMcp}
         isOpen={!!selectedMcpId}
         onClose={handleCloseMcpPanel}
+      />
+
+      {/* CLAUDE.md Detail Panel - Always render, control visibility with isOpen */}
+      <ClaudeMdDetailPanel
+        file={selectedClaudeMd}
+        isOpen={!!selectedClaudeMdId}
+        onClose={handleCloseClaudeMdPanel}
       />
     </div>
   );

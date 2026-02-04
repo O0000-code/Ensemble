@@ -75,23 +75,25 @@ export default function MainLayout() {
     projects: projects.length,
   }), [skills.length, mcpServers.length, claudeMdFiles.length, scenes.length, projects.length]);
 
-  // Dynamically calculate category counts from skills and mcps
+  // Dynamically calculate category counts from skills, mcps, and claudeMd files
   const categoriesWithCounts = useMemo(() => {
     return categories.map(cat => ({
       ...cat,
       count: skills.filter(s => s.category === cat.name).length +
-             mcpServers.filter(m => m.category === cat.name).length
+             mcpServers.filter(m => m.category === cat.name).length +
+             claudeMdFiles.filter(f => f.categoryId === cat.id).length
     }));
-  }, [categories, skills, mcpServers]);
+  }, [categories, skills, mcpServers, claudeMdFiles]);
 
-  // Dynamically calculate tag counts from skills and mcps
+  // Dynamically calculate tag counts from skills, mcps, and claudeMd files
   const tagsWithCounts = useMemo(() => {
     return tags.map(tag => ({
       ...tag,
       count: skills.filter(s => s.tags?.includes(tag.name)).length +
-             mcpServers.filter(m => m.tags?.includes(tag.name)).length
+             mcpServers.filter(m => m.tags?.includes(tag.name)).length +
+             claudeMdFiles.filter(f => f.tagIds?.includes(tag.id)).length
     }));
-  }, [tags, skills, mcpServers]);
+  }, [tags, skills, mcpServers, claudeMdFiles]);
 
   // Smart launch path handler - checks if project exists and has scene
   const handleLaunchPath = useCallback(async (path: string) => {
