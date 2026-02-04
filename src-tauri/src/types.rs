@@ -778,6 +778,10 @@ pub struct SetGlobalResult {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub backup_path: Option<String>,
 
+    /// Auto-imported file ID (when existing global was not managed)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auto_imported_id: Option<String>,
+
     /// Error message
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,

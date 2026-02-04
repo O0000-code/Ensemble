@@ -658,15 +658,52 @@ pub fn set_global_claude_md(id: String) -> Result<SetGlobalResult, String> {
     let global_path = home.join(".claude").join("CLAUDE.md");
 
     let mut backup_path: Option<String> = None;
+    let mut auto_imported_id: Option<String> = None;
     let previous_global_id = app_data.global_claude_md_id.clone();
 
-    // If global file exists, need to backup
+    // If global file exists, need to backup and auto-import
     if global_path.exists() {
-        // Check if it's a file we manage
+        // Check if it's a file we manage (has is_global=true)
         let is_managed = app_data.claude_md_files.iter().any(|f| f.is_global);
 
         if !is_managed {
-            // Not a file we manage, need to backup and import
+            // Not a file we manage - auto-import it first so user doesn't lose it
+            let existing_content = fs::read_to_string(&global_path)
+                .map_err(|e| format!("Failed to read existing global file: {}", e))?;
+
+            let existing_size = global_path.metadata().map(|m| m.len()).unwrap_or(0);
+
+            // Create a new managed file for the existing global CLAUDE.md
+            let import_id = uuid::Uuid::new_v4().to_string();
+            let now = Utc::now().to_rfc3339();
+
+            let imported_file = ClaudeMdFile {
+                id: import_id.clone(),
+                name: "Original Global".to_string(),
+                description: "Auto-imported from ~/.claude/CLAUDE.md before replacement".to_string(),
+                content: String::new(), // Content stored in independent file
+                source_path: global_path.to_string_lossy().to_string(),
+                source_type: ClaudeMdType::Global,
+                category_id: None,
+                tag_ids: vec![],
+                is_global: false, // Not global anymore since we're replacing it
+                managed_path: Some(get_claude_md_file_path(&import_id).to_string_lossy().to_string()),
+                created_at: now.clone(),
+                updated_at: now,
+                size: existing_size,
+                icon: None,
+            };
+
+            // Create independent file directory and save content
+            let import_dir = get_claude_md_file_dir(&import_id);
+            fs::create_dir_all(&import_dir).map_err(|e| format!("Failed to create import directory: {}", e))?;
+            write_claude_md_content(&import_id, &existing_content)?;
+
+            // Add to app data
+            app_data.claude_md_files.push(imported_file);
+            auto_imported_id = Some(import_id);
+
+            // Also create a backup for safety
             let backup_dir = get_global_backup_dir();
             fs::create_dir_all(&backup_dir).map_err(|e| e.to_string())?;
 
@@ -675,6 +712,8 @@ pub fn set_global_claude_md(id: String) -> Result<SetGlobalResult, String> {
             fs::copy(&global_path, &backup_file).map_err(|e| e.to_string())?;
 
             backup_path = Some(backup_file.to_string_lossy().to_string());
+
+            println!("[set_global_claude_md] Auto-imported existing global file as 'Original Global'");
         }
     }
 
@@ -706,6 +745,7 @@ pub fn set_global_claude_md(id: String) -> Result<SetGlobalResult, String> {
         success: true,
         previous_global_id,
         backup_path,
+        auto_imported_id,
         error: None,
     })
 }

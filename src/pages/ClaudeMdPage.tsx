@@ -210,36 +210,8 @@ export function ClaudeMdPage() {
   // Check if we're in empty state (no files)
   const isEmpty = files.length === 0 && !isLoading;
 
-  // Header actions for empty state - only Scan System button
-  const emptyStateHeaderActions = (
-    <div className="flex items-center gap-2.5">
-      {/* Scan System Button - Secondary style, icon=radar */}
-      <button
-        onClick={handleScan}
-        disabled={isScanning}
-        className="
-          flex h-8 items-center gap-1.5
-          rounded-md border border-[#E5E5E5]
-          bg-transparent
-          px-3
-          text-xs font-medium text-[#71717A]
-          hover:bg-[#F4F4F5]
-          disabled:opacity-50
-          transition-colors
-        "
-      >
-        {isScanning ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Radar className="h-3.5 w-3.5" />
-        )}
-        {isScanning ? 'Scanning...' : 'Scan System'}
-      </button>
-    </div>
-  );
-
-  // Header actions for list state - Scan System + Import buttons
-  const listHeaderActions = (
+  // Header actions - always show both Scan System and Import buttons
+  const headerActions = (
     <div className="flex items-center gap-2.5">
       {/* Scan System Button - Secondary style, icon=radar */}
       <button
@@ -297,7 +269,7 @@ export function ClaudeMdPage() {
           searchValue={filter.search}
           onSearchChange={handleSearchChange}
           searchPlaceholder="Search files..."
-          actions={emptyStateHeaderActions}
+          actions={headerActions}
         />
 
         {/* Error notification */}
@@ -341,7 +313,7 @@ export function ClaudeMdPage() {
         searchValue={filter.search}
         onSearchChange={handleSearchChange}
         searchPlaceholder="Search files..."
-        actions={listHeaderActions}
+        actions={headerActions}
       />
 
       {/* Error notification */}
