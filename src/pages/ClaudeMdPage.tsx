@@ -160,9 +160,6 @@ export function ClaudeMdPage() {
       return a.name.localeCompare(b.name);
     });
 
-    console.log('[ClaudeMdPage] filteredFiles computed:',
-      filtered.map(f => ({ id: f.id, name: f.name, isGlobal: f.isGlobal }))
-    );
     return filtered;
   }, [files, filter]);
 
