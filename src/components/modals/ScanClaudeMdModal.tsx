@@ -44,6 +44,7 @@ export function ScanClaudeMdModal({
     isScanning,
     isImporting,
     importFile,
+    loadFiles,
     getUnimportedScanItems,
   } = useClaudeMdStore();
 
@@ -134,6 +135,11 @@ export function ScanClaudeMdModal({
     }
 
     setSelectedPaths(new Set());
+
+    // Reload files from backend to ensure UI is in sync
+    // Wait for loadFiles to complete before closing the modal
+    await loadFiles();
+
     onImportComplete?.();
     onClose();
   }, [
@@ -141,6 +147,7 @@ export function ScanClaudeMdModal({
     unimportedItems,
     selectedPaths,
     importFile,
+    loadFiles,
     onImportComplete,
     onClose,
   ]);
@@ -158,7 +165,11 @@ export function ScanClaudeMdModal({
   // Scan files when modal opens
   useEffect(() => {
     if (isOpen) {
-      scanFiles();
+      // 延迟调用 scanFiles，确保 Modal 先渲染出来
+      const timer = setTimeout(() => {
+        scanFiles();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [isOpen, scanFiles]);
 
