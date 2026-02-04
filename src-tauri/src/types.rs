@@ -598,8 +598,15 @@ pub struct ClaudeMdFile {
     /// Original source type
     pub source_type: ClaudeMdType,
 
-    /// File content
+    /// File content - runtime populated, not serialized to data.json
+    /// For backward compatibility: can deserialize from old data but won't serialize
+    #[serde(default)]
+    #[serde(skip_serializing)]
     pub content: String,
+
+    /// Managed file path (new field for independent file storage)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub managed_path: Option<String>,
 
     /// Whether set as global
     pub is_global: bool,

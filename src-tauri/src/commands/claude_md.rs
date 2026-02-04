@@ -21,6 +21,43 @@ fn get_global_backup_dir() -> PathBuf {
     get_app_data_dir().join("claude-md").join("global-backup")
 }
 
+// ============================================================================
+// Helper functions for independent file storage
+// ============================================================================
+
+/// Get CLAUDE.md storage root directory (~/.ensemble/claude-md/)
+fn get_claude_md_storage_dir() -> PathBuf {
+    get_app_data_dir().join("claude-md")
+}
+
+/// Get directory for a specific CLAUDE.md file (~/.ensemble/claude-md/{id}/)
+fn get_claude_md_file_dir(id: &str) -> PathBuf {
+    get_claude_md_storage_dir().join(id)
+}
+
+/// Get path to the CLAUDE.md file (~/.ensemble/claude-md/{id}/CLAUDE.md)
+fn get_claude_md_file_path(id: &str) -> PathBuf {
+    get_claude_md_file_dir(id).join("CLAUDE.md")
+}
+
+/// Read CLAUDE.md file content from independent file
+fn read_claude_md_content(id: &str) -> Result<String, String> {
+    let path = get_claude_md_file_path(id);
+    fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read CLAUDE.md content: {}", e))
+}
+
+/// Write CLAUDE.md content to independent file
+fn write_claude_md_content(id: &str, content: &str) -> Result<(), String> {
+    let dir = get_claude_md_file_dir(id);
+    fs::create_dir_all(&dir)
+        .map_err(|e| format!("Failed to create directory: {}", e))?;
+
+    let path = dir.join("CLAUDE.md");
+    fs::write(&path, content)
+        .map_err(|e| format!("Failed to write content: {}", e))
+}
+
 /// Excluded directory names
 const EXCLUDED_DIRS: &[&str] = &[
     "node_modules",
@@ -312,15 +349,24 @@ pub fn import_claude_md(options: ClaudeMdImportOptions) -> Result<ClaudeMdImport
         .unwrap_or_else(|| infer_name_from_path(&source_path));
     println!("[import_claude_md] Generated name: {}", name);
 
-    // Create ClaudeMdFile
+    // Generate UUID for the file
+    let id = Uuid::new_v4().to_string();
+
+    // Write content to independent file
+    write_claude_md_content(&id, &content)?;
+    let managed_path = get_claude_md_file_path(&id).to_string_lossy().to_string();
+    println!("[import_claude_md] Written to managed path: {}", managed_path);
+
+    // Create ClaudeMdFile (content field is empty, will be read from independent file)
     let now = Utc::now().to_rfc3339();
-    let file = ClaudeMdFile {
-        id: Uuid::new_v4().to_string(),
+    let mut file = ClaudeMdFile {
+        id,
         name,
         description: options.description.unwrap_or_default(),
         source_path: source_path.to_string_lossy().to_string(),
         source_type,
-        content,
+        content: String::new(), // Content stored in independent file
+        managed_path: Some(managed_path),
         is_global: false,
         category_id: options.category_id,
         tag_ids: options.tag_ids,
@@ -331,7 +377,7 @@ pub fn import_claude_md(options: ClaudeMdImportOptions) -> Result<ClaudeMdImport
     };
     println!("[import_claude_md] Created file with id: {}", file.id);
 
-    // Save to AppData
+    // Save metadata to AppData
     println!("[import_claude_md] Reading app_data...");
     let mut app_data = read_app_data()?;
     println!("[import_claude_md] Current claude_md_files count: {}", app_data.claude_md_files.len());
@@ -340,6 +386,9 @@ pub fn import_claude_md(options: ClaudeMdImportOptions) -> Result<ClaudeMdImport
     println!("[import_claude_md] Writing app_data...");
     write_app_data(app_data)?;
     println!("[import_claude_md] Write complete!");
+
+    // Populate content for return value
+    file.content = content;
 
     Ok(ClaudeMdImportResult {
         success: true,
@@ -398,18 +447,44 @@ fn infer_name_from_path(path: &Path) -> String {
 pub fn read_claude_md(id: String) -> Result<ClaudeMdFile, String> {
     let app_data = read_app_data()?;
 
-    app_data
+    let mut file = app_data
         .claude_md_files
         .into_iter()
         .find(|f| f.id == id)
-        .ok_or_else(|| format!("CLAUDE.md file not found: {}", id))
+        .ok_or_else(|| format!("CLAUDE.md file not found: {}", id))?;
+
+    // Read content from independent file if managed_path exists
+    if file.managed_path.is_some() {
+        file.content = read_claude_md_content(&file.id)?;
+    }
+    // If managed_path is None but content exists (old data), use existing content
+    // (backward compatibility - content was deserialized from old data.json)
+
+    Ok(file)
 }
 
 /// Get all CLAUDE.md files
 #[tauri::command]
 pub fn get_claude_md_files() -> Result<Vec<ClaudeMdFile>, String> {
     let app_data = read_app_data()?;
-    Ok(app_data.claude_md_files)
+
+    let files: Vec<ClaudeMdFile> = app_data
+        .claude_md_files
+        .into_iter()
+        .map(|mut file| {
+            // Read content from independent file if managed_path exists
+            if file.managed_path.is_some() {
+                if let Ok(content) = read_claude_md_content(&file.id) {
+                    file.content = content;
+                }
+            }
+            // If managed_path is None but content exists (old data), use existing content
+            // (backward compatibility - content was deserialized from old data.json)
+            file
+        })
+        .collect();
+
+    Ok(files)
 }
 
 /// Update CLAUDE.md content
@@ -440,11 +515,22 @@ pub fn update_claude_md(
         .find(|f| f.id == id)
         .ok_or_else(|| format!("CLAUDE.md file not found: {}", id))?;
 
-    // Update fields
+    // Track content for return value
+    let mut updated_content: Option<String> = None;
+
+    // Update content - write to independent file
     if let Some(c) = content {
         file.size = c.len() as u64;
-        file.content = c;
+        // Write content to independent file
+        write_claude_md_content(&id, &c)?;
+        // Update managed_path if not set (migrating old data on update)
+        if file.managed_path.is_none() {
+            file.managed_path = Some(get_claude_md_file_path(&id).to_string_lossy().to_string());
+        }
+        updated_content = Some(c);
     }
+
+    // Update other metadata fields
     if let Some(n) = name {
         file.name = n;
     }
@@ -463,8 +549,18 @@ pub fn update_claude_md(
 
     file.updated_at = Utc::now().to_rfc3339();
 
-    let updated_file = file.clone();
+    let mut updated_file = file.clone();
     write_app_data(app_data)?;
+
+    // Populate content for return value
+    if let Some(c) = updated_content {
+        updated_file.content = c;
+    } else if updated_file.managed_path.is_some() {
+        // Read content from independent file
+        if let Ok(c) = read_claude_md_content(&id) {
+            updated_file.content = c;
+        }
+    }
 
     Ok(updated_file)
 }
@@ -486,7 +582,16 @@ pub fn delete_claude_md(id: String) -> Result<(), String> {
         scene.claude_md_ids.retain(|cid| cid != &id);
     }
 
-    // Delete file
+    // Delete independent file directory
+    let file_dir = get_claude_md_file_dir(&id);
+    if file_dir.exists() {
+        if let Err(e) = fs::remove_dir_all(&file_dir) {
+            println!("[delete_claude_md] Warning: Failed to delete directory {:?}: {}", file_dir, e);
+            // Continue with deletion from data.json even if file deletion fails
+        }
+    }
+
+    // Delete from data.json
     app_data.claude_md_files.retain(|f| f.id != id);
 
     write_app_data(app_data)?;
@@ -519,6 +624,14 @@ pub fn set_global_claude_md(id: String) -> Result<SetGlobalResult, String> {
         .find(|f| f.id == id)
         .ok_or_else(|| format!("CLAUDE.md file not found: {}", id))?
         .clone();
+
+    // Read content from independent file if managed_path exists, otherwise use content field (old data)
+    let content = if target_file.managed_path.is_some() {
+        read_claude_md_content(&target_file.id)?
+    } else {
+        // Backward compatibility: use content field for old data
+        target_file.content.clone()
+    };
 
     // Global file path
     let home = dirs::home_dir().ok_or("Cannot get home directory")?;
@@ -557,8 +670,8 @@ pub fn set_global_claude_md(id: String) -> Result<SetGlobalResult, String> {
     let claude_dir = global_path.parent().unwrap();
     fs::create_dir_all(claude_dir).map_err(|e| e.to_string())?;
 
-    // Write global file
-    fs::write(&global_path, &target_file.content).map_err(|e| e.to_string())?;
+    // Write global file (using content from independent file or old data)
+    fs::write(&global_path, &content).map_err(|e| e.to_string())?;
 
     // Set new global flag
     if let Some(file) = app_data.claude_md_files.iter_mut().find(|f| f.id == id) {
@@ -636,6 +749,14 @@ pub fn distribute_claude_md(
         );
     }
 
+    // Read content from independent file if managed_path exists, otherwise use content field (old data)
+    let content = if source_file.managed_path.is_some() {
+        read_claude_md_content(&source_file.id)?
+    } else {
+        // Backward compatibility: use content field for old data
+        source_file.content.clone()
+    };
+
     // Build target path
     let project_path = expand_path(&options.project_path);
     let target_path = project_path.join(options.target_path.as_str());
@@ -674,8 +795,8 @@ pub fn distribute_claude_md(
         }
     }
 
-    // Write file
-    fs::write(&target_path, &source_file.content).map_err(|e| e.to_string())?;
+    // Write file (using content from independent file or old data)
+    fs::write(&target_path, &content).map_err(|e| e.to_string())?;
 
     Ok(ClaudeMdDistributionResult {
         success: true,
@@ -723,4 +844,41 @@ pub fn distribute_scene_claude_md(
     }
 
     Ok(results)
+}
+
+// ============================================================================
+// Migration
+// ============================================================================
+
+/// Migrate old CLAUDE.md data from embedded content to independent file storage
+///
+/// This function checks for old data where content is stored in data.json
+/// and migrates it to independent files in ~/.ensemble/claude-md/{id}/CLAUDE.md
+pub fn migrate_claude_md_storage() -> Result<(), String> {
+    let mut app_data = read_app_data()?;
+    let mut migrated = false;
+
+    for file in app_data.claude_md_files.iter_mut() {
+        // Check if migration is needed (content non-empty and managed_path is None)
+        if !file.content.is_empty() && file.managed_path.is_none() {
+            // Write content to independent file
+            write_claude_md_content(&file.id, &file.content)?;
+
+            // Update managed_path
+            file.managed_path = Some(get_claude_md_file_path(&file.id).to_string_lossy().to_string());
+
+            // Clear content (will be skipped during serialization anyway)
+            file.content = String::new();
+
+            migrated = true;
+            println!("[Migration] Migrated CLAUDE.md: {} (id: {})", file.name, file.id);
+        }
+    }
+
+    if migrated {
+        write_app_data(app_data)?;
+        println!("[Migration] CLAUDE.md storage migration completed");
+    }
+
+    Ok(())
 }

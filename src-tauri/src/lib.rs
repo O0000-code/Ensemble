@@ -2,6 +2,7 @@ mod commands;
 pub mod types;
 mod utils;
 
+use commands::claude_md::migrate_claude_md_storage;
 use commands::{classify, claude_md, config, data, dialog, import, mcps, plugins, skills, symlink, usage};
 use tauri::{Emitter, Manager};
 
@@ -18,6 +19,13 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            // Run CLAUDE.md storage migration (from embedded content to independent files)
+            if let Err(e) = migrate_claude_md_storage() {
+                eprintln!("[Migration] Failed to migrate CLAUDE.md storage: {}", e);
+                // Don't fail startup on migration error, just log it
+            }
+
             Ok(())
         })
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
