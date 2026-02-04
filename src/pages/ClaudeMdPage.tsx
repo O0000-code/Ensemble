@@ -207,8 +207,18 @@ export function ClaudeMdPage() {
   // Header Buttons
   // ============================================================================
 
-  // Check if we're in empty state (no files)
-  const isEmpty = files.length === 0 && !isLoading;
+  // Track if we've completed initial load
+  const [hasInitialLoaded, setHasInitialLoaded] = useState(false);
+
+  // Mark initial load complete when loading finishes
+  useEffect(() => {
+    if (!isLoading && !hasInitialLoaded) {
+      setHasInitialLoaded(true);
+    }
+  }, [isLoading, hasInitialLoaded]);
+
+  // Check if we're in empty state (no files, not loading, and initial load complete)
+  const isEmpty = files.length === 0 && !isLoading && hasInitialLoaded;
 
   // Header actions - always show both Scan System and Import buttons
   const headerActions = (
