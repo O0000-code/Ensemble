@@ -150,9 +150,9 @@ body {
 }
 
 /* ============================================================================
-   Auto Classify Success Animation - Rainbow Gradient Theme
+   Auto Classify Success Animation - Vivid Rainbow Theme
 
-   Design: Use the same rainbow colors as the loading state for natural transition
+   Design: Strong, natural rainbow effect that clearly shows all colors
    ============================================================================ */
 
 /* Rainbow check icon: spring-based entrance */
@@ -176,33 +176,33 @@ body {
   }
 }
 
-/* Background: Rainbow gradient flash */
+/* Background: Vivid rainbow gradient flash */
 @keyframes classify-success-bg {
   0% {
     background: linear-gradient(
       135deg,
-      rgba(239, 68, 68, 0.12),
-      rgba(249, 115, 22, 0.12),
-      rgba(234, 179, 8, 0.12),
-      rgba(34, 197, 94, 0.12),
-      rgba(6, 182, 212, 0.12),
-      rgba(59, 130, 246, 0.12),
-      rgba(139, 92, 246, 0.12)
+      rgba(239, 68, 68, 0.2),
+      rgba(249, 115, 22, 0.2),
+      rgba(234, 179, 8, 0.2),
+      rgba(34, 197, 94, 0.2),
+      rgba(6, 182, 212, 0.2),
+      rgba(59, 130, 246, 0.2),
+      rgba(139, 92, 246, 0.2)
     );
-    border-color: #8b5cf6;
+    border-color: #ef4444;
   }
-  50% {
+  35% {
     background: linear-gradient(
       135deg,
-      rgba(239, 68, 68, 0.15),
-      rgba(249, 115, 22, 0.15),
-      rgba(234, 179, 8, 0.15),
-      rgba(34, 197, 94, 0.15),
-      rgba(6, 182, 212, 0.15),
-      rgba(59, 130, 246, 0.15),
-      rgba(139, 92, 246, 0.15)
+      rgba(239, 68, 68, 0.25),
+      rgba(249, 115, 22, 0.25),
+      rgba(234, 179, 8, 0.25),
+      rgba(34, 197, 94, 0.25),
+      rgba(6, 182, 212, 0.25),
+      rgba(59, 130, 246, 0.25),
+      rgba(139, 92, 246, 0.25)
     );
-    border-color: #22c55e;
+    border-color: #8b5cf6;
   }
   100% {
     background-color: transparent;
@@ -210,35 +210,41 @@ body {
   }
 }
 
-/* Rainbow bloom: Multi-color glow radiates outward */
+/* Rainbow bloom: Full spectrum glow radiates outward */
 @keyframes classify-success-bloom {
   0% {
     box-shadow:
-      0 0 0 0 rgba(139, 92, 246, 0.4),
-      0 0 0 0 rgba(59, 130, 246, 0.3),
-      0 0 0 0 rgba(34, 197, 94, 0.2);
+      0 0 0 0 rgba(239, 68, 68, 0.4),
+      0 0 0 0 rgba(234, 179, 8, 0.35),
+      0 0 0 0 rgba(34, 197, 94, 0.3),
+      0 0 0 0 rgba(59, 130, 246, 0.35),
+      0 0 0 0 rgba(139, 92, 246, 0.4);
   }
   40% {
     box-shadow:
-      0 0 12px 4px rgba(139, 92, 246, 0.35),
-      0 0 20px 8px rgba(59, 130, 246, 0.25),
-      0 0 28px 12px rgba(34, 197, 94, 0.15);
+      0 0 8px 2px rgba(239, 68, 68, 0.35),
+      0 0 14px 4px rgba(234, 179, 8, 0.3),
+      0 0 20px 6px rgba(34, 197, 94, 0.25),
+      0 0 26px 8px rgba(59, 130, 246, 0.3),
+      0 0 32px 10px rgba(139, 92, 246, 0.35);
   }
   100% {
     box-shadow:
-      0 0 6px 2px rgba(139, 92, 246, 0.1),
-      0 0 10px 4px rgba(59, 130, 246, 0.05),
-      0 0 14px 6px rgba(34, 197, 94, 0.02);
+      0 0 4px 1px rgba(239, 68, 68, 0.08),
+      0 0 7px 2px rgba(234, 179, 8, 0.06),
+      0 0 10px 3px rgba(34, 197, 94, 0.04),
+      0 0 13px 4px rgba(59, 130, 246, 0.06),
+      0 0 16px 5px rgba(139, 92, 246, 0.08);
   }
 }
 
-/* Sparkle effect */
+/* Sparkle effect - enhanced */
 @keyframes classify-success-sparkle {
   0% {
     filter: brightness(1) saturate(1);
   }
-  30% {
-    filter: brightness(1.2) saturate(1.15);
+  35% {
+    filter: brightness(1.25) saturate(1.2);
   }
   100% {
     filter: brightness(1) saturate(1);
