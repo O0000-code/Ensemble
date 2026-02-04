@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Plug, FileText, Layers, Folder, Plus, Settings, Repeat } from 'lucide-react';
+import { Sparkles, Plug, FileText, Layers, Folder, Plus, Settings, Repeat, ChevronDown, ChevronUp } from 'lucide-react';
 import { Category, Tag } from '@/types';
 import { CategoryInlineInput, TagInlineInput } from '@/components/sidebar';
 import { ColorPicker } from '@/components/common';
@@ -84,6 +84,9 @@ const navItems = [
   { id: 'projects', label: 'Projects', icon: Folder, countKey: 'projects' as const },
 ];
 
+// Maximum categories to display before showing "Show X more"
+const MAX_VISIBLE_CATEGORIES = 9;
+
 // Maximum tags to display before showing "+N"
 const MAX_VISIBLE_TAGS = 10;
 
@@ -120,6 +123,7 @@ export function Sidebar({
 }: SidebarProps) {
   const navigate = useNavigate();
   const [isClickAnimating, setIsClickAnimating] = useState(false);
+  const [showAllCategories, setShowAllCategories] = useState(false);
   const [showAllTags, setShowAllTags] = useState(false);
 
   // Handle refresh button click with animation
@@ -168,6 +172,10 @@ export function Sidebar({
   };
 
   // Calculate visible tags and remaining count
+  // Calculate visible categories and remaining count
+  const visibleCategories = showAllCategories ? categories : categories.slice(0, MAX_VISIBLE_CATEGORIES);
+  const remainingCategoriesCount = categories.length - MAX_VISIBLE_CATEGORIES;
+
   const visibleTags = showAllTags ? tags : tags.slice(0, MAX_VISIBLE_TAGS);
   const remainingTagsCount = tags.length - MAX_VISIBLE_TAGS;
 
@@ -265,7 +273,7 @@ export function Sidebar({
           {/* Categories List */}
             {categories.length > 0 ? (
               <div className="flex flex-col gap-0.5">
-                {categories.map((category) => {
+                {visibleCategories.map((category) => {
                   const isActive = activeCategory === category.id;
                   const isEditing = editingCategoryId === category.id;
 
@@ -347,6 +355,26 @@ export function Sidebar({
                     onSave={(name) => onCategorySave?.(null, name)}
                     onCancel={() => onCategoryEditCancel?.()}
                   />
+                )}
+
+                {/* Show more / Show less 按钮 */}
+                {remainingCategoriesCount > 0 && (
+                  <button
+                    onClick={() => setShowAllCategories(!showAllCategories)}
+                    className="w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-[12px] font-medium text-[#A1A1AA] hover:bg-[#F4F4F5] transition-colors"
+                  >
+                    {showAllCategories ? (
+                      <>
+                        <ChevronUp size={12} />
+                        <span>Show less</span>
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown size={12} />
+                        <span>Show {remainingCategoriesCount} more</span>
+                      </>
+                    )}
+                  </button>
                 )}
               </div>
             ) : (
