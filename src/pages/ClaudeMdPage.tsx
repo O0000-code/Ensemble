@@ -235,32 +235,10 @@ export function ClaudeMdPage() {
   // ============================================================================
 
 
-  // Header actions - always show Auto Classify, Scan System and Import buttons
+  // Header actions - always show Scan System, Import and Auto Classify buttons
+  // Auto Classify should be on the rightmost position
   const headerActions = (
     <div className="flex items-center gap-2.5">
-      {/* Auto Classify Button */}
-      <button
-        onClick={() => autoClassify()}
-        disabled={isAutoClassifying}
-        className="
-          flex h-8 items-center gap-1.5
-          rounded-md border border-[#E5E5E5]
-          bg-transparent
-          px-3
-          text-xs font-medium text-[#71717A]
-          hover:bg-[#F4F4F5]
-          disabled:opacity-50
-          transition-colors
-        "
-      >
-        {isAutoClassifying ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Sparkles className="h-3.5 w-3.5" />
-        )}
-        {isAutoClassifying ? 'Classifying...' : 'Auto Classify'}
-      </button>
-
       {/* Scan System Button - Secondary style, icon=radar */}
       <button
         onClick={handleScan}
@@ -299,6 +277,29 @@ export function ClaudeMdPage() {
       >
         <Download className="h-3.5 w-3.5" />
         Import
+      </button>
+
+      {/* Auto Classify Button - rightmost position */}
+      <button
+        onClick={() => autoClassify()}
+        disabled={isAutoClassifying}
+        className="
+          flex h-8 items-center gap-1.5
+          rounded-md border border-[#E5E5E5]
+          bg-transparent
+          px-3
+          text-xs font-medium text-[#71717A]
+          hover:bg-[#F4F4F5]
+          disabled:opacity-50
+          transition-colors
+        "
+      >
+        {isAutoClassifying ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Sparkles className="h-3.5 w-3.5" />
+        )}
+        {isAutoClassifying ? 'Classifying...' : 'Auto Classify'}
       </button>
     </div>
   );

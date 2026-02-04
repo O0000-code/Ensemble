@@ -659,20 +659,20 @@ export const McpServersPage: React.FC = () => {
               <Button
                 variant="secondary"
                 size="small"
-                icon={isClassifying ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                onClick={() => autoClassify()}
-                disabled={isClassifying}
-              >
-                {isClassifying ? 'Classifying...' : 'Auto Classify'}
-              </Button>
-              <Button
-                variant="secondary"
-                size="small"
                 icon={isDetectingMcps ? <Loader2 className="animate-spin" /> : <Download />}
                 onClick={() => openMcpsModal()}
                 disabled={isDetectingMcps}
               >
                 {isDetectingMcps ? 'Detecting...' : 'Import'}
+              </Button>
+              <Button
+                variant="secondary"
+                size="small"
+                icon={isClassifying ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                onClick={() => autoClassify()}
+                disabled={isClassifying}
+              >
+                {isClassifying ? 'Classifying...' : 'Auto Classify'}
               </Button>
             </div>
           }
@@ -710,20 +710,20 @@ export const McpServersPage: React.FC = () => {
             <Button
               variant="secondary"
               size="small"
-              icon={isClassifying ? <Loader2 className="animate-spin" /> : <Sparkles />}
-              onClick={() => autoClassify()}
-              disabled={isClassifying}
-            >
-              {isClassifying ? 'Classifying...' : 'Auto Classify'}
-            </Button>
-            <Button
-              variant="secondary"
-              size="small"
               icon={isDetectingMcps ? <Loader2 className="animate-spin" /> : <Download />}
               onClick={() => openMcpsModal()}
               disabled={isDetectingMcps}
             >
               {isDetectingMcps ? 'Detecting...' : 'Import'}
+            </Button>
+            <Button
+              variant="secondary"
+              size="small"
+              icon={isClassifying ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              onClick={() => autoClassify()}
+              disabled={isClassifying}
+            >
+              {isClassifying ? 'Classifying...' : 'Auto Classify'}
             </Button>
           </div>
         }
