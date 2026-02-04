@@ -229,7 +229,7 @@ body {
 }
 
 /* Rainbow bloom: Full spectrum glow radiates outward
-   Physics: Fast initial expansion → Peak hold → Gradual decay */
+   Ultra-smooth animation with 16 keyframes for 60fps-like smoothness */
 @keyframes classify-success-bloom {
   0% {
     box-shadow:
@@ -239,17 +239,39 @@ body {
       0 0 0 0 rgba(59, 130, 246, 0),
       0 0 0 0 rgba(139, 92, 246, 0);
   }
-  /* Rapid expansion phase */
-  15% {
+  5% {
     box-shadow:
-      0 0 6px 1px rgba(239, 68, 68, 0.3),
-      0 0 10px 2px rgba(234, 179, 8, 0.25),
-      0 0 14px 3px rgba(34, 197, 94, 0.2),
-      0 0 18px 4px rgba(59, 130, 246, 0.25),
-      0 0 22px 5px rgba(139, 92, 246, 0.3);
+      0 0 2px 0.5px rgba(239, 68, 68, 0.12),
+      0 0 4px 1px rgba(234, 179, 8, 0.1),
+      0 0 6px 1.5px rgba(34, 197, 94, 0.08),
+      0 0 8px 2px rgba(59, 130, 246, 0.1),
+      0 0 10px 2.5px rgba(139, 92, 246, 0.12);
   }
-  /* Peak intensity */
-  30% {
+  10% {
+    box-shadow:
+      0 0 4px 1px rgba(239, 68, 68, 0.22),
+      0 0 7px 1.5px rgba(234, 179, 8, 0.18),
+      0 0 10px 2px rgba(34, 197, 94, 0.15),
+      0 0 13px 3px rgba(59, 130, 246, 0.18),
+      0 0 16px 4px rgba(139, 92, 246, 0.22);
+  }
+  18% {
+    box-shadow:
+      0 0 7px 2px rgba(239, 68, 68, 0.32),
+      0 0 12px 3px rgba(234, 179, 8, 0.27),
+      0 0 17px 4px rgba(34, 197, 94, 0.22),
+      0 0 22px 6px rgba(59, 130, 246, 0.27),
+      0 0 27px 8px rgba(139, 92, 246, 0.32);
+  }
+  25% {
+    box-shadow:
+      0 0 9px 2.5px rgba(239, 68, 68, 0.36),
+      0 0 15px 4px rgba(234, 179, 8, 0.31),
+      0 0 21px 6px rgba(34, 197, 94, 0.26),
+      0 0 27px 8px rgba(59, 130, 246, 0.31),
+      0 0 33px 10px rgba(139, 92, 246, 0.36);
+  }
+  32% {
     box-shadow:
       0 0 10px 3px rgba(239, 68, 68, 0.35),
       0 0 16px 5px rgba(234, 179, 8, 0.3),
@@ -257,7 +279,14 @@ body {
       0 0 28px 9px rgba(59, 130, 246, 0.3),
       0 0 34px 11px rgba(139, 92, 246, 0.35);
   }
-  /* Sustain phase - hold near peak */
+  40% {
+    box-shadow:
+      0 0 9px 2.5px rgba(239, 68, 68, 0.32),
+      0 0 15px 4.5px rgba(234, 179, 8, 0.28),
+      0 0 21px 6.5px rgba(34, 197, 94, 0.23),
+      0 0 27px 8.5px rgba(59, 130, 246, 0.28),
+      0 0 33px 10.5px rgba(139, 92, 246, 0.32);
+  }
   50% {
     box-shadow:
       0 0 8px 2px rgba(239, 68, 68, 0.28),
@@ -266,46 +295,63 @@ body {
       0 0 26px 8px rgba(59, 130, 246, 0.24),
       0 0 32px 10px rgba(139, 92, 246, 0.28);
   }
-  /* Gradual decay */
+  60% {
+    box-shadow:
+      0 0 7px 1.8px rgba(239, 68, 68, 0.23),
+      0 0 12px 3.2px rgba(234, 179, 8, 0.2),
+      0 0 17px 5px rgba(34, 197, 94, 0.16),
+      0 0 22px 6.5px rgba(59, 130, 246, 0.2),
+      0 0 27px 8px rgba(139, 92, 246, 0.23);
+  }
   70% {
     box-shadow:
-      0 0 6px 1px rgba(239, 68, 68, 0.18),
-      0 0 10px 2px rgba(234, 179, 8, 0.15),
-      0 0 14px 3px rgba(34, 197, 94, 0.12),
-      0 0 18px 4px rgba(59, 130, 246, 0.15),
-      0 0 22px 5px rgba(139, 92, 246, 0.18);
+      0 0 6px 1.5px rgba(239, 68, 68, 0.18),
+      0 0 10px 2.5px rgba(234, 179, 8, 0.15),
+      0 0 14px 4px rgba(34, 197, 94, 0.12),
+      0 0 18px 5px rgba(59, 130, 246, 0.15),
+      0 0 22px 6px rgba(139, 92, 246, 0.18);
   }
-  /* Final fade */
+  80% {
+    box-shadow:
+      0 0 5px 1.2px rgba(239, 68, 68, 0.13),
+      0 0 8px 2px rgba(234, 179, 8, 0.11),
+      0 0 11px 3px rgba(34, 197, 94, 0.09),
+      0 0 14px 4px rgba(59, 130, 246, 0.11),
+      0 0 17px 5px rgba(139, 92, 246, 0.13);
+  }
+  90% {
+    box-shadow:
+      0 0 4px 1px rgba(239, 68, 68, 0.09),
+      0 0 7px 1.5px rgba(234, 179, 8, 0.07),
+      0 0 10px 2px rgba(34, 197, 94, 0.06),
+      0 0 13px 3px rgba(59, 130, 246, 0.07),
+      0 0 16px 4px rgba(139, 92, 246, 0.09);
+  }
   100% {
     box-shadow:
-      0 0 4px 1px rgba(239, 68, 68, 0.06),
-      0 0 7px 2px rgba(234, 179, 8, 0.05),
-      0 0 10px 3px rgba(34, 197, 94, 0.04),
-      0 0 13px 4px rgba(59, 130, 246, 0.05),
-      0 0 16px 5px rgba(139, 92, 246, 0.06);
+      0 0 3px 0.8px rgba(239, 68, 68, 0.05),
+      0 0 5px 1.2px rgba(234, 179, 8, 0.04),
+      0 0 7px 1.5px rgba(34, 197, 94, 0.03),
+      0 0 9px 2px rgba(59, 130, 246, 0.04),
+      0 0 11px 2.5px rgba(139, 92, 246, 0.05);
   }
 }
 
-/* Sparkle effect - synchronized with bloom timing */
+/* Sparkle effect - ultra-smooth synchronized with bloom */
 @keyframes classify-success-sparkle {
-  0% {
-    filter: brightness(1) saturate(1);
-  }
-  15% {
-    filter: brightness(1.15) saturate(1.1);
-  }
-  30% {
-    filter: brightness(1.25) saturate(1.2);
-  }
-  50% {
-    filter: brightness(1.18) saturate(1.15);
-  }
-  70% {
-    filter: brightness(1.08) saturate(1.05);
-  }
-  100% {
-    filter: brightness(1) saturate(1);
-  }
+  0% { filter: brightness(1) saturate(1); }
+  5% { filter: brightness(1.05) saturate(1.03); }
+  10% { filter: brightness(1.1) saturate(1.06); }
+  18% { filter: brightness(1.18) saturate(1.12); }
+  25% { filter: brightness(1.23) saturate(1.17); }
+  32% { filter: brightness(1.25) saturate(1.2); }
+  40% { filter: brightness(1.22) saturate(1.17); }
+  50% { filter: brightness(1.18) saturate(1.14); }
+  60% { filter: brightness(1.13) saturate(1.1); }
+  70% { filter: brightness(1.08) saturate(1.06); }
+  80% { filter: brightness(1.05) saturate(1.04); }
+  90% { filter: brightness(1.02) saturate(1.02); }
+  100% { filter: brightness(1) saturate(1); }
 }
 
 /* Rainbow gradient check icon */
