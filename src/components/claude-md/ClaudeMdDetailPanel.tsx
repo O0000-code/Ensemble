@@ -1,12 +1,14 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   FileText,
+  FolderOpen,
   Layers,
   X,
   Plus,
 } from 'lucide-react';
 import { SlidePanel } from '@/components/layout';
-import { Toggle, Dropdown } from '@/components/common';
+import { Toggle, Dropdown, Button } from '@/components/common';
+import { safeInvoke } from '@/utils/tauri';
 import { useClaudeMdStore } from '@/stores/claudeMdStore';
 import { useAppStore } from '@/stores/appStore';
 import { useScenesStore } from '@/stores/scenesStore';
@@ -246,6 +248,12 @@ export function ClaudeMdDetailPanel({ file, isOpen, onClose }: ClaudeMdDetailPan
     }
   };
 
+  const handleOpenInFinder = async () => {
+    if (selectedFile?.sourcePath) {
+      await safeInvoke('reveal_in_finder', { path: selectedFile.sourcePath });
+    }
+  };
+
   // NOW we can do conditional rendering (after all hooks)
   // If no file, render empty SlidePanel to maintain animation
   if (!selectedFile) {
@@ -447,6 +455,14 @@ export function ClaudeMdDetailPanel({ file, isOpen, onClose }: ClaudeMdDetailPan
               {selectedFile.sourcePath}
             </span>
           </div>
+          <Button
+            variant="secondary"
+            size="small"
+            icon={<FolderOpen />}
+            onClick={handleOpenInFinder}
+          >
+            Open in Finder
+          </Button>
         </div>
       </section>
 
