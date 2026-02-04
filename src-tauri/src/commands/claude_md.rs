@@ -573,6 +573,9 @@ pub fn update_claude_md(
 pub fn delete_claude_md(id: String) -> Result<(), String> {
     let mut app_data = read_app_data()?;
 
+    // Find the file metadata before deletion (for saving to info.json)
+    let file_metadata = app_data.claude_md_files.iter().find(|f| f.id == id).cloned();
+
     // If it's the current global, just unset the global status
     // but DO NOT delete ~/.claude/CLAUDE.md
     if app_data.global_claude_md_id.as_ref() == Some(&id) {
@@ -591,6 +594,16 @@ pub fn delete_claude_md(id: String) -> Result<(), String> {
     // Soft delete: move to trash instead of permanent deletion
     let file_dir = get_claude_md_file_dir(&id);
     if file_dir.exists() {
+        // Save metadata to info.json before moving to trash (for restore functionality)
+        if let Some(metadata) = &file_metadata {
+            let info_path = file_dir.join("info.json");
+            if let Ok(info_json) = serde_json::to_string_pretty(metadata) {
+                if let Err(e) = fs::write(&info_path, info_json) {
+                    println!("[delete_claude_md] Warning: Failed to save info.json: {}", e);
+                }
+            }
+        }
+
         let trash_dir = get_app_data_dir().join("trash").join("claude-md");
         if let Err(e) = fs::create_dir_all(&trash_dir) {
             println!("[delete_claude_md] Warning: Failed to create trash directory: {}", e);

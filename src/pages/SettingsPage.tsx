@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Github, BookOpen, FileText, ChevronDown, Check } from 'lucide-react';
+import { TrashRecoveryModal } from '@/components/modals';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { useSettingsStore } from '@/stores';
 import { safeInvoke } from '@/utils/tauri';
@@ -174,9 +175,27 @@ function CustomSelect({ value, options, onChange, className = '' }: CustomSelect
 // Main Settings Page Component
 // ============================================================================
 
+// Action Button Component for consistent styling
+interface ActionButtonProps {
+  onClick: () => void;
+  children: React.ReactNode;
+}
+
+function ActionButton({ onClick, children }: ActionButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      className="text-xs font-medium text-[#71717A] hover:text-[#18181B] transition-colors"
+    >
+      {children}
+    </button>
+  );
+}
+
 export function SettingsPage() {
   const [quickActionStatus, setQuickActionStatus] = useState<'idle' | 'installing' | 'success' | 'error'>('idle');
   const [_quickActionMessage, setQuickActionMessage] = useState('');
+  const [showTrashModal, setShowTrashModal] = useState(false);
 
   const {
     terminalApp,
@@ -254,6 +273,30 @@ export function SettingsPage() {
                     { value: 'CLAUDE.local.md', label: './CLAUDE.local.md' },
                   ]}
                 />
+              </Row>
+            </Card>
+          </section>
+
+          {/* Storage Section */}
+          <section>
+            <SectionHeader
+              title="Storage"
+              description="Manage application data and storage"
+            />
+            <Card>
+              {/* Deleted Items */}
+              <Row noBorder>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[13px] font-medium text-[#18181B]">
+                    Deleted Items
+                  </span>
+                  <span className="text-xs text-[#71717A]">
+                    Skills, MCPs, and CLAUDE.md files you've removed
+                  </span>
+                </div>
+                <ActionButton onClick={() => setShowTrashModal(true)}>
+                  Recover
+                </ActionButton>
               </Row>
             </Card>
           </section>
@@ -486,6 +529,12 @@ export function SettingsPage() {
           </section>
         </div>
       </div>
+
+      {/* Trash Recovery Modal */}
+      <TrashRecoveryModal
+        isOpen={showTrashModal}
+        onClose={() => setShowTrashModal(false)}
+      />
     </div>
   );
 }

@@ -8,4 +8,5 @@ pub mod mcps;
 pub mod plugins;
 pub mod skills;
 pub mod symlink;
+pub mod trash;
 pub mod usage;
