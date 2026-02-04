@@ -124,13 +124,16 @@ export function ScanClaudeMdModal({
       selectedPaths.has(item.path)
     );
 
+    console.log('[ScanModal] Starting import, items:', itemsToImport.length);
     setImportingCount(0);
 
     for (const item of itemsToImport) {
-      await importFile({
+      console.log('[ScanModal] Importing:', item.path);
+      const result = await importFile({
         sourcePath: item.path,
         name: item.projectName || undefined,
       });
+      console.log('[ScanModal] Import result:', result);
       setImportingCount((prev) => prev + 1);
     }
 
@@ -138,7 +141,9 @@ export function ScanClaudeMdModal({
 
     // Reload files from backend to ensure UI is in sync
     // Wait for loadFiles to complete before closing the modal
+    console.log('[ScanModal] Calling loadFiles...');
     await loadFiles();
+    console.log('[ScanModal] loadFiles completed');
 
     onImportComplete?.();
     onClose();

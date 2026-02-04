@@ -279,10 +279,13 @@ fn is_excluded_dir(entry: &walkdir::DirEntry) -> bool {
 /// * `ClaudeMdImportResult` - Import result
 #[tauri::command]
 pub fn import_claude_md(options: ClaudeMdImportOptions) -> Result<ClaudeMdImportResult, String> {
+    println!("[import_claude_md] Called with source_path: {}", options.source_path);
     let source_path = expand_path(&options.source_path);
+    println!("[import_claude_md] Expanded path: {:?}", source_path);
 
     // Verify source file exists
     if !source_path.exists() {
+        println!("[import_claude_md] Source file not found!");
         return Ok(ClaudeMdImportResult {
             success: false,
             file: None,
@@ -296,6 +299,7 @@ pub fn import_claude_md(options: ClaudeMdImportOptions) -> Result<ClaudeMdImport
     // Read file content
     let content =
         fs::read_to_string(&source_path).map_err(|e| format!("Failed to read file: {}", e))?;
+    println!("[import_claude_md] Read content, length: {}", content.len());
 
     let size = source_path.metadata().map(|m| m.len()).unwrap_or(0);
 
@@ -306,6 +310,7 @@ pub fn import_claude_md(options: ClaudeMdImportOptions) -> Result<ClaudeMdImport
     let name = options
         .name
         .unwrap_or_else(|| infer_name_from_path(&source_path));
+    println!("[import_claude_md] Generated name: {}", name);
 
     // Create ClaudeMdFile
     let now = Utc::now().to_rfc3339();
@@ -324,11 +329,17 @@ pub fn import_claude_md(options: ClaudeMdImportOptions) -> Result<ClaudeMdImport
         size,
         icon: None,
     };
+    println!("[import_claude_md] Created file with id: {}", file.id);
 
     // Save to AppData
+    println!("[import_claude_md] Reading app_data...");
     let mut app_data = read_app_data()?;
+    println!("[import_claude_md] Current claude_md_files count: {}", app_data.claude_md_files.len());
     app_data.claude_md_files.push(file.clone());
+    println!("[import_claude_md] After push, count: {}", app_data.claude_md_files.len());
+    println!("[import_claude_md] Writing app_data...");
     write_app_data(app_data)?;
+    println!("[import_claude_md] Write complete!");
 
     Ok(ClaudeMdImportResult {
         success: true,
