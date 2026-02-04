@@ -176,27 +176,25 @@ body {
   }
 }
 
-/* Background: White interior + Rainbow border + Rainbow glow */
-@keyframes classify-success-bg {
-  0%, 50% {
-    background:
-      linear-gradient(#fff, #fff) padding-box,
-      linear-gradient(
-        135deg,
-        #ef4444 0%,
-        #f97316 14%,
-        #eab308 28%,
-        #22c55e 42%,
-        #06b6d4 56%,
-        #3b82f6 70%,
-        #8b5cf6 100%
-      ) border-box;
-    border: 2px solid transparent;
-  }
-  100% {
-    background: transparent;
-    border: 1px solid #E5E5E5;
-  }
+/* Success state uses same rainbow border as loading state */
+.classify-success-bg {
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    conic-gradient(
+      from 0deg,
+      #ef4444 0%,
+      #f97316 14%,
+      #eab308 28%,
+      #22c55e 42%,
+      #06b6d4 56%,
+      #3b82f6 70%,
+      #8b5cf6 84%,
+      #ef4444 100%
+    ) border-box !important;
+  border: 2px solid transparent !important;
+  animation:
+    classify-success-bloom 700ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+    classify-success-sparkle 700ms ease-out forwards;
 }
 
 /* Rainbow bloom: Full spectrum glow radiates outward */
@@ -260,13 +258,6 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-
-.classify-success-bg {
-  animation:
-    classify-success-bg 700ms cubic-bezier(0.4, 0, 0.2, 1) forwards,
-    classify-success-bloom 700ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
-    classify-success-sparkle 700ms ease-out forwards;
 }
 
 /* Success text styling - rainbow gradient */
