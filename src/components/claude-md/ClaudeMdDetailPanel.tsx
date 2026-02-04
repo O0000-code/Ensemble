@@ -50,7 +50,7 @@ function formatRelativeTime(dateString?: string): string {
 function getTypeLabel(type: ClaudeMdType): string {
   switch (type) {
     case 'global':
-      return 'Global Configuration';
+      return 'User Configuration';
     case 'project':
       return 'Project Configuration';
     case 'local':
@@ -275,12 +275,12 @@ export function ClaudeMdDetailPanel({ file, isOpen, onClose }: ClaudeMdDetailPan
   // Detail Header content
   const detailHeader = (
     <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
-      {/* Icon */}
+      {/* Icon - 36x36, bg #F4F4F5, cornerRadius 8px */}
       <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#F4F4F5]">
         <FileText className="h-5 w-5 text-[#71717A]" />
       </div>
 
-      {/* Title & Path */}
+      {/* Title Wrap - gap 2px */}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <h2 className="text-[15px] font-semibold text-[#18181B]">
           {selectedFile.name}
@@ -295,16 +295,16 @@ export function ClaudeMdDetailPanel({ file, isOpen, onClose }: ClaudeMdDetailPan
   // Detail Content
   const detailContent = (
     <div className="flex flex-col gap-7">
-      {/* Info Section */}
+      {/* Info Section - gap 16px */}
       <section className="flex flex-col gap-4">
-        {/* Info Row - Three columns: Type, File Size, Modified */}
+        {/* Info Row - gap 32px: Type, File Size, Modified */}
         <div className="flex gap-8">
           <InfoItem label="Type" value={getTypeLabel(selectedFile.sourceType)} />
           <InfoItem label="File Size" value={formatFileSize(selectedFile.size)} />
           <InfoItem label="Modified" value={formatRelativeTime(selectedFile.updatedAt)} />
         </div>
 
-        {/* Category Selector */}
+        {/* Category Item - gap 8px */}
         <div className="flex flex-col gap-2">
           <span className="text-[11px] font-medium text-[#71717A]">Category</span>
           <Dropdown
@@ -313,11 +313,11 @@ export function ClaudeMdDetailPanel({ file, isOpen, onClose }: ClaudeMdDetailPan
             onChange={handleCategoryChange}
             placeholder="Select category"
             compact
-            className="w-40"
+            className="w-fit"
           />
         </div>
 
-        {/* Tags */}
+        {/* Tags Item - gap 8px */}
         <div className="flex flex-col gap-2">
           <span className="text-[11px] font-medium text-[#71717A]">Tags</span>
           <div className="flex flex-wrap items-center gap-2">
@@ -405,7 +405,7 @@ export function ClaudeMdDetailPanel({ file, isOpen, onClose }: ClaudeMdDetailPan
         </div>
       </section>
 
-      {/* Preview Section */}
+      {/* Preview Section - gap 12px */}
       <section className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold text-[#18181B]">Preview</h3>
         <div className="overflow-hidden rounded-lg border border-[#E5E5E5] bg-[#FAFAFA] p-4">
@@ -415,13 +415,13 @@ export function ClaudeMdDetailPanel({ file, isOpen, onClose }: ClaudeMdDetailPan
         </div>
       </section>
 
-      {/* Configuration Section */}
+      {/* Configuration Section - gap 12px */}
       <section className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold text-[#18181B]">Configuration</h3>
         <div className="overflow-hidden rounded-lg border border-[#E5E5E5]">
-          {/* Set as Global Row */}
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex flex-col gap-0.5">
+          {/* Set as Global Row - padding 16px */}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex flex-col gap-1">
               <span className="text-[13px] font-medium text-[#18181B]">
                 Set as Global
               </span>
@@ -438,7 +438,7 @@ export function ClaudeMdDetailPanel({ file, isOpen, onClose }: ClaudeMdDetailPan
         </div>
       </section>
 
-      {/* Source Section */}
+      {/* Source Section - gap 12px */}
       <section className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold text-[#18181B]">Source</h3>
         <div className="flex flex-col gap-3 rounded-lg border border-[#E5E5E5] p-4">
@@ -457,7 +457,7 @@ export function ClaudeMdDetailPanel({ file, isOpen, onClose }: ClaudeMdDetailPan
         </div>
       </section>
 
-      {/* Used in Scenes Section */}
+      {/* Used in Scenes Section - gap 12px */}
       <section className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold text-[#18181B]">Used in Scenes</h3>
         {usedInScenes.length > 0 ? (

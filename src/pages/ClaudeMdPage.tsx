@@ -1,7 +1,7 @@
 // src/pages/ClaudeMdPage.tsx
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { FileText, Scan, Plus, Loader2 } from 'lucide-react';
+import { FileText, Radar, Download, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout';
 import { ClaudeMdCard } from '@/components/claude-md/ClaudeMdCard';
 import { ClaudeMdDetailPanel } from '@/components/claude-md/ClaudeMdDetailPanel';
@@ -10,90 +10,70 @@ import { ScanClaudeMdModal } from '@/components/modals/ScanClaudeMdModal';
 import { useClaudeMdStore } from '@/stores/claudeMdStore';
 
 // ============================================================================
-// Empty State Component (Custom for CLAUDE.md page)
+// Empty State Icon Component (Custom document icon matching design)
 // ============================================================================
 
-interface ClaudeMdEmptyStateProps {
-  onScan: () => void;
-  onImport: () => void;
-  isScanning: boolean;
-}
+/**
+ * EmptyStateDocIcon Component
+ *
+ * Custom document icon matching the design spec:
+ * - 36x44 frame with line-based document illustration
+ * - Stroke color: #D4D4D8 for outer, #E5E5E5 for inner details
+ */
+const EmptyStateDocIcon: React.FC = () => {
+  return (
+    <svg width="36" height="44" viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Document outline with folded corner */}
+      <path
+        d="M0 0V44H36V10L26 0H0Z"
+        stroke="#D4D4D8"
+        strokeWidth="1.5"
+        fill="none"
+      />
+      {/* Fold lines */}
+      <path d="M26 0V10H36" stroke="#E5E5E5" strokeWidth="1" fill="none" />
+      {/* Text lines */}
+      <line x1="7" y1="18" x2="29" y2="18" stroke="#E5E5E5" strokeWidth="1.5" />
+      <line x1="7" y1="26" x2="23" y2="26" stroke="#E5E5E5" strokeWidth="1.5" />
+      <line x1="7" y1="34" x2="19" y2="34" stroke="#E5E5E5" strokeWidth="1.5" />
+    </svg>
+  );
+};
+
+// ============================================================================
+// Empty State Component (Custom for CLAUDE.md page)
+// ============================================================================
 
 /**
  * ClaudeMdEmptyState Component
  *
  * Shows when there are no CLAUDE.md files.
  *
- * Design specs:
- * - Icon container: 80x80, bg #F4F4F5, border-radius 20px
- * - Icon: file-text, 40x40, #A1A1AA
- * - Title: 16px, 600, #18181B
- * - Description: 14px, normal, #71717A, line-height 1.5
- * - Buttons: same as header buttons
+ * Design specs (from design 6zwvB):
+ * - Icon: Custom document SVG, 36x44
+ * - Title: "No CLAUDE.md files", 14px, 500, #A1A1AA
+ * - Description: "Import files or scan your system to get started", 13px, normal, #D4D4D8, text-align center
+ * - No buttons (buttons are in header only)
+ * - gap: 20px between icon and text group
+ * - gap: 6px between title and description
  */
-const ClaudeMdEmptyState: React.FC<ClaudeMdEmptyStateProps> = ({
-  onScan,
-  onImport,
-  isScanning,
-}) => {
+const ClaudeMdEmptyState: React.FC = () => {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6">
-      {/* Icon Container - 80x80 */}
-      <div className="flex h-20 w-20 items-center justify-center rounded-[20px] bg-[#F4F4F5]">
-        <FileText className="h-10 w-10 text-[#A1A1AA]" />
-      </div>
+    <div className="flex flex-1 flex-col items-center justify-center">
+      {/* Empty State Container - gap 20px */}
+      <div className="flex flex-col items-center gap-5">
+        {/* Document Icon - 36x44 */}
+        <EmptyStateDocIcon />
 
-      {/* Text Area */}
-      <div className="flex flex-col items-center gap-2 text-center">
-        <h3 className="text-base font-semibold text-[#18181B]">
-          No CLAUDE.md files yet
-        </h3>
-        <p className="max-w-[320px] text-sm font-normal leading-relaxed text-[#71717A]">
-          Import your first CLAUDE.md file or scan your system to get started
-        </p>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex items-center gap-3">
-        {/* Scan System Button - Secondary style */}
-        <button
-          onClick={onScan}
-          disabled={isScanning}
-          className="
-            flex items-center gap-2
-            rounded-md border border-[#E5E5E5]
-            bg-transparent
-            px-3.5 py-2
-            text-sm font-normal text-[#18181B]
-            hover:bg-[#F4F4F5]
-            disabled:opacity-50
-            transition-colors
-          "
-        >
-          {isScanning ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Scan className="h-4 w-4" />
-          )}
-          {isScanning ? 'Scanning...' : 'Scan System'}
-        </button>
-
-        {/* Import Button - Primary style */}
-        <button
-          onClick={onImport}
-          className="
-            flex items-center gap-2
-            rounded-md
-            bg-[#18181B]
-            px-3.5 py-2
-            text-sm font-medium text-white
-            hover:bg-[#27272A]
-            transition-colors
-          "
-        >
-          <Plus className="h-4 w-4" />
-          Import
-        </button>
+        {/* Text Group - gap 6px */}
+        <div className="flex flex-col items-center gap-1.5">
+          <span className="text-sm font-medium tracking-[-0.2px] text-[#A1A1AA]">
+            No CLAUDE.md files
+          </span>
+          <span className="text-[13px] font-normal text-[#D4D4D8] text-center">
+            Import files or scan your system to get started
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -227,45 +207,77 @@ export function ClaudeMdPage() {
   // Header Buttons
   // ============================================================================
 
-  const headerActions = (
-    <div className="flex items-center gap-2">
-      {/* Scan System Button - Secondary */}
+  // Check if we're in empty state (no files)
+  const isEmpty = files.length === 0 && !isLoading;
+
+  // Header actions for empty state - only Scan System button
+  const emptyStateHeaderActions = (
+    <div className="flex items-center gap-2.5">
+      {/* Scan System Button - Secondary style, icon=radar */}
       <button
         onClick={handleScan}
         disabled={isScanning}
         className="
-          flex items-center gap-2
+          flex h-8 items-center gap-1.5
           rounded-md border border-[#E5E5E5]
           bg-transparent
-          px-3.5 py-2
-          text-sm font-normal text-[#18181B]
+          px-3
+          text-xs font-medium text-[#71717A]
           hover:bg-[#F4F4F5]
           disabled:opacity-50
           transition-colors
         "
       >
         {isScanning ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
         ) : (
-          <Scan className="h-4 w-4" />
+          <Radar className="h-3.5 w-3.5" />
+        )}
+        {isScanning ? 'Scanning...' : 'Scan System'}
+      </button>
+    </div>
+  );
+
+  // Header actions for list state - Scan System + Import buttons
+  const listHeaderActions = (
+    <div className="flex items-center gap-2.5">
+      {/* Scan System Button - Secondary style, icon=radar */}
+      <button
+        onClick={handleScan}
+        disabled={isScanning}
+        className="
+          flex h-8 items-center gap-1.5
+          rounded-md border border-[#E5E5E5]
+          bg-transparent
+          px-3
+          text-xs font-medium text-[#71717A]
+          hover:bg-[#F4F4F5]
+          disabled:opacity-50
+          transition-colors
+        "
+      >
+        {isScanning ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Radar className="h-3.5 w-3.5" />
         )}
         {isScanning ? 'Scanning...' : 'Scan System'}
       </button>
 
-      {/* Import Button - Primary */}
+      {/* Import Button - Secondary style, icon=download */}
       <button
         onClick={handleImport}
         className="
-          flex items-center gap-2
-          rounded-md
-          bg-[#18181B]
-          px-3.5 py-2
-          text-sm font-medium text-white
-          hover:bg-[#27272A]
+          flex h-8 items-center gap-1.5
+          rounded-md border border-[#E5E5E5]
+          bg-transparent
+          px-3
+          text-xs font-medium text-[#71717A]
+          hover:bg-[#F4F4F5]
           transition-colors
         "
       >
-        <Plus className="h-4 w-4" />
+        <Download className="h-3.5 w-3.5" />
         Import
       </button>
     </div>
@@ -276,16 +288,16 @@ export function ClaudeMdPage() {
   // ============================================================================
 
   // Empty state (no files and no search filter)
-  if (filteredFiles.length === 0 && !filter.search && !isLoading) {
+  if (isEmpty && !filter.search) {
     return (
       <div className="relative flex h-full flex-col overflow-hidden">
-        {/* Header */}
+        {/* Header - Empty state: only Scan System button */}
         <PageHeader
           title="CLAUDE.md Files"
           searchValue={filter.search}
           onSearchChange={handleSearchChange}
           searchPlaceholder="Search files..."
-          actions={headerActions}
+          actions={emptyStateHeaderActions}
         />
 
         {/* Error notification */}
@@ -301,12 +313,8 @@ export function ClaudeMdPage() {
           </div>
         )}
 
-        {/* Empty State */}
-        <ClaudeMdEmptyState
-          onScan={handleScan}
-          onImport={handleImport}
-          isScanning={isScanning}
-        />
+        {/* Empty State - No buttons, just icon and text */}
+        <ClaudeMdEmptyState />
 
         {/* Import Modal */}
         <ImportClaudeMdModal
@@ -327,13 +335,13 @@ export function ClaudeMdPage() {
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden">
-      {/* Header */}
+      {/* Header - List state: Scan System + Import buttons */}
       <PageHeader
         title="CLAUDE.md Files"
         searchValue={filter.search}
         onSearchChange={handleSearchChange}
         searchPlaceholder="Search files..."
-        actions={headerActions}
+        actions={listHeaderActions}
       />
 
       {/* Error notification */}
@@ -385,10 +393,8 @@ export function ClaudeMdPage() {
                 key={file.id}
                 file={file}
                 compact={!!selectedFileId}
-                selected={file.id === selectedFileId}
                 onClick={() => handleFileClick(file.id)}
                 onDelete={() => handleDelete(file.id)}
-                onView={() => handleFileClick(file.id)}
               />
             ))}
           </div>

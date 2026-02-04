@@ -1,6 +1,7 @@
 // src/components/claude-md/ClaudeMdBadge.tsx
 
 import React from 'react';
+import { Globe, Folder, User } from 'lucide-react';
 import type { ClaudeMdType } from '@/types/claudeMd';
 
 /**
@@ -15,67 +16,73 @@ interface ClaudeMdBadgeProps {
 
 /**
  * Badge configuration for each type
- * Based on design spec:
- * - GLOBAL: #10B981 (green)
- * - PROJECT: #3B82F6 (blue)
- * - LOCAL: #8B5CF6 (purple)
- * - Text: white, 10px, 600
- * - Padding: 2px 8px
- * - Border radius: 4px
+ * Based on design spec (P3AWE):
+ * - GLOBAL: #7C3AED (紫色) + globe 图标
+ * - PROJECT: #0EA5E9 (青色) + folder 图标
+ * - LOCAL: #F59E0B (橙色) + user 图标
+ * - Size: 16x16
+ * - cornerRadius: 8px (圆形)
+ * - Border: 2px white
+ * - Icon: 8x8, white
  */
-const badgeConfig: Record<ClaudeMdType, { bgColor: string; label: string }> = {
+const badgeConfig: Record<
+  ClaudeMdType,
+  { bgColor: string; Icon: React.FC<{ className?: string }> }
+> = {
   global: {
-    bgColor: '#10B981',
-    label: 'GLOBAL',
+    bgColor: '#7C3AED',
+    Icon: Globe,
   },
   project: {
-    bgColor: '#3B82F6',
-    label: 'PROJECT',
+    bgColor: '#0EA5E9',
+    Icon: Folder,
   },
   local: {
-    bgColor: '#8B5CF6',
-    label: 'LOCAL',
+    bgColor: '#F59E0B',
+    Icon: User,
   },
 };
 
 /**
  * ClaudeMdBadge Component
  *
- * A type indicator badge for CLAUDE.md files.
- * Shows GLOBAL (green), PROJECT (blue), or LOCAL (purple) based on file type.
+ * A circular type indicator badge for CLAUDE.md files.
+ * Shows a colored circle with icon:
+ * - Global: purple (#7C3AED) + globe icon
+ * - Project: cyan (#0EA5E9) + folder icon
+ * - Local: orange (#F59E0B) + user icon
  *
- * Design specs:
- * - Border radius: 4px
- * - Padding: 2px 8px
- * - Font size: 10px
- * - Font weight: 600
- * - Text color: white
+ * Design specs (from P3AWE):
+ * - Size: 16x16
+ * - Border radius: 8px (圆形)
+ * - Border: 2px white
+ * - Icon: 8x8, white
+ * - Position: absolute, right -4px (x=28 from parent 40px), top -4px (y=-4)
  */
 export const ClaudeMdBadge: React.FC<ClaudeMdBadgeProps> = ({
   type,
   className = '',
 }) => {
   const config = badgeConfig[type];
+  const { Icon } = config;
 
   return (
-    <span
+    <div
       className={`
-        inline-flex
+        flex
+        h-4
+        w-4
         items-center
         justify-center
-        rounded-[4px]
-        px-2
-        py-0.5
-        text-[10px]
-        font-semibold
-        leading-none
-        text-white
+        rounded-full
+        border-2
+        border-white
         ${className}
       `}
       style={{ backgroundColor: config.bgColor }}
     >
-      {config.label}
-    </span>
+      <Icon className="h-2 w-2 text-white" />
+    </div>
   );
 };
 

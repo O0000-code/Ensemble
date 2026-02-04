@@ -1,7 +1,7 @@
 // src/components/claude-md/ClaudeMdCard.tsx
 
 import React, { useRef, useState } from 'react';
-import { FileText, MoreHorizontal, Trash2, Eye } from 'lucide-react';
+import { FileText, MoreHorizontal, Trash2 } from 'lucide-react';
 import { ClaudeMdBadge } from './ClaudeMdBadge';
 import { TagsWithTooltip } from '@/components/common/TagsWithTooltip';
 import type { ClaudeMdFile } from '@/types/claudeMd';
@@ -20,33 +20,6 @@ const RIGHT_SECTION_DELAY = '150ms';
 // Helper Functions
 // ============================================================================
 
-/**
- * Format file size for display
- */
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-/**
- * Format relative time
- */
-function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
 
 // ============================================================================
 // ClaudeMdCard Component
@@ -57,14 +30,10 @@ interface ClaudeMdCardProps {
   file: ClaudeMdFile;
   /** Whether to show compact mode (when detail panel is open) */
   compact?: boolean;
-  /** Whether this card is selected */
-  selected?: boolean;
   /** Click handler */
   onClick?: () => void;
   /** Delete handler */
   onDelete?: () => void;
-  /** View button click handler */
-  onView?: () => void;
 }
 
 /**
@@ -72,26 +41,27 @@ interface ClaudeMdCardProps {
  *
  * Displays a CLAUDE.md file card in the list view.
  *
- * Design specs:
+ * Design specs (from P3AWE):
  * - Width: fill_container
  * - Border radius: 8px
  * - Border: 1px solid #E5E5E5
- * - Padding: 20px
- * - Gap: 16px
- * - Background: white (selected: #FAFAFA)
+ * - Padding: 16px 20px
+ * - Gap: 14px
+ * - Background: white
  *
  * Layout:
- * - File icon: 48x48, bg #F4F4F5, border-radius 8px, icon 24x24
- * - File info: name + badge, path, stats
- * - Right: tags, view button
+ * - Icon Container: 40x40, layout none (for badge positioning)
+ *   - Icon Wrap: 40x40, bg #FAFAFA, cornerRadius 8px, icon 20x20 (#52525B)
+ *   - Badge: 16x16, cornerRadius 8px (circle), 2px white border, position x=28, y=-4
+ * - Info: name (13px, #18181B, 500) + path (12px, #71717A), gap 3px
+ * - Tags: category + tags
+ * - Actions: 28x28, ellipsis icon
  */
 export const ClaudeMdCard: React.FC<ClaudeMdCardProps> = ({
   file,
   compact = false,
-  selected = false,
   onClick,
   onDelete,
-  onView,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -111,11 +81,6 @@ export const ClaudeMdCard: React.FC<ClaudeMdCardProps> = ({
     e.stopPropagation();
     setShowMenu(false);
     onDelete?.();
-  };
-
-  const handleView = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onView?.();
   };
 
   // Close menu when clicking outside
@@ -151,89 +116,58 @@ export const ClaudeMdCard: React.FC<ClaudeMdCardProps> = ({
         flex
         w-full
         items-center
-        gap-4
+        gap-[14px]
         rounded-lg
         border
         border-[#E5E5E5]
-        p-5
-        ${selected ? 'bg-[#FAFAFA]' : 'bg-white hover:bg-[#FAFAFA]'}
-        ${onClick ? 'cursor-pointer' : ''}
+        px-5 py-4
+        bg-white
+        ${onClick ? 'cursor-pointer hover:bg-[#FAFAFA]' : ''}
       `}
       style={{
         transition: `background-color ${TRANSITION_BASE}`,
       }}
     >
-      {/* File Icon Container - 48x48 */}
-      <div
-        className={`
-          flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg
-          ${selected ? 'bg-[#F4F4F5]' : 'bg-[#F4F4F5]'}
-        `}
-        style={{
-          transition: `background-color ${TRANSITION_BASE}`,
-        }}
-      >
-        <FileText
-          className={`h-6 w-6 ${selected ? 'text-[#18181B]' : 'text-[#71717A]'}`}
-          style={{ transition: `color ${TRANSITION_BASE}` }}
-        />
-      </div>
-
-      {/* File Info - flex-1 */}
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        {/* Title Row - Name + Badge */}
-        <div className="flex items-center gap-2">
-          <span
-            className={`text-sm text-[#18181B] truncate ${
-              selected ? 'font-semibold' : 'font-semibold'
-            }`}
-          >
-            {file.name}
-          </span>
+      {/* Icon Container - 40x40, layout none for badge positioning */}
+      <div className="relative h-10 w-10 flex-shrink-0">
+        {/* Icon Wrap - 40x40, bg #FAFAFA, cornerRadius 8px */}
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#FAFAFA]">
+          <FileText className="h-5 w-5 text-[#52525B]" />
+        </div>
+        {/* Badge - positioned at top-right, x=28 (right -4px), y=-4 (top -4px) */}
+        <div className="absolute -right-1 -top-1">
           <ClaudeMdBadge type={file.sourceType} />
         </div>
+      </div>
 
-        {/* Path Row */}
+      {/* Info - flex-1, gap 3px */}
+      <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
+        {/* Name - 13px, #18181B, font-medium (500) */}
+        <span className="text-[13px] font-medium text-[#18181B] truncate">
+          {file.name}
+        </span>
+        {/* Path - 12px, #71717A, font-normal */}
         <span className="text-xs font-normal text-[#71717A] truncate">
           {file.sourcePath}
         </span>
-
-        {/* Stats Row - File size, Modified time */}
-        <div className="flex items-center gap-4">
-          <span className="text-xs font-normal text-[#71717A]">
-            {formatFileSize(file.size)}
-          </span>
-          <span className="text-xs font-normal text-[#71717A]">
-            Modified {formatRelativeTime(file.updatedAt)}
-          </span>
-        </div>
       </div>
 
-      {/* Right Section - Tags (hidden in compact mode) */}
+      {/* Tags Section (hidden in compact mode) */}
       <div
-        className="flex items-center gap-2 shrink-0"
+        className="flex items-center gap-[6px] shrink-0"
         style={rightSectionStyle}
       >
         {tagNames.length > 0 && <TagsWithTooltip tags={tagNames} />}
       </div>
 
-      {/* View Button - 32x32 */}
-      <button
-        onClick={handleView}
-        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md border border-[#E5E5E5] hover:bg-[#F4F4F5] transition-colors"
-        aria-label="View file"
-      >
-        <Eye className="h-4 w-4 text-[#71717A]" />
-      </button>
-
-      {/* More Menu */}
+      {/* Actions Button - 28x28, ellipsis icon */}
       <div ref={menuRef} className="shrink-0 relative">
         <button
           onClick={handleMoreClick}
-          className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-[#F4F4F5] transition-colors"
+          className="flex h-7 w-7 items-center justify-center rounded hover:bg-[#F4F4F5] transition-colors"
           aria-label="More actions"
         >
-          <MoreHorizontal className="w-4 h-4 text-[#71717A]" />
+          <MoreHorizontal className="h-4 w-4 text-[#A1A1AA]" />
         </button>
 
         {/* Dropdown Menu */}
