@@ -598,10 +598,9 @@ pub struct ClaudeMdFile {
     /// Original source type
     pub source_type: ClaudeMdType,
 
-    /// File content - runtime populated, not serialized to data.json
-    /// For backward compatibility: can deserialize from old data but won't serialize
+    /// File content - runtime populated from independent file
+    /// Stored as empty string in data.json, actual content read from ~/.ensemble/claude-md/{id}/CLAUDE.md
     #[serde(default)]
-    #[serde(skip_serializing)]
     pub content: String,
 
     /// Managed file path (new field for independent file storage)

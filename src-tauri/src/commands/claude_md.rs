@@ -479,7 +479,6 @@ pub fn get_claude_md_files() -> Result<Vec<ClaudeMdFile>, String> {
                 }
             }
             // If managed_path is None but content exists (old data), use existing content
-            // (backward compatibility - content was deserialized from old data.json)
             file
         })
         .collect();
