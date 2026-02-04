@@ -185,7 +185,7 @@ export function TagPage() {
             icon={isClassifying ? <span className="ai-spinner" /> : <Sparkles />}
             onClick={handleAutoClassify}
             disabled={isClassifying}
-            className={`min-w-[120px] ${isClassifying ? 'ai-classifying' : ''}`}
+            className={`w-[132px] ${isClassifying ? 'ai-classifying' : ''}`}
           >
             {isClassifying ? (
               <span className="ai-classifying-text">Classifying...</span>

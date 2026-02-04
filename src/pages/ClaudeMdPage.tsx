@@ -116,6 +116,7 @@ export function ClaudeMdPage() {
     isScanning,
     isAutoClassifying,
     classifySuccess,
+    isFadingOut,
     autoClassify,
     error,
     clearError,
@@ -293,21 +294,26 @@ export function ClaudeMdPage() {
           hover:bg-[#F4F4F5]
           disabled:opacity-50
           transition-colors
-          min-w-[120px]
+          w-[132px]
           ${isAutoClassifying ? 'ai-classifying' : ''}
           ${classifySuccess ? 'classify-success-bg' : ''}
+          ${isFadingOut ? 'classify-fading-out' : ''}
         `}
       >
         {isAutoClassifying ? (
           <span className="ai-spinner" />
         ) : classifySuccess ? (
-          <Check className="h-3.5 w-3.5 classify-success-icon" />
+          <Check className={`h-3.5 w-3.5 classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`} />
         ) : (
-          <Sparkles className="h-3.5 w-3.5" />
+          <Sparkles className={`h-3.5 w-3.5 ${!isAutoClassifying && !classifySuccess ? 'classify-fade-in' : ''}`} />
         )}
         {isAutoClassifying ? (
           <span className="ai-classifying-text">Classifying...</span>
-        ) : classifySuccess ? 'Done!' : 'Auto Classify'}
+        ) : classifySuccess ? (
+          <span className={isFadingOut ? 'classify-fading-out' : ''}>Done!</span>
+        ) : (
+          <span className={!isAutoClassifying && !classifySuccess ? 'classify-fade-in' : ''}>Auto Classify</span>
+        )}
       </button>
     </div>
   );

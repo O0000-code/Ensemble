@@ -197,6 +197,37 @@ body {
     classify-success-sparkle 700ms ease-out forwards;
 }
 
+/* Fade out transition when returning to idle state */
+@keyframes classify-fade-out {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes classify-fade-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.classify-fading-out {
+  animation: classify-fade-out 200ms ease-out forwards;
+}
+
+.classify-fade-in {
+  animation: classify-fade-in 200ms ease-out forwards;
+}
+
 /* Rainbow bloom: Full spectrum glow radiates outward */
 @keyframes classify-success-bloom {
   0% {

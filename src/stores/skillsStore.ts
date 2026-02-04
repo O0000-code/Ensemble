@@ -35,6 +35,7 @@ interface SkillsState {
   // Classification state
   isClassifying: boolean;
   classifySuccess: boolean;
+  isFadingOut: boolean;
 
   // Usage stats
   usageStats: Record<string, SkillUsage>;
@@ -79,6 +80,7 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
   isLoading: false,
   isClassifying: false,
   classifySuccess: false,
+  isFadingOut: false,
   error: null,
   usageStats: {},
   isLoadingUsage: false,
@@ -400,9 +402,13 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
       // Reload categories, tags, and skills to get updated data
       await Promise.all([loadCategories(), loadTags(), get().loadSkills()]);
       set({ classifySuccess: true, isClassifying: false });
+      // Show success for 1.5s, then fade out for 200ms
       setTimeout(() => {
-        set({ classifySuccess: false });
-      }, 1800);
+        set({ isFadingOut: true });
+        setTimeout(() => {
+          set({ classifySuccess: false, isFadingOut: false });
+        }, 200);
+      }, 1500);
     } catch (error) {
       const message = typeof error === 'string' ? error : String(error);
       set({ error: message, isClassifying: false, classifySuccess: false });

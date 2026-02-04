@@ -190,6 +190,7 @@ export function SkillsPage() {
     autoClassify,
     isClassifying,
     classifySuccess,
+    isFadingOut,
     error,
     clearError,
     loadSkills,
@@ -696,16 +697,20 @@ export function SkillsPage() {
               size="small"
               icon={
                 isClassifying ? <span className="ai-spinner" /> :
-                classifySuccess ? <Check className="classify-success-icon" /> :
-                <Sparkles />
+                classifySuccess ? <Check className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`} /> :
+                <Sparkles className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''} />
               }
               onClick={handleAutoClassify}
               disabled={isClassifying || classifySuccess}
-              className={`min-w-[120px] ${isClassifying ? 'ai-classifying' : ''} ${classifySuccess ? 'classify-success-bg' : ''}`}
+              className={`w-[132px] ${isClassifying ? 'ai-classifying' : ''} ${classifySuccess ? 'classify-success-bg' : ''} ${isFadingOut ? 'classify-fading-out' : ''}`}
             >
               {isClassifying ? (
                 <span className="ai-classifying-text">Classifying...</span>
-              ) : classifySuccess ? 'Done!' : 'Auto Classify'}
+              ) : classifySuccess ? (
+                <span className={isFadingOut ? 'classify-fading-out' : ''}>Done!</span>
+              ) : (
+                <span className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''}>Auto Classify</span>
+              )}
             </Button>
           </div>
         }

@@ -49,6 +49,7 @@ interface ClaudeMdState {
   isDistributing: boolean;
   isAutoClassifying: boolean;
   classifySuccess: boolean;
+  isFadingOut: boolean;
 
   // Error state
   error: string | null;
@@ -123,6 +124,7 @@ export const useClaudeMdStore = create<ClaudeMdState>((set, get) => ({
   isDistributing: false,
   isAutoClassifying: false,
   classifySuccess: false,
+  isFadingOut: false,
   error: null,
 
   // ========================================================================
@@ -516,9 +518,13 @@ export const useClaudeMdStore = create<ClaudeMdState>((set, get) => ({
       // Reload files
       await get().loadFiles();
       set({ classifySuccess: true, isAutoClassifying: false });
+      // Show success for 1.5s, then fade out for 200ms
       setTimeout(() => {
-        set({ classifySuccess: false });
-      }, 1800);
+        set({ isFadingOut: true });
+        setTimeout(() => {
+          set({ classifySuccess: false, isFadingOut: false });
+        }, 200);
+      }, 1500);
     } catch (error) {
       const message = typeof error === 'string' ? error : String(error);
       set({ error: message, isAutoClassifying: false, classifySuccess: false });
