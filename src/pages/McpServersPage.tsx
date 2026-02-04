@@ -682,7 +682,7 @@ export const McpServersPage: React.FC = () => {
                 {isClassifying ? (
                   <span className="ai-classifying-text">Classifying...</span>
                 ) : classifySuccess ? (
-                  <span className={isFadingOut ? 'classify-fading-out' : ''}>Done!</span>
+                  <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>Done!</span>
                 ) : (
                   <span className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''}>Auto Classify</span>
                 )}
@@ -744,7 +744,7 @@ export const McpServersPage: React.FC = () => {
               {isClassifying ? (
                 <span className="ai-classifying-text">Classifying...</span>
               ) : classifySuccess ? (
-                <span className={isFadingOut ? 'classify-fading-out' : ''}>Done!</span>
+                <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>Done!</span>
               ) : (
                 <span className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''}>Auto Classify</span>
               )}
