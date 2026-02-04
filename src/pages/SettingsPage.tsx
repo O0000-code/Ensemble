@@ -485,12 +485,12 @@ export function SettingsPage() {
             <Card className="p-5">
               {/* App Info */}
               <div className="flex items-center gap-3.5">
-                {/* App Icon - Deep Shadow 3D Style */}
+                {/* App Icon - Flat Style */}
                 <div
                   className="w-12 h-12 rounded-[10px] flex-shrink-0 relative overflow-hidden"
                   style={{
                     background: 'linear-gradient(145deg, #27272A 0%, #18181B 40%, #09090B 100%)',
-                    boxShadow: '0 4.8px 14.4px -2.4px rgba(0,0,0,0.38), 0 1.2px 2.4px rgba(0,0,0,0.19), inset 0 0.6px 0 rgba(255,255,255,0.06)'
+                    boxShadow: 'inset 0 0.6px 0 rgba(255,255,255,0.06)'
                   }}
                 >
                   <svg

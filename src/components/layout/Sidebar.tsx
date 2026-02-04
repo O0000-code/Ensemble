@@ -496,7 +496,7 @@ export function Sidebar({
         </div>
 
         {/* Sidebar Footer - 固定 */}
-        <footer className="pt-4 -ml-1.5 flex-shrink-0">
+        <footer className="pt-2 -ml-1.5 flex-shrink-0">
           <button
             onClick={handleSettingsClick}
             className={`
