@@ -1,3 +1,10 @@
+/**
+ * NOTE: This component is NOT used by SkillsPage.tsx!
+ * SkillsPage has its own inline detail panel implementation.
+ * This component is only used by CategoryPage and TagPage.
+ * If you need to modify the Skills detail panel on the main Skills page,
+ * edit src/pages/SkillsPage.tsx instead.
+ */
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Sparkles,
