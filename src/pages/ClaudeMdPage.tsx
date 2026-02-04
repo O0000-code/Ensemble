@@ -1,7 +1,7 @@
 // src/pages/ClaudeMdPage.tsx
 
 import React, { useState, useMemo } from 'react';
-import { FileText, Radar, Download, Loader2, Sparkles } from 'lucide-react';
+import { FileText, Radar, Download, Loader2, Sparkles, Check } from 'lucide-react';
 import { PageHeader } from '@/components/layout';
 import { ClaudeMdCard } from '@/components/claude-md/ClaudeMdCard';
 import { ClaudeMdDetailPanel } from '@/components/claude-md/ClaudeMdDetailPanel';
@@ -115,6 +115,7 @@ export function ClaudeMdPage() {
     isLoading,
     isScanning,
     isAutoClassifying,
+    classifySuccess,
     autoClassify,
     error,
     clearError,
@@ -282,8 +283,8 @@ export function ClaudeMdPage() {
       {/* Auto Classify Button - rightmost position */}
       <button
         onClick={() => autoClassify()}
-        disabled={isAutoClassifying}
-        className="
+        disabled={isAutoClassifying || classifySuccess}
+        className={`
           flex h-8 items-center gap-1.5
           rounded-md border border-[#E5E5E5]
           bg-transparent
@@ -292,14 +293,17 @@ export function ClaudeMdPage() {
           hover:bg-[#F4F4F5]
           disabled:opacity-50
           transition-colors
-        "
+          ${classifySuccess ? 'classify-success-bg' : ''}
+        `}
       >
         {isAutoClassifying ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : classifySuccess ? (
+          <Check className="h-3.5 w-3.5 text-green-600 classify-success-icon" />
         ) : (
           <Sparkles className="h-3.5 w-3.5" />
         )}
-        {isAutoClassifying ? 'Classifying...' : 'Auto Classify'}
+        {isAutoClassifying ? 'Classifying...' : classifySuccess ? 'Done!' : 'Auto Classify'}
       </button>
     </div>
   );

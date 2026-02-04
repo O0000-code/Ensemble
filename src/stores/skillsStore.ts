@@ -34,6 +34,7 @@ interface SkillsState {
 
   // Classification state
   isClassifying: boolean;
+  classifySuccess: boolean;
 
   // Usage stats
   usageStats: Record<string, SkillUsage>;
@@ -77,6 +78,7 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
   filter: initialFilter,
   isLoading: false,
   isClassifying: false,
+  classifySuccess: false,
   error: null,
   usageStats: {},
   isLoadingUsage: false,
@@ -321,7 +323,7 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
       return;
     }
 
-    set({ isClassifying: true, error: null });
+    set({ isClassifying: true, classifySuccess: false, error: null });
 
     try {
       // Prepare all skills for classification
@@ -397,10 +399,13 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
 
       // Reload categories, tags, and skills to get updated data
       await Promise.all([loadCategories(), loadTags(), get().loadSkills()]);
-      set({ isClassifying: false });
+      set({ classifySuccess: true, isClassifying: false });
+      setTimeout(() => {
+        set({ classifySuccess: false });
+      }, 1800);
     } catch (error) {
       const message = typeof error === 'string' ? error : String(error);
-      set({ error: message, isClassifying: false });
+      set({ error: message, isClassifying: false, classifySuccess: false });
     }
   },
 

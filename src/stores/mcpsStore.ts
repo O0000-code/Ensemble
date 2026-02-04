@@ -27,6 +27,7 @@ interface McpsState {
 
   // Classification
   isClassifying: boolean;
+  classifySuccess: boolean;
 
   // Actions
   setMcpServers: (servers: McpServer[]) => void;
@@ -63,6 +64,7 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
   usageStats: {},
   isLoadingUsage: false,
   isClassifying: false,
+  classifySuccess: false,
 
   setMcpServers: (servers) => set({ mcpServers: servers }),
 
@@ -344,7 +346,7 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
       return;
     }
 
-    set({ isClassifying: true, error: null });
+    set({ isClassifying: true, classifySuccess: false, error: null });
 
     try {
       // Prepare all MCPs for classification
@@ -417,10 +419,13 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
 
       // Reload categories, tags, and MCPs
       await Promise.all([loadCategories(), loadTags(), get().loadMcps()]);
-      set({ isClassifying: false });
+      set({ classifySuccess: true, isClassifying: false });
+      setTimeout(() => {
+        set({ classifySuccess: false });
+      }, 1800);
     } catch (error) {
       const message = typeof error === 'string' ? error : String(error);
-      set({ error: message, isClassifying: false });
+      set({ error: message, isClassifying: false, classifySuccess: false });
     }
   },
 

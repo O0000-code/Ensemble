@@ -148,3 +148,60 @@ body {
     opacity: 1;
   }
 }
+
+/* Auto Classify Success Animation - Physics-based spring effect */
+@keyframes classify-success-icon {
+  0% {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(1.25) rotate(12deg);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(0.9) rotate(-5deg);
+  }
+  85% {
+    transform: scale(1.05) rotate(2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes classify-success-bg {
+  0% {
+    background-color: transparent;
+    border-color: #E5E5E5;
+  }
+  30% {
+    background-color: #DCFCE7;
+    border-color: #86EFAC;
+  }
+  100% {
+    background-color: transparent;
+    border-color: #E5E5E5;
+  }
+}
+
+@keyframes classify-success-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+.classify-success-icon {
+  animation: classify-success-icon 350ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.classify-success-bg {
+  animation: classify-success-bg 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards,
+             classify-success-pulse 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}

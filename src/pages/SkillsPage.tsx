@@ -19,6 +19,7 @@ import {
   Copy,
   FolderOpen,
   Download,
+  Check,
 } from 'lucide-react';
 import { PageHeader, SlidePanel } from '@/components/layout';
 import { parseDescription } from '@/utils/parseDescription';
@@ -188,6 +189,7 @@ export function SkillsPage() {
     getFilteredSkills,
     autoClassify,
     isClassifying,
+    classifySuccess,
     error,
     clearError,
     loadSkills,
@@ -692,11 +694,16 @@ export function SkillsPage() {
             <Button
               variant="secondary"
               size="small"
-              icon={isClassifying ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              icon={
+                isClassifying ? <Loader2 className="animate-spin" /> :
+                classifySuccess ? <Check className="classify-success-icon text-green-600" /> :
+                <Sparkles />
+              }
               onClick={handleAutoClassify}
-              disabled={isClassifying}
+              disabled={isClassifying || classifySuccess}
+              className={classifySuccess ? 'classify-success-bg' : ''}
             >
-              {isClassifying ? 'Classifying...' : 'Auto Classify'}
+              {isClassifying ? 'Classifying...' : classifySuccess ? 'Done!' : 'Auto Classify'}
             </Button>
           </div>
         }

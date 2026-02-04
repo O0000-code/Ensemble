@@ -157,6 +157,7 @@ export const McpServersPage: React.FC = () => {
     loadUsageStats,
     autoClassify,
     isClassifying,
+    classifySuccess,
   } = useMcpsStore();
 
   const { categories, tags: appTags, addTag: addGlobalTag } = useAppStore();
@@ -668,11 +669,16 @@ export const McpServersPage: React.FC = () => {
               <Button
                 variant="secondary"
                 size="small"
-                icon={isClassifying ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                icon={
+                  isClassifying ? <Loader2 className="animate-spin" /> :
+                  classifySuccess ? <Check className="classify-success-icon text-green-600" /> :
+                  <Sparkles />
+                }
                 onClick={() => autoClassify()}
-                disabled={isClassifying}
+                disabled={isClassifying || classifySuccess}
+                className={classifySuccess ? 'classify-success-bg' : ''}
               >
-                {isClassifying ? 'Classifying...' : 'Auto Classify'}
+                {isClassifying ? 'Classifying...' : classifySuccess ? 'Done!' : 'Auto Classify'}
               </Button>
             </div>
           }
@@ -719,11 +725,16 @@ export const McpServersPage: React.FC = () => {
             <Button
               variant="secondary"
               size="small"
-              icon={isClassifying ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              icon={
+                isClassifying ? <Loader2 className="animate-spin" /> :
+                classifySuccess ? <Check className="classify-success-icon text-green-600" /> :
+                <Sparkles />
+              }
               onClick={() => autoClassify()}
-              disabled={isClassifying}
+              disabled={isClassifying || classifySuccess}
+              className={classifySuccess ? 'classify-success-bg' : ''}
             >
-              {isClassifying ? 'Classifying...' : 'Auto Classify'}
+              {isClassifying ? 'Classifying...' : classifySuccess ? 'Done!' : 'Auto Classify'}
             </Button>
           </div>
         }
