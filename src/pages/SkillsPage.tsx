@@ -738,15 +738,17 @@ export function SkillsPage() {
         `}
       >
         {filteredSkills.length === 0 ? (
-          <EmptyState
-            icon={<Sparkles className="h-12 w-12" />}
-            title="No skills"
-            description={
-              filter.search
-                ? 'No skills match your search. Try a different query.'
-                : 'Add your first skill to get started'
-            }
-          />
+          <div className="flex h-full items-center justify-center">
+            <EmptyState
+              icon={<Sparkles className="h-12 w-12" />}
+              title="No skills"
+              description={
+                filter.search
+                  ? 'No skills match your search. Try a different query.'
+                  : 'Add your first skill to get started'
+              }
+            />
+          </div>
         ) : (
           /* Skill List - Unified component with smooth transitions */
           <div className="flex flex-col gap-3">
