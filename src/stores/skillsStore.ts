@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Skill, SkillUsage, UsageStats } from '../types';
 import { useSettingsStore } from './settingsStore';
 import { useAppStore } from './appStore';
+import { usePluginsStore } from './pluginsStore';
 import { isTauri, safeInvoke } from '@/utils/tauri';
 
 // Classification types
@@ -129,6 +130,16 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
 
     const skill = get().skills.find((s) => s.id === id);
     if (!skill) return;
+
+    // If this is a plugin-imported skill, clean up the import record
+    if (skill.pluginId) {
+      const pluginsStore = usePluginsStore.getState();
+      const importKey = `${skill.pluginId}|${skill.name}`;
+      const newImported = pluginsStore.importedPluginSkills.filter(
+        (s) => s !== importKey
+      );
+      pluginsStore.setImportedPluginSkills(newImported);
+    }
 
     // Optimistic update - remove from list
     set((state) => ({

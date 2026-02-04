@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Database, FolderOpen, MessageSquare, Code, Globe, FileText, Zap, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Database, Plug, MessageSquare, Code, Globe, FileText, Zap, MoreHorizontal, Trash2 } from 'lucide-react';
 import { ICON_MAP } from '@/components/common';
 import { McpServer } from '@/types';
 
@@ -10,7 +10,7 @@ const iconMap: Record<string, React.ElementType> = {
   Communication: MessageSquare,
   Research: Globe,
   Productivity: FileText,
-  default: FolderOpen,
+  default: Plug,
 };
 
 // Get icon component based on category

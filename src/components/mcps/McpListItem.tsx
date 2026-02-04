@@ -22,18 +22,18 @@ const RIGHT_SECTION_DELAY = '150ms';
 // ============================================================================
 
 const categoryIconMap: Record<string, React.ElementType> = {
-  Database: ICON_MAP['database'] || ICON_MAP['folder'],
-  Development: ICON_MAP['code'] || ICON_MAP['folder'],
-  Communication: ICON_MAP['message-square'] || ICON_MAP['folder'],
-  Research: ICON_MAP['globe'] || ICON_MAP['folder'],
-  Productivity: ICON_MAP['file-text'] || ICON_MAP['folder'],
+  Database: ICON_MAP['database'] || ICON_MAP['plug'],
+  Development: ICON_MAP['code'] || ICON_MAP['plug'],
+  Communication: ICON_MAP['message-square'] || ICON_MAP['plug'],
+  Research: ICON_MAP['globe'] || ICON_MAP['plug'],
+  Productivity: ICON_MAP['file-text'] || ICON_MAP['plug'],
 };
 
 const getMcpIcon = (mcp: McpServer): React.ElementType => {
   if (mcp.icon && ICON_MAP[mcp.icon]) {
     return ICON_MAP[mcp.icon];
   }
-  return categoryIconMap[mcp.category] || ICON_MAP['folder-open'] || ICON_MAP['folder'];
+  return categoryIconMap[mcp.category] || ICON_MAP['plug'];
 };
 
 

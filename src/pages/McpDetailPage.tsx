@@ -425,7 +425,7 @@ export const McpDetailPage: React.FC = () => {
       {/* Icon Picker */}
       {iconPickerState.triggerRef && (
         <IconPicker
-          value={mcpServers.find((m) => m.id === iconPickerState.mcpId)?.icon || 'database'}
+          value={mcpServers.find((m) => m.id === iconPickerState.mcpId)?.icon || 'plug'}
           onChange={handleIconChange}
           triggerRef={iconPickerState.triggerRef}
           isOpen={iconPickerState.isOpen}

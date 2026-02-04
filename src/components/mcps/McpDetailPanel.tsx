@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Database,
+  Plug,
   FolderOpen,
   Code,
   MessageSquare,
@@ -35,7 +36,7 @@ const iconMap: Record<string, React.ElementType> = {
   Communication: MessageSquare,
   Research: Globe,
   Productivity: FileText,
-  default: FolderOpen,
+  default: Plug,
 };
 
 const getIcon = (category: string): React.ElementType => {
@@ -614,7 +615,7 @@ export function McpDetailPanel({ mcp, isOpen, onClose }: McpDetailPanelProps) {
       {/* Icon Picker */}
       {iconPickerState.triggerRef && (
         <IconPicker
-          value={selectedMcp?.icon || 'database'}
+          value={selectedMcp?.icon || 'plug'}
           onChange={handleIconChange}
           triggerRef={iconPickerState.triggerRef}
           isOpen={iconPickerState.isOpen}

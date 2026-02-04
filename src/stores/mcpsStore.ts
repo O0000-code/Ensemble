@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { McpServer, FetchMcpToolsResult, McpUsage, UsageStats } from '@/types';
 import { useSettingsStore } from './settingsStore';
+import { usePluginsStore } from './pluginsStore';
 import { isTauri, safeInvoke } from '@/utils/tauri';
 
 interface McpsFilter {
@@ -89,6 +90,16 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
 
     const mcp = get().mcpServers.find((m) => m.id === id);
     if (!mcp) return;
+
+    // If this is a plugin-imported MCP, clean up the import record
+    if (mcp.pluginId) {
+      const pluginsStore = usePluginsStore.getState();
+      const importKey = `${mcp.pluginId}|${mcp.name}`;
+      const newImported = pluginsStore.importedPluginMcps.filter(
+        (s) => s !== importKey
+      );
+      pluginsStore.setImportedPluginMcps(newImported);
+    }
 
     // Optimistic update - remove from list
     set((state) => ({
