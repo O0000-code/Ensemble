@@ -186,3 +186,373 @@ body {
     opacity: 1;
   }
 }
+
+/* ============================================================================
+   Auto Classify Success Animation - Vivid Rainbow Theme
+
+   Design: Strong, natural rainbow effect that clearly shows all colors
+   ============================================================================ */
+
+/* Rainbow check icon: spring-based entrance */
+@keyframes classify-success-icon {
+  0% {
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.3) rotate(12deg);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(0.9) rotate(-6deg);
+  }
+  85% {
+    transform: scale(1.08) rotate(2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+/* Success state uses same rainbow border as loading state */
+.classify-success-bg {
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    conic-gradient(
+      from 0deg,
+      #ef4444 0%,
+      #f97316 14%,
+      #eab308 28%,
+      #22c55e 42%,
+      #06b6d4 56%,
+      #3b82f6 70%,
+      #8b5cf6 84%,
+      #ef4444 100%
+    ) border-box !important;
+  border: 2px solid transparent !important;
+  animation:
+    classify-success-bloom 1000ms cubic-bezier(0.16, 1, 0.3, 1) forwards,
+    classify-success-sparkle 1000ms ease-out forwards;
+}
+
+/* Fade out transition when returning to idle state */
+@keyframes classify-fade-out {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+@keyframes classify-fade-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.classify-fading-out {
+  animation: classify-fade-out 200ms ease-out forwards;
+}
+
+.classify-fade-in {
+  animation: classify-fade-in 200ms ease-out forwards;
+}
+
+/* Rainbow bloom: Full spectrum glow radiates outward
+   Ultra-smooth animation with 16 keyframes for 60fps-like smoothness */
+@keyframes classify-success-bloom {
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(239, 68, 68, 0),
+      0 0 0 0 rgba(234, 179, 8, 0),
+      0 0 0 0 rgba(34, 197, 94, 0),
+      0 0 0 0 rgba(59, 130, 246, 0),
+      0 0 0 0 rgba(139, 92, 246, 0);
+  }
+  5% {
+    box-shadow:
+      0 0 2px 0.5px rgba(239, 68, 68, 0.12),
+      0 0 4px 1px rgba(234, 179, 8, 0.1),
+      0 0 6px 1.5px rgba(34, 197, 94, 0.08),
+      0 0 8px 2px rgba(59, 130, 246, 0.1),
+      0 0 10px 2.5px rgba(139, 92, 246, 0.12);
+  }
+  10% {
+    box-shadow:
+      0 0 4px 1px rgba(239, 68, 68, 0.22),
+      0 0 7px 1.5px rgba(234, 179, 8, 0.18),
+      0 0 10px 2px rgba(34, 197, 94, 0.15),
+      0 0 13px 3px rgba(59, 130, 246, 0.18),
+      0 0 16px 4px rgba(139, 92, 246, 0.22);
+  }
+  18% {
+    box-shadow:
+      0 0 7px 2px rgba(239, 68, 68, 0.32),
+      0 0 12px 3px rgba(234, 179, 8, 0.27),
+      0 0 17px 4px rgba(34, 197, 94, 0.22),
+      0 0 22px 6px rgba(59, 130, 246, 0.27),
+      0 0 27px 8px rgba(139, 92, 246, 0.32);
+  }
+  25% {
+    box-shadow:
+      0 0 9px 2.5px rgba(239, 68, 68, 0.36),
+      0 0 15px 4px rgba(234, 179, 8, 0.31),
+      0 0 21px 6px rgba(34, 197, 94, 0.26),
+      0 0 27px 8px rgba(59, 130, 246, 0.31),
+      0 0 33px 10px rgba(139, 92, 246, 0.36);
+  }
+  32% {
+    box-shadow:
+      0 0 10px 3px rgba(239, 68, 68, 0.35),
+      0 0 16px 5px rgba(234, 179, 8, 0.3),
+      0 0 22px 7px rgba(34, 197, 94, 0.25),
+      0 0 28px 9px rgba(59, 130, 246, 0.3),
+      0 0 34px 11px rgba(139, 92, 246, 0.35);
+  }
+  40% {
+    box-shadow:
+      0 0 9px 2.5px rgba(239, 68, 68, 0.32),
+      0 0 15px 4.5px rgba(234, 179, 8, 0.28),
+      0 0 21px 6.5px rgba(34, 197, 94, 0.23),
+      0 0 27px 8.5px rgba(59, 130, 246, 0.28),
+      0 0 33px 10.5px rgba(139, 92, 246, 0.32);
+  }
+  50% {
+    box-shadow:
+      0 0 8px 2px rgba(239, 68, 68, 0.28),
+      0 0 14px 4px rgba(234, 179, 8, 0.24),
+      0 0 20px 6px rgba(34, 197, 94, 0.2),
+      0 0 26px 8px rgba(59, 130, 246, 0.24),
+      0 0 32px 10px rgba(139, 92, 246, 0.28);
+  }
+  60% {
+    box-shadow:
+      0 0 7px 1.8px rgba(239, 68, 68, 0.23),
+      0 0 12px 3.2px rgba(234, 179, 8, 0.2),
+      0 0 17px 5px rgba(34, 197, 94, 0.16),
+      0 0 22px 6.5px rgba(59, 130, 246, 0.2),
+      0 0 27px 8px rgba(139, 92, 246, 0.23);
+  }
+  70% {
+    box-shadow:
+      0 0 6px 1.5px rgba(239, 68, 68, 0.18),
+      0 0 10px 2.5px rgba(234, 179, 8, 0.15),
+      0 0 14px 4px rgba(34, 197, 94, 0.12),
+      0 0 18px 5px rgba(59, 130, 246, 0.15),
+      0 0 22px 6px rgba(139, 92, 246, 0.18);
+  }
+  80% {
+    box-shadow:
+      0 0 5px 1.2px rgba(239, 68, 68, 0.13),
+      0 0 8px 2px rgba(234, 179, 8, 0.11),
+      0 0 11px 3px rgba(34, 197, 94, 0.09),
+      0 0 14px 4px rgba(59, 130, 246, 0.11),
+      0 0 17px 5px rgba(139, 92, 246, 0.13);
+  }
+  90% {
+    box-shadow:
+      0 0 4px 1px rgba(239, 68, 68, 0.09),
+      0 0 7px 1.5px rgba(234, 179, 8, 0.07),
+      0 0 10px 2px rgba(34, 197, 94, 0.06),
+      0 0 13px 3px rgba(59, 130, 246, 0.07),
+      0 0 16px 4px rgba(139, 92, 246, 0.09);
+  }
+  100% {
+    box-shadow:
+      0 0 3px 0.8px rgba(239, 68, 68, 0.05),
+      0 0 5px 1.2px rgba(234, 179, 8, 0.04),
+      0 0 7px 1.5px rgba(34, 197, 94, 0.03),
+      0 0 9px 2px rgba(59, 130, 246, 0.04),
+      0 0 11px 2.5px rgba(139, 92, 246, 0.05);
+  }
+}
+
+/* Sparkle effect - ultra-smooth synchronized with bloom */
+@keyframes classify-success-sparkle {
+  0% { filter: brightness(1) saturate(1); }
+  5% { filter: brightness(1.05) saturate(1.03); }
+  10% { filter: brightness(1.1) saturate(1.06); }
+  18% { filter: brightness(1.18) saturate(1.12); }
+  25% { filter: brightness(1.23) saturate(1.17); }
+  32% { filter: brightness(1.25) saturate(1.2); }
+  40% { filter: brightness(1.22) saturate(1.17); }
+  50% { filter: brightness(1.18) saturate(1.14); }
+  60% { filter: brightness(1.13) saturate(1.1); }
+  70% { filter: brightness(1.08) saturate(1.06); }
+  80% { filter: brightness(1.05) saturate(1.04); }
+  90% { filter: brightness(1.02) saturate(1.02); }
+  100% { filter: brightness(1) saturate(1); }
+}
+
+/* Rainbow gradient check icon - animated rainbow color */
+.classify-success-icon {
+  animation:
+    classify-success-icon 400ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+    classify-icon-rainbow 1.5s ease-in-out forwards;
+  transform-origin: center center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b5cf6;
+}
+
+/* Animate through rainbow colors */
+@keyframes classify-icon-rainbow {
+  0% { color: #ef4444; }      /* Red */
+  15% { color: #f97316; }     /* Orange */
+  30% { color: #eab308; }     /* Yellow */
+  45% { color: #22c55e; }     /* Green */
+  60% { color: #06b6d4; }     /* Cyan */
+  75% { color: #3b82f6; }     /* Blue */
+  90% { color: #8b5cf6; }     /* Purple */
+  100% { color: #a855f7; }    /* End Purple */
+}
+
+/* Success text styling - rainbow gradient */
+.classify-success-text {
+  background: linear-gradient(
+    90deg,
+    #ef4444,
+    #f97316,
+    #eab308,
+    #22c55e,
+    #06b6d4,
+    #3b82f6,
+    #8b5cf6
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 500;
+}
+
+/* AI Classifying Animation - Rainbow Rotating Gradient Border */
+@property --ai-gradient-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes ai-gradient-rotate {
+  to {
+    --ai-gradient-angle: 360deg;
+  }
+}
+
+@keyframes ai-icon-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Simple CSS Spinner - perfectly centered rotation */
+.ai-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: #8b5cf6;
+  border-right-color: #3b82f6;
+  border-bottom-color: #22c55e;
+  border-left-color: #f97316;
+  animation: ai-spinner-rotate 0.8s linear infinite;
+}
+
+@keyframes ai-spinner-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ai-pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(236, 72, 153, 0.4);
+  }
+}
+
+.ai-classifying {
+  position: relative;
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    conic-gradient(
+      from var(--ai-gradient-angle),
+      #ef4444 0%,      /* Red */
+      #f97316 14%,     /* Orange */
+      #eab308 28%,     /* Yellow */
+      #22c55e 42%,     /* Green */
+      #06b6d4 56%,     /* Cyan */
+      #3b82f6 70%,     /* Blue */
+      #8b5cf6 84%,     /* Purple */
+      #ef4444 100%     /* Red (loop) */
+    ) border-box !important;
+  border: 2px solid transparent !important;
+  animation:
+    ai-gradient-rotate 4s linear infinite,
+    ai-pulse-glow 2s ease-in-out infinite;
+}
+
+.ai-classifying:hover {
+  background:
+    linear-gradient(#FAFAFA, #FAFAFA) padding-box,
+    conic-gradient(
+      from var(--ai-gradient-angle),
+      #ef4444 0%,
+      #f97316 14%,
+      #eab308 28%,
+      #22c55e 42%,
+      #06b6d4 56%,
+      #3b82f6 70%,
+      #8b5cf6 84%,
+      #ef4444 100%
+    ) border-box !important;
+}
+
+.ai-classifying-text {
+  background: linear-gradient(
+    90deg,
+    #ef4444,
+    #f97316,
+    #eab308,
+    #22c55e,
+    #06b6d4,
+    #3b82f6,
+    #8b5cf6,
+    #ef4444
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: ai-text-gradient 3s linear infinite;
+}
+
+@keyframes ai-text-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.ai-icon-spin {
+  animation: ai-icon-spin 1.2s linear infinite;
+  color: #6366F1;
+}

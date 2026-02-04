@@ -1,24 +1,10 @@
 import { create } from 'zustand';
-import type { Skill, SkillUsage, UsageStats } from '../types';
+import type { Skill, SkillUsage, UsageStats, ClassifyItem, ClassifyResult } from '../types';
 import { useSettingsStore } from './settingsStore';
 import { useAppStore } from './appStore';
 import { usePluginsStore } from './pluginsStore';
 import { isTauri, safeInvoke } from '@/utils/tauri';
-
-// Classification types
-interface ClassifyItem {
-  id: string;
-  name: string;
-  description: string;
-  instructions?: string;
-}
-
-interface ClassifyResult {
-  id: string;
-  suggested_category: string;
-  suggested_tags: string[];
-  confidence: number;
-}
+import { ICON_NAMES } from '@/components/common/IconPicker';
 
 // ============================================================================
 // Types
@@ -48,6 +34,8 @@ interface SkillsState {
 
   // Classification state
   isClassifying: boolean;
+  classifySuccess: boolean;
+  isFadingOut: boolean;
 
   // Usage stats
   usageStats: Record<string, SkillUsage>;
@@ -91,6 +79,8 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
   filter: initialFilter,
   isLoading: false,
   isClassifying: false,
+  classifySuccess: false,
+  isFadingOut: false,
   error: null,
   usageStats: {},
   isLoadingUsage: false,
@@ -328,29 +318,18 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
     }
 
     const { skills } = get();
-    const { anthropicApiKey } = useSettingsStore.getState();
     const { categories, tags } = useAppStore.getState();
 
-    if (!anthropicApiKey) {
-      set({ error: 'API key is required for auto-classification. Please configure it in Settings.' });
+    if (skills.length === 0) {
+      set({ error: 'No skills to classify.' });
       return;
     }
 
-    // Get skills that need classification (uncategorized or no tags)
-    const skillsToClassify = skills.filter(
-      (s) => !s.category || s.category === 'Uncategorized' || s.tags.length === 0
-    );
-
-    if (skillsToClassify.length === 0) {
-      set({ error: 'No skills need classification.' });
-      return;
-    }
-
-    set({ isClassifying: true, error: null });
+    set({ isClassifying: true, classifySuccess: false, error: null });
 
     try {
-      // Prepare items for classification
-      const items: ClassifyItem[] = skillsToClassify.map((s) => ({
+      // Prepare all skills for classification
+      const items: ClassifyItem[] = skills.map((s) => ({
         id: s.id,
         name: s.name,
         description: s.description,
@@ -361,12 +340,12 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
       const existingCategories = categories.map((c) => c.name);
       const existingTags = tags.map((t) => t.name);
 
-      // Call the classification API
+      // Call backend with available icons
       const results = await safeInvoke<ClassifyResult[]>('auto_classify', {
         items,
-        apiKey: anthropicApiKey,
         existingCategories,
         existingTags,
+        availableIcons: ICON_NAMES,
       });
 
       if (!results) {
@@ -374,34 +353,65 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
         return;
       }
 
-      // Apply classification results
+      // Collect new categories and tags that need to be created
+      const { addCategory, addTag, loadCategories, loadTags } = useAppStore.getState();
+      const existingCategoryNames = new Set(categories.map(c => c.name));
+      const existingTagNames = new Set(tags.map(t => t.name));
+
+      const newCategories = new Set<string>();
+      const newTags = new Set<string>();
+
       for (const result of results) {
-        const skill = skills.find((s) => s.id === result.id);
-        if (skill) {
-          // Update category
-          if (result.suggested_category && result.suggested_category !== skill.category) {
-            await safeInvoke('update_skill_metadata', {
-              skillId: result.id,
-              category: result.suggested_category,
-            });
-          }
-          // Update tags
-          if (result.suggested_tags.length > 0) {
-            const newTags = [...new Set([...skill.tags, ...result.suggested_tags])];
-            await safeInvoke('update_skill_metadata', {
-              skillId: result.id,
-              tags: newTags,
-            });
+        if (!existingCategoryNames.has(result.suggested_category)) {
+          newCategories.add(result.suggested_category);
+        }
+        for (const tag of result.suggested_tags) {
+          if (!existingTagNames.has(tag)) {
+            newTags.add(tag);
           }
         }
       }
 
-      // Reload skills to get updated data
-      await get().loadSkills();
-      set({ isClassifying: false });
+      // Create new categories with predefined colors
+      const categoryColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
+      let colorIndex = categories.length;
+      for (const categoryName of newCategories) {
+        await addCategory(categoryName, categoryColors[colorIndex % categoryColors.length]);
+        colorIndex++;
+      }
+
+      // Create new tags
+      for (const tagName of newTags) {
+        await addTag(tagName);
+      }
+
+      // Apply classification results
+      for (const result of results) {
+        const skill = skills.find((s) => s.id === result.id);
+        if (skill) {
+          // Update category, tags, and icon
+          await safeInvoke('update_skill_metadata', {
+            skillId: result.id,
+            category: result.suggested_category,
+            tags: result.suggested_tags,
+            icon: result.suggested_icon,
+          });
+        }
+      }
+
+      // Reload categories, tags, and skills to get updated data
+      await Promise.all([loadCategories(), loadTags(), get().loadSkills()]);
+      set({ classifySuccess: true, isClassifying: false });
+      // Show success for 1.5s, then fade out for 200ms
+      setTimeout(() => {
+        set({ isFadingOut: true });
+        setTimeout(() => {
+          set({ classifySuccess: false, isFadingOut: false });
+        }, 200);
+      }, 1500);
     } catch (error) {
       const message = typeof error === 'string' ? error : String(error);
-      set({ error: message, isClassifying: false });
+      set({ error: message, isClassifying: false, classifySuccess: false });
     }
   },
 

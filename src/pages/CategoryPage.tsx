@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Sparkles, Plug, FileText, Loader2 } from 'lucide-react';
+import { Sparkles, Plug, FileText } from 'lucide-react';
 import PageHeader from '../components/layout/PageHeader';
 import { SkillListItem } from '../components/skills/SkillListItem';
 import { SkillDetailPanel } from '../components/skills/SkillDetailPanel';
@@ -170,11 +170,14 @@ export function CategoryPage() {
             <Button
               variant="secondary"
               size="small"
-              icon={isClassifying ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              icon={isClassifying ? <span className="ai-spinner" /> : <Sparkles />}
               onClick={handleAutoClassify}
               disabled={isClassifying}
+              className={`w-[132px] ${isClassifying ? 'ai-classifying' : ''}`}
             >
-              {isClassifying ? 'Classifying...' : 'Auto Classify'}
+              {isClassifying ? (
+                <span className="ai-classifying-text">Classifying...</span>
+              ) : 'Auto Classify'}
             </Button>
           }
         />
@@ -197,11 +200,14 @@ export function CategoryPage() {
           <Button
             variant="secondary"
             size="small"
-            icon={isClassifying ? <Loader2 className="animate-spin" /> : <Sparkles />}
+            icon={isClassifying ? <span className="ai-spinner" /> : <Sparkles />}
             onClick={handleAutoClassify}
             disabled={isClassifying}
+            className={`w-[132px] ${isClassifying ? 'ai-classifying' : ''}`}
           >
-            {isClassifying ? 'Classifying...' : 'Auto Classify'}
+            {isClassifying ? (
+              <span className="ai-classifying-text">Classifying...</span>
+            ) : 'Auto Classify'}
           </Button>
         }
       />

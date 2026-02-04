@@ -18,6 +18,7 @@ import {
   Info,
   RefreshCw,
   Check,
+  Sparkles,
 } from 'lucide-react';
 import { PageHeader, SlidePanel } from '@/components/layout';
 import { EmptyState, IconPicker, ICON_MAP, Dropdown, ScopeSelector, Button } from '@/components/common';
@@ -154,6 +155,10 @@ export const McpServersPage: React.FC = () => {
     fetchToolsSuccessMcp,
     usageStats,
     loadUsageStats,
+    autoClassify,
+    isClassifying,
+    classifySuccess,
+    isFadingOut,
   } = useMcpsStore();
 
   const { categories, tags: appTags, addTag: addGlobalTag } = useAppStore();
@@ -652,15 +657,37 @@ export const McpServersPage: React.FC = () => {
           onSearchChange={handleSearchChange}
           searchPlaceholder="Search servers..."
           actions={
-            <Button
-              variant="secondary"
-              size="small"
-              icon={isDetectingMcps ? <Loader2 className="animate-spin" /> : <Download />}
-              onClick={() => openMcpsModal()}
-              disabled={isDetectingMcps}
-            >
-              {isDetectingMcps ? 'Detecting...' : 'Import'}
-            </Button>
+            <div className="flex items-center gap-2.5">
+              <Button
+                variant="secondary"
+                size="small"
+                icon={isDetectingMcps ? <Loader2 className="animate-spin" /> : <Download />}
+                onClick={() => openMcpsModal()}
+                disabled={isDetectingMcps}
+              >
+                {isDetectingMcps ? 'Detecting...' : 'Import'}
+              </Button>
+              <Button
+                variant="secondary"
+                size="small"
+                icon={
+                  isClassifying ? <span className="ai-spinner" /> :
+                  classifySuccess ? <Check className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`} /> :
+                  <Sparkles className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''} />
+                }
+                onClick={() => autoClassify()}
+                disabled={isClassifying || classifySuccess}
+                className={`w-[132px] ${isClassifying ? 'ai-classifying' : ''} ${classifySuccess ? 'classify-success-bg' : ''} ${isFadingOut ? 'classify-fading-out' : ''}`}
+              >
+                {isClassifying ? (
+                  <span className="ai-classifying-text">Classifying...</span>
+                ) : classifySuccess ? (
+                  <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>Done!</span>
+                ) : (
+                  <span className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''}>Auto Classify</span>
+                )}
+              </Button>
+            </div>
           }
         />
         <div className="flex flex-1 items-center justify-center">
@@ -692,15 +719,37 @@ export const McpServersPage: React.FC = () => {
         onSearchChange={handleSearchChange}
         searchPlaceholder="Search servers..."
         actions={
-          <Button
-            variant="secondary"
-            size="small"
-            icon={isDetectingMcps ? <Loader2 className="animate-spin" /> : <Download />}
-            onClick={() => openMcpsModal()}
-            disabled={isDetectingMcps}
-          >
-            {isDetectingMcps ? 'Detecting...' : 'Import'}
-          </Button>
+          <div className="flex items-center gap-2.5">
+            <Button
+              variant="secondary"
+              size="small"
+              icon={isDetectingMcps ? <Loader2 className="animate-spin" /> : <Download />}
+              onClick={() => openMcpsModal()}
+              disabled={isDetectingMcps}
+            >
+              {isDetectingMcps ? 'Detecting...' : 'Import'}
+            </Button>
+            <Button
+              variant="secondary"
+              size="small"
+              icon={
+                isClassifying ? <span className="ai-spinner" /> :
+                classifySuccess ? <Check className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`} /> :
+                <Sparkles className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''} />
+              }
+              onClick={() => autoClassify()}
+              disabled={isClassifying || classifySuccess}
+              className={`w-[132px] ${isClassifying ? 'ai-classifying' : ''} ${classifySuccess ? 'classify-success-bg' : ''} ${isFadingOut ? 'classify-fading-out' : ''}`}
+            >
+              {isClassifying ? (
+                <span className="ai-classifying-text">Classifying...</span>
+              ) : classifySuccess ? (
+                <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>Done!</span>
+              ) : (
+                <span className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''}>Auto Classify</span>
+              )}
+            </Button>
+          </div>
         }
       />
 

@@ -19,6 +19,7 @@ import {
   Copy,
   FolderOpen,
   Download,
+  Check,
 } from 'lucide-react';
 import { PageHeader, SlidePanel } from '@/components/layout';
 import { parseDescription } from '@/utils/parseDescription';
@@ -188,6 +189,8 @@ export function SkillsPage() {
     getFilteredSkills,
     autoClassify,
     isClassifying,
+    classifySuccess,
+    isFadingOut,
     error,
     clearError,
     loadSkills,
@@ -692,11 +695,22 @@ export function SkillsPage() {
             <Button
               variant="secondary"
               size="small"
-              icon={isClassifying ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              icon={
+                isClassifying ? <span className="ai-spinner" /> :
+                classifySuccess ? <Check className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`} /> :
+                <Sparkles className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''} />
+              }
               onClick={handleAutoClassify}
-              disabled={isClassifying}
+              disabled={isClassifying || classifySuccess}
+              className={`w-[132px] ${isClassifying ? 'ai-classifying' : ''} ${classifySuccess ? 'classify-success-bg' : ''} ${isFadingOut ? 'classify-fading-out' : ''}`}
             >
-              {isClassifying ? 'Classifying...' : 'Auto Classify'}
+              {isClassifying ? (
+                <span className="ai-classifying-text">Classifying...</span>
+              ) : classifySuccess ? (
+                <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>Done!</span>
+              ) : (
+                <span className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''}>Auto Classify</span>
+              )}
             </Button>
           </div>
         }
