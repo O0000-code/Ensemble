@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Upload } from 'lucide-react';
 import { useClaudeMdStore } from '@/stores/claudeMdStore';
 import { isTauri, safeInvoke } from '@/utils/tauri';
+import { listen, UnlistenFn } from '@tauri-apps/api/event';
 
 type ImportMethod = 'file' | 'path';
 
@@ -44,6 +45,48 @@ export function ImportClaudeMdModal({
 
   // Store
   const { importFile, isImporting } = useClaudeMdStore();
+
+  // Tauri drag-drop event listener
+  useEffect(() => {
+    if (!isOpen || !isTauri()) return;
+
+    let unlisten: UnlistenFn | undefined;
+
+    const setupListener = async () => {
+      try {
+        // Listen for Tauri's native drag-drop event
+        unlisten = await listen<{ paths: string[]; position: { x: number; y: number } }>(
+          'tauri://drag-drop',
+          (event) => {
+            const paths = event.payload.paths;
+            if (paths && paths.length > 0) {
+              // Find first .md file
+              const mdFile = paths.find(p => p.toLowerCase().endsWith('.md'));
+              if (mdFile) {
+                setSelectedFilePath(mdFile);
+                // Auto-fill display name from file path if empty
+                if (!displayName) {
+                  const fileName = mdFile.split('/').pop() || '';
+                  const nameWithoutExt = fileName.replace(/\.md$/i, '');
+                  setDisplayName(nameWithoutExt === 'CLAUDE' ? '' : nameWithoutExt);
+                }
+              }
+            }
+          }
+        );
+      } catch (error) {
+        console.error('Failed to setup drag-drop listener:', error);
+      }
+    };
+
+    setupListener();
+
+    return () => {
+      if (unlisten) {
+        unlisten();
+      }
+    };
+  }, [isOpen, displayName]);
 
   // Get the effective file path based on import method
   const effectiveFilePath = importMethod === 'file' ? selectedFilePath : enteredPath;
@@ -97,18 +140,9 @@ export function ImportClaudeMdModal({
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      const file = files[0];
-      // In Tauri, we need the path, not the File object
-      // For web drag-drop, we can read the file name
-      if (file.name.toLowerCase().endsWith('.md')) {
-        // Note: In browser drag-drop, we only get the filename, not the full path
-        // The full path feature works with Tauri's native drag-drop
-        setSelectedFilePath(file.name);
-      }
-    }
+    // Note: The actual file path is received through Tauri's native drag-drop event
+    // (tauri://drag-drop) which is set up in the useEffect hook above.
+    // The React onDrop event only handles the visual feedback.
   }, []);
 
   // Handle import
