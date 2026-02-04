@@ -182,11 +182,14 @@ export function TagPage() {
           <Button
             variant="secondary"
             size="small"
-            icon={isClassifying ? <Loader2 className="animate-spin" /> : <Sparkles />}
+            icon={isClassifying ? <Loader2 className="ai-icon-spin" /> : <Sparkles />}
             onClick={handleAutoClassify}
             disabled={isClassifying}
+            className={`min-w-[120px] ${isClassifying ? 'ai-classifying' : ''}`}
           >
-            {isClassifying ? 'Classifying...' : 'Auto Classify'}
+            {isClassifying ? (
+              <span className="ai-classifying-text">Classifying...</span>
+            ) : 'Auto Classify'}
           </Button>
         }
       />

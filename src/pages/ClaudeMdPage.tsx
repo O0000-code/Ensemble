@@ -294,17 +294,20 @@ export function ClaudeMdPage() {
           disabled:opacity-50
           transition-colors
           min-w-[120px]
+          ${isAutoClassifying ? 'ai-classifying' : ''}
           ${classifySuccess ? 'classify-success-bg' : ''}
         `}
       >
         {isAutoClassifying ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 ai-icon-spin" />
         ) : classifySuccess ? (
           <Check className="h-3.5 w-3.5 text-green-600 classify-success-icon" />
         ) : (
           <Sparkles className="h-3.5 w-3.5" />
         )}
-        {isAutoClassifying ? 'Classifying...' : classifySuccess ? 'Done!' : 'Auto Classify'}
+        {isAutoClassifying ? (
+          <span className="ai-classifying-text">Classifying...</span>
+        ) : classifySuccess ? 'Done!' : 'Auto Classify'}
       </button>
     </div>
   );

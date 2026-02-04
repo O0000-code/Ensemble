@@ -670,15 +670,17 @@ export const McpServersPage: React.FC = () => {
                 variant="secondary"
                 size="small"
                 icon={
-                  isClassifying ? <Loader2 className="animate-spin" /> :
+                  isClassifying ? <Loader2 className="ai-icon-spin" /> :
                   classifySuccess ? <Check className="classify-success-icon text-green-600" /> :
                   <Sparkles />
                 }
                 onClick={() => autoClassify()}
                 disabled={isClassifying || classifySuccess}
-                className={`min-w-[120px] ${classifySuccess ? 'classify-success-bg' : ''}`}
+                className={`min-w-[120px] ${isClassifying ? 'ai-classifying' : ''} ${classifySuccess ? 'classify-success-bg' : ''}`}
               >
-                {isClassifying ? 'Classifying...' : classifySuccess ? 'Done!' : 'Auto Classify'}
+                {isClassifying ? (
+                  <span className="ai-classifying-text">Classifying...</span>
+                ) : classifySuccess ? 'Done!' : 'Auto Classify'}
               </Button>
             </div>
           }
@@ -726,15 +728,17 @@ export const McpServersPage: React.FC = () => {
               variant="secondary"
               size="small"
               icon={
-                isClassifying ? <Loader2 className="animate-spin" /> :
+                isClassifying ? <Loader2 className="ai-icon-spin" /> :
                 classifySuccess ? <Check className="classify-success-icon text-green-600" /> :
                 <Sparkles />
               }
               onClick={() => autoClassify()}
               disabled={isClassifying || classifySuccess}
-              className={`min-w-[120px] ${classifySuccess ? 'classify-success-bg' : ''}`}
+              className={`min-w-[120px] ${isClassifying ? 'ai-classifying' : ''} ${classifySuccess ? 'classify-success-bg' : ''}`}
             >
-              {isClassifying ? 'Classifying...' : classifySuccess ? 'Done!' : 'Auto Classify'}
+              {isClassifying ? (
+                <span className="ai-classifying-text">Classifying...</span>
+              ) : classifySuccess ? 'Done!' : 'Auto Classify'}
             </Button>
           </div>
         }

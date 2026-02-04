@@ -209,3 +209,88 @@ body {
   animation: classify-success-bg 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards,
              classify-success-pulse 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
+
+/* AI Classifying Animation - Rotating Gradient Border */
+@property --ai-gradient-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes ai-gradient-rotate {
+  to {
+    --ai-gradient-angle: 360deg;
+  }
+}
+
+@keyframes ai-text-shimmer {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes ai-icon-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ai-classifying {
+  position: relative;
+  background:
+    linear-gradient(#fff, #fff) padding-box,
+    conic-gradient(
+      from var(--ai-gradient-angle),
+      #8B5CF6 0%,
+      #6366F1 20%,
+      #3B82F6 40%,
+      #06B6D4 60%,
+      #3B82F6 80%,
+      #8B5CF6 100%
+    ) border-box !important;
+  border: 1.5px solid transparent !important;
+  animation: ai-gradient-rotate 3s linear infinite;
+}
+
+.ai-classifying:hover {
+  background:
+    linear-gradient(#FAFAFA, #FAFAFA) padding-box,
+    conic-gradient(
+      from var(--ai-gradient-angle),
+      #8B5CF6 0%,
+      #6366F1 20%,
+      #3B82F6 40%,
+      #06B6D4 60%,
+      #3B82F6 80%,
+      #8B5CF6 100%
+    ) border-box !important;
+}
+
+.ai-classifying-text {
+  background: linear-gradient(90deg, #8B5CF6, #3B82F6, #06B6D4, #3B82F6, #8B5CF6);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: ai-text-gradient 2s linear infinite;
+}
+
+@keyframes ai-text-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.ai-icon-spin {
+  animation: ai-icon-spin 1.2s linear infinite;
+  color: #6366F1;
+}
