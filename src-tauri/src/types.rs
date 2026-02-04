@@ -83,6 +83,9 @@ pub struct Scene {
     pub mcp_ids: Vec<String>,
     pub created_at: String,
     pub last_used: Option<String>,
+    /// Associated CLAUDE.md file IDs (excluding isGlobal=true files)
+    #[serde(default)]
+    pub claude_md_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -97,6 +100,8 @@ pub struct TrashedScene {
     pub created_at: String,
     pub last_used: Option<String>,
     pub deleted_at: String,
+    #[serde(default)]
+    pub claude_md_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -156,6 +161,12 @@ pub struct AppData {
     /// Imported plugin MCPs' pluginId list
     #[serde(default)]
     pub imported_plugin_mcps: Vec<String>,
+    /// Managed CLAUDE.md files list
+    #[serde(default)]
+    pub claude_md_files: Vec<ClaudeMdFile>,
+    /// Current global CLAUDE.md file ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub global_claude_md_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -194,10 +205,17 @@ pub struct AppSettings {
     #[serde(default = "default_warp_open_mode")]
     pub warp_open_mode: String,
     pub has_completed_import: bool,
+    /// CLAUDE.md distribution target path
+    #[serde(default = "default_claude_md_distribution_path")]
+    pub claude_md_distribution_path: ClaudeMdDistributionPath,
 }
 
 fn default_warp_open_mode() -> String {
     "window".to_string()
+}
+
+fn default_claude_md_distribution_path() -> ClaudeMdDistributionPath {
+    ClaudeMdDistributionPath::ClaudeDir
 }
 
 impl Default for AppSettings {
@@ -212,6 +230,7 @@ impl Default for AppSettings {
             claude_command: "claude".to_string(),
             warp_open_mode: "window".to_string(),
             has_completed_import: false,
+            claude_md_distribution_path: ClaudeMdDistributionPath::default(),
         }
     }
 }
@@ -493,4 +512,267 @@ pub struct PluginImportItem {
     pub source_path: String,
     /// Plugin version
     pub version: String,
+}
+
+// ============================================================================
+// CLAUDE.md related types
+// ============================================================================
+
+/// CLAUDE.md file type
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum ClaudeMdType {
+    Global,
+    Project,
+    Local,
+}
+
+impl ClaudeMdType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ClaudeMdType::Global => "global",
+            ClaudeMdType::Project => "project",
+            ClaudeMdType::Local => "local",
+        }
+    }
+}
+
+/// CLAUDE.md distribution target path
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum ClaudeMdDistributionPath {
+    #[serde(rename = ".claude/CLAUDE.md")]
+    ClaudeDir,
+    #[serde(rename = "CLAUDE.md")]
+    Root,
+    #[serde(rename = "CLAUDE.local.md")]
+    Local,
+}
+
+impl Default for ClaudeMdDistributionPath {
+    fn default() -> Self {
+        ClaudeMdDistributionPath::ClaudeDir
+    }
+}
+
+impl ClaudeMdDistributionPath {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ClaudeMdDistributionPath::ClaudeDir => ".claude/CLAUDE.md",
+            ClaudeMdDistributionPath::Root => "CLAUDE.md",
+            ClaudeMdDistributionPath::Local => "CLAUDE.local.md",
+        }
+    }
+}
+
+/// Conflict resolution strategy
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum ClaudeMdConflictResolution {
+    Overwrite,
+    Backup,
+    Skip,
+}
+
+impl Default for ClaudeMdConflictResolution {
+    fn default() -> Self {
+        ClaudeMdConflictResolution::Backup
+    }
+}
+
+/// CLAUDE.md file info (managed file)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeMdFile {
+    /// Unique identifier (UUID)
+    pub id: String,
+
+    /// Display name
+    pub name: String,
+
+    /// Description
+    pub description: String,
+
+    /// Original source path
+    pub source_path: String,
+
+    /// Original source type
+    pub source_type: ClaudeMdType,
+
+    /// File content
+    pub content: String,
+
+    /// Whether set as global
+    pub is_global: bool,
+
+    /// Category ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub category_id: Option<String>,
+
+    /// Tag ID list
+    #[serde(default)]
+    pub tag_ids: Vec<String>,
+
+    /// Created time (ISO 8601)
+    pub created_at: String,
+
+    /// Updated time (ISO 8601)
+    pub updated_at: String,
+
+    /// File size in bytes
+    pub size: u64,
+
+    /// Custom icon name
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
+}
+
+/// Scan result item
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeMdScanItem {
+    /// File path
+    pub path: String,
+
+    /// File type
+    #[serde(rename = "type")]
+    pub file_type: ClaudeMdType,
+
+    /// File size (bytes)
+    pub size: u64,
+
+    /// Last modified time (ISO 8601)
+    pub modified_at: String,
+
+    /// Whether already imported
+    pub is_imported: bool,
+
+    /// Corresponding ClaudeMdFile ID (if imported)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub imported_id: Option<String>,
+
+    /// Content preview (first 500 chars)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preview: Option<String>,
+
+    /// Project name
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub project_name: Option<String>,
+}
+
+/// Scan result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeMdScanResult {
+    /// Scanned file list
+    pub items: Vec<ClaudeMdScanItem>,
+
+    /// Number of directories scanned
+    pub scanned_dirs: u32,
+
+    /// Duration in milliseconds
+    pub duration: u64,
+
+    /// Error messages
+    #[serde(default)]
+    pub errors: Vec<String>,
+}
+
+/// Import options
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeMdImportOptions {
+    /// Source file path
+    pub source_path: String,
+
+    /// Custom name
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+
+    /// Custom description
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+
+    /// Category ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub category_id: Option<String>,
+
+    /// Tag ID list
+    #[serde(default)]
+    pub tag_ids: Vec<String>,
+}
+
+/// Import result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeMdImportResult {
+    /// Whether successful
+    pub success: bool,
+
+    /// Imported file
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file: Option<ClaudeMdFile>,
+
+    /// Error message
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+/// Distribution options
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeMdDistributionOptions {
+    /// ClaudeMdFile ID to distribute
+    pub claude_md_id: String,
+
+    /// Target project path
+    pub project_path: String,
+
+    /// Target file path
+    pub target_path: ClaudeMdDistributionPath,
+
+    /// Conflict resolution strategy
+    #[serde(default)]
+    pub conflict_resolution: ClaudeMdConflictResolution,
+}
+
+/// Distribution result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeMdDistributionResult {
+    /// Whether successful
+    pub success: bool,
+
+    /// Target file full path
+    pub target_path: String,
+
+    /// Action performed
+    pub action: String, // "created" | "overwritten" | "backed_up" | "skipped"
+
+    /// Backup path
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub backup_path: Option<String>,
+
+    /// Error message
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+/// Set global result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SetGlobalResult {
+    /// Whether successful
+    pub success: bool,
+
+    /// Previous global file ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub previous_global_id: Option<String>,
+
+    /// Backup path
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub backup_path: Option<String>,
+
+    /// Error message
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
 }

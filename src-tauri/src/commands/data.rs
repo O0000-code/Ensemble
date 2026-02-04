@@ -110,6 +110,8 @@ pub fn init_app_data() -> Result<(), String> {
             trashed_projects: vec![],
             imported_plugin_skills: vec![],
             imported_plugin_mcps: vec![],
+            claude_md_files: vec![],
+            global_claude_md_id: None,
         };
         write_app_data(default_data)?;
     }
@@ -245,8 +247,9 @@ pub fn add_scene(
     icon: String,
     skillIds: Vec<String>,
     mcpIds: Vec<String>,
+    claudeMdIds: Option<Vec<String>>,
 ) -> Result<Scene, String> {
-    println!("add_scene called: name={}, skillIds={:?}, mcpIds={:?}", name, skillIds, mcpIds);
+    println!("add_scene called: name={}, skillIds={:?}, mcpIds={:?}, claudeMdIds={:?}", name, skillIds, mcpIds, claudeMdIds);
     let mut data = read_app_data()?;
     println!("Current scenes count: {}", data.scenes.len());
 
@@ -257,6 +260,7 @@ pub fn add_scene(
         icon,
         skill_ids: skillIds,
         mcp_ids: mcpIds,
+        claude_md_ids: claudeMdIds.unwrap_or_default(),
         created_at: chrono::Utc::now().to_rfc3339(),
         last_used: None,
     };
@@ -276,6 +280,7 @@ pub fn update_scene(
     icon: Option<String>,
     skill_ids: Option<Vec<String>>,
     mcp_ids: Option<Vec<String>>,
+    claude_md_ids: Option<Vec<String>>,
 ) -> Result<(), String> {
     let mut data = read_app_data()?;
 
@@ -294,6 +299,9 @@ pub fn update_scene(
         }
         if let Some(m) = mcp_ids {
             scene.mcp_ids = m;
+        }
+        if let Some(c) = claude_md_ids {
+            scene.claude_md_ids = c;
         }
         write_app_data(data)?;
         Ok(())
@@ -319,6 +327,7 @@ pub fn delete_scene(id: String) -> Result<(), String> {
             icon: scene.icon,
             skill_ids: scene.skill_ids,
             mcp_ids: scene.mcp_ids,
+            claude_md_ids: scene.claude_md_ids,
             created_at: scene.created_at,
             last_used: scene.last_used,
             deleted_at: chrono::Utc::now().to_rfc3339(),

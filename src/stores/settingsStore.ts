@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AppSettings } from '../types';
+import type { AppSettings, ClaudeMdDistributionPath } from '../types';
 import { isTauri, safeInvoke } from '@/utils/tauri';
 
 // ============================================================================
@@ -32,6 +32,9 @@ export interface SettingsState {
   claudeCommand: string;
   warpOpenMode: 'tab' | 'window';
 
+  // CLAUDE.md settings
+  claudeMdDistributionPath: ClaudeMdDistributionPath;
+
   // Import state
   hasCompletedImport: boolean;
 
@@ -51,6 +54,7 @@ export interface SettingsState {
   setTerminalApp: (app: string) => void;
   setClaudeCommand: (command: string) => void;
   setWarpOpenMode: (mode: 'tab' | 'window') => void;
+  setClaudeMdDistributionPath: (path: ClaudeMdDistributionPath) => void;
   setHasCompletedImport: (completed: boolean) => void;
   setStats: (stats: Partial<SettingsStats>) => void;
 
@@ -74,6 +78,7 @@ const defaultSettings = {
   terminalApp: 'Terminal',
   claudeCommand: 'claude',
   warpOpenMode: 'window' as const,
+  claudeMdDistributionPath: '.claude/CLAUDE.md' as ClaudeMdDistributionPath,
   hasCompletedImport: false,
   stats: {
     skillsCount: 0,
@@ -130,6 +135,11 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
     get().saveSettings();
   },
 
+  setClaudeMdDistributionPath: (path: ClaudeMdDistributionPath) => {
+    set({ claudeMdDistributionPath: path });
+    get().saveSettings();
+  },
+
   setHasCompletedImport: (completed: boolean) => {
     set({ hasCompletedImport: completed });
     get().saveSettings();
@@ -162,6 +172,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
           terminalApp: settings.terminalApp || 'Terminal',
           claudeCommand: settings.claudeCommand || 'claude',
           warpOpenMode: settings.warpOpenMode || 'window',
+          claudeMdDistributionPath: settings.claudeMdDistributionPath || '.claude/CLAUDE.md',
           hasCompletedImport: settings.hasCompletedImport || false,
           isLoading: false,
         });
@@ -194,6 +205,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
           terminalApp: state.terminalApp,
           claudeCommand: state.claudeCommand,
           warpOpenMode: state.warpOpenMode,
+          claudeMdDistributionPath: state.claudeMdDistributionPath,
           hasCompletedImport: state.hasCompletedImport,
         },
       });

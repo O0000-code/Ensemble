@@ -2,7 +2,7 @@ mod commands;
 pub mod types;
 mod utils;
 
-use commands::{classify, config, data, dialog, import, mcps, plugins, skills, symlink, usage};
+use commands::{classify, claude_md, config, data, dialog, import, mcps, plugins, skills, symlink, usage};
 use tauri::{Emitter, Manager};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -116,6 +116,17 @@ pub fn run() {
             plugins::import_plugin_skills,
             plugins::import_plugin_mcps,
             plugins::check_plugins_enabled,
+            // CLAUDE.md commands
+            claude_md::scan_claude_md_files,
+            claude_md::import_claude_md,
+            claude_md::read_claude_md,
+            claude_md::get_claude_md_files,
+            claude_md::update_claude_md,
+            claude_md::delete_claude_md,
+            claude_md::set_global_claude_md,
+            claude_md::unset_global_claude_md,
+            claude_md::distribute_claude_md,
+            claude_md::distribute_scene_claude_md,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

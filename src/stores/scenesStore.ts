@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import { Scene, Skill, McpServer } from '@/types';
+import { Scene, Skill, McpServer, ClaudeMdFile } from '@/types';
 import { useSkillsStore } from './skillsStore';
 import { useMcpsStore } from './mcpsStore';
+import { useClaudeMdStore } from './claudeMdStore';
 import { isTauri, safeInvoke } from '@/utils/tauri';
 
 // ============================================================================
@@ -14,7 +15,8 @@ export interface CreateModalState {
   description: string;
   selectedSkillIds: string[];
   selectedMcpIds: string[];
-  activeTab: 'skills' | 'mcps';
+  selectedClaudeMdIds: string[];
+  activeTab: 'skills' | 'mcps' | 'claudeMd';
   search: string;
   categoryFilter: string;
   tagFilter: string[];
@@ -53,9 +55,14 @@ interface ScenesState {
   selectAllMcps: (mcpIds: string[]) => void;
   clearAllSelections: () => void;
 
-  // Getters for available skills/mcps
+  // CLAUDE.md selection
+  toggleClaudeMdSelection: (id: string) => void;
+  selectAllClaudeMd: (ids: string[]) => void;
+
+  // Getters for available skills/mcps/claudeMd
   getAvailableSkills: () => Skill[];
   getAvailableMcps: () => McpServer[];
+  getDistributableClaudeMd: () => ClaudeMdFile[];
 }
 
 // ============================================================================
@@ -68,6 +75,7 @@ const initialCreateModalState: CreateModalState = {
   description: '',
   selectedSkillIds: [],
   selectedMcpIds: [],
+  selectedClaudeMdIds: [],
   activeTab: 'skills',
   search: '',
   categoryFilter: '',
@@ -137,6 +145,7 @@ export const useScenesStore = create<ScenesState>((set, get) => ({
         icon: 'layers',
         skillIds: createModal.selectedSkillIds,
         mcpIds: createModal.selectedMcpIds,
+        claudeMdIds: createModal.selectedClaudeMdIds,
       });
 
       if (!scene) {
@@ -277,16 +286,47 @@ export const useScenesStore = create<ScenesState>((set, get) => ({
         ...state.createModal,
         selectedSkillIds: [],
         selectedMcpIds: [],
+        selectedClaudeMdIds: [],
       },
     })),
 
-  // Getters for available skills/mcps from other stores
+  // CLAUDE.md selection
+  toggleClaudeMdSelection: (id) =>
+    set((state) => {
+      const { selectedClaudeMdIds } = state.createModal;
+      const newIds = selectedClaudeMdIds.includes(id)
+        ? selectedClaudeMdIds.filter((cid) => cid !== id)
+        : [...selectedClaudeMdIds, id];
+      return {
+        createModal: {
+          ...state.createModal,
+          selectedClaudeMdIds: newIds,
+        },
+      };
+    }),
+
+  selectAllClaudeMd: (ids) =>
+    set((state) => ({
+      createModal: {
+        ...state.createModal,
+        selectedClaudeMdIds: ids,
+      },
+    })),
+
+  // Getters for available skills/mcps/claudeMd from other stores
   getAvailableSkills: () => {
     return useSkillsStore.getState().skills;
   },
 
   getAvailableMcps: () => {
     return useMcpsStore.getState().mcpServers;
+  },
+
+  // Get distributable CLAUDE.md files (exclude global files)
+  getDistributableClaudeMd: () => {
+    const files = useClaudeMdStore.getState().files;
+    // Exclude isGlobal=true files - they don't need to be added to Scene
+    return files.filter((file) => !file.isGlobal);
   },
 }));
 

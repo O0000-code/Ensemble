@@ -14,10 +14,13 @@ import {
   Globe,
   FileCode,
   Zap,
+  FileText,
 } from 'lucide-react';
 import { Skill, McpServer } from '@/types';
 import { Dropdown } from '@/components/common/Dropdown';
 import { usePluginsStore } from '@/stores/pluginsStore';
+import { useScenesStore } from '@/stores/scenesStore';
+import { useClaudeMdStore } from '@/stores/claudeMdStore';
 
 // ============================================================================
 // Types
@@ -31,12 +34,13 @@ interface CreateSceneModalProps {
     description: string;
     skillIds: string[];
     mcpIds: string[];
+    claudeMdIds?: string[];
   }) => void;
   skills: Skill[];
   mcpServers: McpServer[];
 }
 
-type TabType = 'skills' | 'mcps';
+type TabType = 'skills' | 'mcps' | 'claudeMd';
 
 // ============================================================================
 // Icon Mapping for Skills/MCPs
@@ -234,12 +238,13 @@ const CheckableItem: React.FC<CheckableItemProps> = ({
 interface SelectedItemProps {
   id: string;
   name: string;
-  type: 'skill' | 'mcp';
+  type: 'skill' | 'mcp' | 'claudeMd';
   onRemove: (id: string) => void;
 }
 
 const SelectedItem: React.FC<SelectedItemProps> = ({ id, name, type, onRemove }) => {
   const isSkill = type === 'skill';
+  const isMcp = type === 'mcp';
 
   return (
     <div className="flex items-center justify-between rounded-md border border-[#E5E5E5] bg-white px-3 py-2.5">
@@ -253,13 +258,15 @@ const SelectedItem: React.FC<SelectedItemProps> = ({ id, name, type, onRemove })
             items-center
             justify-center
             rounded
-            ${isSkill ? 'bg-[#F4F4F5]' : 'bg-[#DCFCE7]'}
+            ${isSkill ? 'bg-[#F4F4F5]' : isMcp ? 'bg-[#DCFCE7]' : 'bg-[#E0E7FF]'}
           `}
         >
           {isSkill ? (
             <Sparkles className="h-3 w-3 text-[#18181B]" />
-          ) : (
+          ) : isMcp ? (
             <Plug className="h-3 w-3 text-[#16A34A]" />
+          ) : (
+            <FileText className="h-3 w-3 text-[#4F46E5]" />
           )}
         </div>
         <span className="text-xs font-medium text-[#18181B]">{name}</span>
@@ -335,6 +342,10 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
   // Plugin state for filtering
   const { pluginEnabledStatus, loadInstalledPlugins } = usePluginsStore();
 
+  // CLAUDE.md state from stores
+  const { getDistributableClaudeMd } = useScenesStore();
+  const { files: claudeMdFiles, loadFiles: loadClaudeMdFiles } = useClaudeMdStore();
+
   // Local state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -344,13 +355,18 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>([]);
   const [selectedMcpIds, setSelectedMcpIds] = useState<string[]>([]);
+  const [selectedClaudeMdIds, setSelectedClaudeMdIds] = useState<string[]>([]);
 
-  // Load plugin status when modal opens
+  // Get distributable CLAUDE.md files (exclude global ones)
+  const distributableClaudeMd = useMemo(() => getDistributableClaudeMd(), [claudeMdFiles]);
+
+  // Load plugin status and CLAUDE.md files when modal opens
   useEffect(() => {
     if (isOpen) {
       loadInstalledPlugins();
+      loadClaudeMdFiles();
     }
-  }, [isOpen, loadInstalledPlugins]);
+  }, [isOpen, loadInstalledPlugins, loadClaudeMdFiles]);
 
   // Check if a Skill should be disabled (from an enabled plugin)
   const isSkillDisabled = useCallback((skill: Skill): boolean => {
@@ -377,6 +393,7 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
       setTagFilter([]);
       setSelectedSkillIds([]);
       setSelectedMcpIds([]);
+      setSelectedClaudeMdIds([]);
     }
   }, [isOpen]);
 
@@ -511,6 +528,14 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
   const handleClearAll = useCallback(() => {
     setSelectedSkillIds([]);
     setSelectedMcpIds([]);
+    setSelectedClaudeMdIds([]);
+  }, []);
+
+  // CLAUDE.md selection handler
+  const handleToggleClaudeMd = useCallback((id: string) => {
+    setSelectedClaudeMdIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   }, []);
 
   const handleCreate = useCallback(() => {
@@ -520,9 +545,10 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
       description: description.trim(),
       skillIds: selectedSkillIds,
       mcpIds: selectedMcpIds,
+      claudeMdIds: selectedClaudeMdIds,
     });
     onClose();
-  }, [name, description, selectedSkillIds, selectedMcpIds, onCreateScene, onClose]);
+  }, [name, description, selectedSkillIds, selectedMcpIds, selectedClaudeMdIds, onCreateScene, onClose]);
 
   // Get selected items for display
   const selectedSkills = useMemo(
@@ -533,6 +559,11 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
   const selectedMcps = useMemo(
     () => mcpServers.filter((m) => selectedMcpIds.includes(m.id)),
     [mcpServers, selectedMcpIds]
+  );
+
+  const selectedClaudeMdFiles = useMemo(
+    () => claudeMdFiles.filter((f) => selectedClaudeMdIds.includes(f.id)),
+    [claudeMdFiles, selectedClaudeMdIds]
   );
 
   if (!isOpen) return null;
@@ -629,6 +660,23 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
                       }`}
                     >
                       {selectedMcpIds.length} selected
+                    </span>
+                  </div>
+
+                  {/* CLAUDE.md */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-[#71717A]" />
+                      <span className="text-[13px] font-normal text-[#52525B]">CLAUDE.md</span>
+                    </div>
+                    <span
+                      className={`rounded px-2.5 py-1 text-xs font-medium ${
+                        selectedClaudeMdIds.length > 0
+                          ? 'bg-[#E0E7FF] text-[#4F46E5]'
+                          : 'bg-[#F4F4F5] text-[#18181B]'
+                      }`}
+                    >
+                      {selectedClaudeMdIds.length} selected
                     </span>
                   </div>
                 </div>
@@ -729,6 +777,40 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
                     {mcpServers.length}
                   </span>
                 </button>
+
+                {/* CLAUDE.md Tab */}
+                <button
+                  onClick={() => setActiveTab('claudeMd')}
+                  className={`flex items-center gap-2 px-5 py-2.5 ${
+                    activeTab === 'claudeMd'
+                      ? 'border-b-2 border-[#18181B]'
+                      : 'border-b-2 border-transparent'
+                  }`}
+                >
+                  <FileText
+                    className={`h-4 w-4 ${
+                      activeTab === 'claudeMd' ? 'text-[#18181B]' : 'text-[#71717A]'
+                    }`}
+                  />
+                  <span
+                    className={`text-[13px] ${
+                      activeTab === 'claudeMd'
+                        ? 'font-semibold text-[#18181B]'
+                        : 'font-normal text-[#71717A]'
+                    }`}
+                  >
+                    CLAUDE.md
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                      activeTab === 'claudeMd'
+                        ? 'bg-[#FAFAFA] text-[#52525B]'
+                        : 'bg-[#FAFAFA] text-[#71717A]'
+                    }`}
+                  >
+                    {distributableClaudeMd.length}
+                  </span>
+                </button>
               </div>
 
               {/* Filters Row */}
@@ -740,7 +822,7 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={`Search ${activeTab === 'skills' ? 'skills' : 'MCP servers'}...`}
+                    placeholder={`Search ${activeTab === 'skills' ? 'skills' : activeTab === 'mcps' ? 'MCP servers' : 'CLAUDE.md files'}...`}
                     className="flex-1 bg-transparent text-[13px] text-[#18181B] placeholder:text-[#A1A1AA] focus:outline-none"
                   />
                 </div>
@@ -781,43 +863,170 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
             {/* Center Content - Checkable List */}
             <div className="flex-1 overflow-y-auto p-5">
               <div className="flex flex-col gap-2">
-                {filteredItems.map((item) => {
-                  const disabled = activeTab === 'skills'
-                    ? isSkillDisabled(item as Skill)
-                    : isMcpDisabled(item as McpServer);
-                  const disabledReason = disabled
-                    ? `此 ${activeTab === 'skills' ? 'Skill' : 'MCP'} 由已启用的插件提供，全局已生效，无需添加到场景`
-                    : undefined;
+                {/* Skills and MCPs list */}
+                {(activeTab === 'skills' || activeTab === 'mcps') && (
+                  <>
+                    {filteredItems.map((item) => {
+                      const disabled = activeTab === 'skills'
+                        ? isSkillDisabled(item as Skill)
+                        : isMcpDisabled(item as McpServer);
+                      const disabledReason = disabled
+                        ? `此 ${activeTab === 'skills' ? 'Skill' : 'MCP'} 由已启用的插件提供，全局已生效，无需添加到场景`
+                        : undefined;
 
-                  return (
-                    <CheckableItem
-                      key={item.id}
-                      id={item.id}
-                      name={item.name}
-                      description={item.description}
-                      category={item.category}
-                      tags={item.tags}
-                      selected={
-                        activeTab === 'skills'
-                          ? selectedSkillIds.includes(item.id)
-                          : selectedMcpIds.includes(item.id)
-                      }
-                      type={activeTab === 'skills' ? 'skill' : 'mcp'}
-                      onToggle={activeTab === 'skills' ? handleToggleSkill : handleToggleMcp}
-                      disabled={disabled}
-                      disabledReason={disabledReason}
-                    />
-                  );
-                })}
+                      return (
+                        <CheckableItem
+                          key={item.id}
+                          id={item.id}
+                          name={item.name}
+                          description={item.description}
+                          category={item.category}
+                          tags={item.tags}
+                          selected={
+                            activeTab === 'skills'
+                              ? selectedSkillIds.includes(item.id)
+                              : selectedMcpIds.includes(item.id)
+                          }
+                          type={activeTab === 'skills' ? 'skill' : 'mcp'}
+                          onToggle={activeTab === 'skills' ? handleToggleSkill : handleToggleMcp}
+                          disabled={disabled}
+                          disabledReason={disabledReason}
+                        />
+                      );
+                    })}
 
-                {filteredItems.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <Search className="h-8 w-8 text-[#D4D4D8]" />
-                    <p className="mt-3 text-sm font-medium text-[#71717A]">No items found</p>
-                    <p className="mt-1 text-xs text-[#A1A1AA]">
-                      Try adjusting your search or filters
-                    </p>
-                  </div>
+                    {filteredItems.length === 0 && (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <Search className="h-8 w-8 text-[#D4D4D8]" />
+                        <p className="mt-3 text-sm font-medium text-[#71717A]">No items found</p>
+                        <p className="mt-1 text-xs text-[#A1A1AA]">
+                          Try adjusting your search or filters
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* CLAUDE.md list */}
+                {activeTab === 'claudeMd' && (
+                  <>
+                    {distributableClaudeMd
+                      .filter((file) => {
+                        if (!searchQuery) return true;
+                        const query = searchQuery.toLowerCase();
+                        return (
+                          file.name.toLowerCase().includes(query) ||
+                          file.description.toLowerCase().includes(query) ||
+                          file.sourcePath.toLowerCase().includes(query)
+                        );
+                      })
+                      .map((file) => (
+                        <div
+                          key={file.id}
+                          onClick={() => handleToggleClaudeMd(file.id)}
+                          className={`
+                            relative
+                            flex
+                            cursor-pointer
+                            items-center
+                            gap-3.5
+                            rounded-lg
+                            border
+                            px-4
+                            py-3.5
+                            transition-colors
+                            ${
+                              selectedClaudeMdIds.includes(file.id)
+                                ? 'border-[#E5E5E5] bg-[#FAFAFA]'
+                                : 'border-[#E5E5E5] bg-white hover:bg-[#FAFAFA]'
+                            }
+                          `}
+                        >
+                          {/* Checkbox */}
+                          <div
+                            className={`
+                              flex
+                              h-5
+                              w-5
+                              flex-shrink-0
+                              items-center
+                              justify-center
+                              rounded
+                              transition-colors
+                              ${
+                                selectedClaudeMdIds.includes(file.id)
+                                  ? 'bg-[#18181B]'
+                                  : 'border-2 border-[#D4D4D4]'
+                              }
+                            `}
+                          >
+                            {selectedClaudeMdIds.includes(file.id) && (
+                              <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
+                            )}
+                          </div>
+
+                          {/* Icon Container */}
+                          <div
+                            className={`
+                              flex
+                              h-9
+                              w-9
+                              flex-shrink-0
+                              items-center
+                              justify-center
+                              rounded-lg
+                              ${selectedClaudeMdIds.includes(file.id) ? 'bg-white' : 'bg-[#FAFAFA]'}
+                            `}
+                          >
+                            <FileText
+                              className={`h-[18px] w-[18px] ${
+                                selectedClaudeMdIds.includes(file.id)
+                                  ? 'text-[#18181B]'
+                                  : 'text-[#52525B]'
+                              }`}
+                            />
+                          </div>
+
+                          {/* Info */}
+                          <div className="flex min-w-0 flex-1 flex-col gap-1">
+                            <span
+                              className={`
+                                text-[13px]
+                                ${
+                                  selectedClaudeMdIds.includes(file.id)
+                                    ? 'font-semibold text-[#18181B]'
+                                    : 'font-medium text-[#18181B]'
+                                }
+                              `}
+                            >
+                              {file.name}
+                            </span>
+                            <span
+                              className={`
+                                truncate text-xs font-normal
+                                ${
+                                  selectedClaudeMdIds.includes(file.id)
+                                    ? 'text-[#52525B]'
+                                    : 'text-[#71717A]'
+                                }
+                              `}
+                            >
+                              {file.sourcePath}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+
+                    {distributableClaudeMd.length === 0 && (
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <FileText className="h-8 w-8 text-[#D4D4D8]" />
+                        <p className="mt-3 text-sm font-medium text-[#71717A]">No CLAUDE.md files available</p>
+                        <p className="mt-1 text-xs text-[#A1A1AA]">
+                          Import CLAUDE.md files in the CLAUDE.md management page
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -828,7 +1037,7 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
             {/* Right Header */}
             <div className="flex h-14 items-center justify-between border-b border-[#E5E5E5] px-5">
               <span className="text-sm font-semibold text-[#18181B]">Selected Items</span>
-              {(selectedSkillIds.length > 0 || selectedMcpIds.length > 0) && (
+              {(selectedSkillIds.length > 0 || selectedMcpIds.length > 0 || selectedClaudeMdIds.length > 0) && (
                 <button
                   onClick={handleClearAll}
                   className="rounded px-2.5 py-1 text-[11px] font-medium text-[#DC2626] transition-colors hover:bg-[#FEE2E2]"
@@ -880,6 +1089,27 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
                     ))
                   ) : (
                     <p className="py-2 text-xs text-[#A1A1AA]">No MCP servers selected</p>
+                  )}
+                </CollapsibleGroup>
+
+                {/* CLAUDE.md Group */}
+                <CollapsibleGroup
+                  title="CLAUDE.md"
+                  count={selectedClaudeMdFiles.length}
+                  icon={<FileText className="h-3.5 w-3.5 text-[#4F46E5]" />}
+                >
+                  {selectedClaudeMdFiles.length > 0 ? (
+                    selectedClaudeMdFiles.map((file) => (
+                      <SelectedItem
+                        key={file.id}
+                        id={file.id}
+                        name={file.name}
+                        type="claudeMd"
+                        onRemove={handleToggleClaudeMd}
+                      />
+                    ))
+                  ) : (
+                    <p className="py-2 text-xs text-[#A1A1AA]">No CLAUDE.md files selected</p>
                   )}
                 </CollapsibleGroup>
               </div>
