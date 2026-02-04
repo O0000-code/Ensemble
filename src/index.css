@@ -176,11 +176,44 @@ body {
   }
 }
 
-/* Background: White with rainbow border */
+/* Background: Vivid rainbow gradient flash with rainbow border */
 @keyframes classify-success-bg {
-  0%, 50% {
+  0% {
     background:
-      linear-gradient(#fff, #fff) padding-box,
+      linear-gradient(
+        135deg,
+        rgba(239, 68, 68, 0.2),
+        rgba(249, 115, 22, 0.2),
+        rgba(234, 179, 8, 0.2),
+        rgba(34, 197, 94, 0.2),
+        rgba(6, 182, 212, 0.2),
+        rgba(59, 130, 246, 0.2),
+        rgba(139, 92, 246, 0.2)
+      ) padding-box,
+      linear-gradient(
+        135deg,
+        #ef4444 0%,
+        #f97316 14%,
+        #eab308 28%,
+        #22c55e 42%,
+        #06b6d4 56%,
+        #3b82f6 70%,
+        #8b5cf6 100%
+      ) border-box;
+    border: 2px solid transparent;
+  }
+  35% {
+    background:
+      linear-gradient(
+        135deg,
+        rgba(239, 68, 68, 0.25),
+        rgba(249, 115, 22, 0.25),
+        rgba(234, 179, 8, 0.25),
+        rgba(34, 197, 94, 0.25),
+        rgba(6, 182, 212, 0.25),
+        rgba(59, 130, 246, 0.25),
+        rgba(139, 92, 246, 0.25)
+      ) padding-box,
       linear-gradient(
         135deg,
         #ef4444 0%,
