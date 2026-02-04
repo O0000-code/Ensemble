@@ -22,29 +22,18 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function formatRelativeTime(dateString?: string): string {
-  if (!dateString) return 'Unknown';
-
+function formatDate(dateString: string): string {
   const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
 
-  if (diffMins < 60) {
-    return `${diffMins}m ago`;
-  } else if (diffHours < 24) {
-    return `${diffHours}h ago`;
-  } else if (diffDays < 7) {
-    return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
-  } else {
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  }
+function countLines(content: string): number {
+  if (!content) return 0;
+  return content.split('\n').length;
 }
 
 function getTypeLabel(type: ClaudeMdType): string {
@@ -295,11 +284,12 @@ export function ClaudeMdDetailPanel({ file, isOpen, onClose }: ClaudeMdDetailPan
   // Detail Content
   const detailContent = (
     <div className="flex flex-col gap-7">
-      {/* Info Row - Type, File Size, Modified */}
+      {/* Info Row - Imported, File Size, Lines, Scenes */}
       <div className="flex gap-8">
-        <InfoItem label="Type" value={getTypeLabel(selectedFile.sourceType)} />
+        <InfoItem label="Imported" value={formatDate(selectedFile.createdAt)} />
         <InfoItem label="File Size" value={formatFileSize(selectedFile.size)} />
-        <InfoItem label="Modified" value={formatRelativeTime(selectedFile.updatedAt)} />
+        <InfoItem label="Lines" value={`${countLines(selectedFile.content).toLocaleString()} lines`} />
+        <InfoItem label="Scenes" value={`${usedInScenes.length} ${usedInScenes.length === 1 ? 'scene' : 'scenes'}`} />
       </div>
 
       {/* Category & Tags Section */}
