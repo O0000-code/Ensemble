@@ -293,6 +293,7 @@ export function ClaudeMdPage() {
           hover:bg-[#F4F4F5]
           disabled:opacity-50
           transition-colors
+          min-w-[120px]
           ${classifySuccess ? 'classify-success-bg' : ''}
         `}
       >

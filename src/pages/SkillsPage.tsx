@@ -701,7 +701,7 @@ export function SkillsPage() {
               }
               onClick={handleAutoClassify}
               disabled={isClassifying || classifySuccess}
-              className={classifySuccess ? 'classify-success-bg' : ''}
+              className={`min-w-[120px] ${classifySuccess ? 'classify-success-bg' : ''}`}
             >
               {isClassifying ? 'Classifying...' : classifySuccess ? 'Done!' : 'Auto Classify'}
             </Button>

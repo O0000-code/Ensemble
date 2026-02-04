@@ -676,7 +676,7 @@ export const McpServersPage: React.FC = () => {
                 }
                 onClick={() => autoClassify()}
                 disabled={isClassifying || classifySuccess}
-                className={classifySuccess ? 'classify-success-bg' : ''}
+                className={`min-w-[120px] ${classifySuccess ? 'classify-success-bg' : ''}`}
               >
                 {isClassifying ? 'Classifying...' : classifySuccess ? 'Done!' : 'Auto Classify'}
               </Button>
@@ -732,7 +732,7 @@ export const McpServersPage: React.FC = () => {
               }
               onClick={() => autoClassify()}
               disabled={isClassifying || classifySuccess}
-              className={classifySuccess ? 'classify-success-bg' : ''}
+              className={`min-w-[120px] ${classifySuccess ? 'classify-success-bg' : ''}`}
             >
               {isClassifying ? 'Classifying...' : classifySuccess ? 'Done!' : 'Auto Classify'}
             </Button>
