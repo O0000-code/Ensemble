@@ -408,7 +408,10 @@ export function ClaudeMdDetailPanel({ file, isOpen, onClose }: ClaudeMdDetailPan
       {/* Content Section - gap 12px */}
       <section className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold text-[#18181B]">Content</h3>
-        <div className="max-h-[480px] overflow-y-auto rounded-lg border border-[#E5E5E5] bg-white p-4">
+        <div
+          className="overflow-y-auto rounded-lg border border-[#E5E5E5] bg-white p-4"
+          style={{ maxHeight: '480px' }}
+        >
           <div className="whitespace-pre-wrap text-xs font-normal leading-relaxed text-[#52525B]">
             {selectedFile.content || 'No content available'}
           </div>
