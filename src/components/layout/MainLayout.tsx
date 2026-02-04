@@ -8,6 +8,7 @@ import { useAppStore } from '@/stores/appStore';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useSkillsStore } from '@/stores/skillsStore';
 import { useMcpsStore } from '@/stores/mcpsStore';
+import { useClaudeMdStore } from '@/stores/claudeMdStore';
 import { useScenesStore } from '@/stores/scenesStore';
 import { useProjectsStore } from '@/stores/projectsStore';
 import { useImportStore } from '@/stores/importStore';
@@ -59,6 +60,7 @@ export default function MainLayout() {
   const { loadSettings, hasCompletedImport } = useSettingsStore();
   const { skills, loadSkills, setFilter: setSkillsFilter } = useSkillsStore();
   const { mcpServers, loadMcps, setFilter: setMcpsFilter } = useMcpsStore();
+  const { files: claudeMdFiles, loadFiles: loadClaudeMdFiles } = useClaudeMdStore();
   const { scenes, loadScenes } = useScenesStore();
   const { projects, loadProjects } = useProjectsStore();
   const { detectExistingConfig } = useImportStore();
@@ -68,9 +70,10 @@ export default function MainLayout() {
   const navCounts = useMemo(() => ({
     skills: skills.length,
     mcpServers: mcpServers.length,
+    claudeMd: claudeMdFiles.length,
     scenes: scenes.length,
     projects: projects.length,
-  }), [skills.length, mcpServers.length, scenes.length, projects.length]);
+  }), [skills.length, mcpServers.length, claudeMdFiles.length, scenes.length, projects.length]);
 
   // Dynamically calculate category counts from skills and mcps
   const categoriesWithCounts = useMemo(() => {
@@ -189,6 +192,7 @@ export default function MainLayout() {
         await Promise.all([
           loadSkills(),
           loadMcps(),
+          loadClaudeMdFiles(),
           loadScenes(),
           loadProjects(),
         ]);
@@ -287,12 +291,13 @@ export default function MainLayout() {
 
   // Determine active nav from current route
   // Category/Tag pages don't highlight any main nav item (return null equivalent by using 'skills' but Sidebar won't highlight it)
-  const getActiveNav = (): 'skills' | 'mcp-servers' | 'scenes' | 'projects' | 'settings' | null => {
+  const getActiveNav = (): 'skills' | 'mcp-servers' | 'claude-md' | 'scenes' | 'projects' | 'settings' | null => {
     const path = location.pathname;
     // Category/Tag pages - don't highlight main nav
     if (path.startsWith('/category/') || path.startsWith('/tag/')) return null;
     if (path.startsWith('/skills')) return 'skills';
     if (path.startsWith('/mcp-servers')) return 'mcp-servers';
+    if (path.startsWith('/claude-md')) return 'claude-md';
     if (path.startsWith('/scenes')) return 'scenes';
     if (path.startsWith('/projects')) return 'projects';
     if (path.startsWith('/settings')) return 'settings';

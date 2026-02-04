@@ -277,12 +277,14 @@ export function SettingsPage() {
     terminalApp,
     claudeCommand,
     warpOpenMode,
+    claudeMdDistributionPath,
     stats,
     setAnthropicApiKey,
     setAutoClassifyNewItems,
     setTerminalApp,
     setClaudeCommand,
     setWarpOpenMode,
+    setClaudeMdDistributionPath,
     getMaskedApiKey,
     hasApiKey,
     selectDirectory,
@@ -414,6 +416,38 @@ export function SettingsPage() {
                 >
                   {isDetecting ? 'Detecting...' : 'Detect & Import'}
                 </Button>
+              </Row>
+            </Card>
+          </section>
+
+          {/* CLAUDE.md Section */}
+          <section>
+            <SectionHeader
+              title="CLAUDE.md"
+              description="Configure how CLAUDE.md files are distributed to projects"
+            />
+            <Card>
+              {/* Default Distribution Path */}
+              <Row noBorder>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[13px] font-medium text-[#18181B]">
+                    Default Distribution Path
+                  </span>
+                  <span className="text-xs text-[#71717A]">
+                    {claudeMdDistributionPath === '.claude/CLAUDE.md' && './.claude/CLAUDE.md'}
+                    {claudeMdDistributionPath === 'CLAUDE.md' && './CLAUDE.md'}
+                    {claudeMdDistributionPath === 'CLAUDE.local.md' && './CLAUDE.local.md'}
+                  </span>
+                </div>
+                <CustomSelect
+                  value={claudeMdDistributionPath}
+                  onChange={(value) => setClaudeMdDistributionPath(value as '.claude/CLAUDE.md' | 'CLAUDE.md' | 'CLAUDE.local.md')}
+                  options={[
+                    { value: '.claude/CLAUDE.md', label: './.claude/CLAUDE.md' },
+                    { value: 'CLAUDE.md', label: './CLAUDE.md' },
+                    { value: 'CLAUDE.local.md', label: './CLAUDE.local.md' },
+                  ]}
+                />
               </Row>
             </Card>
           </section>

@@ -66,6 +66,8 @@ export interface Scene {
   mcpIds: string[];
   createdAt: string;
   lastUsed?: string;
+  /** 关联的 CLAUDE.md 文件 ID 列表 (排除 isGlobal=true 的) */
+  claudeMdIds?: string[];
 }
 
 export interface Project {
@@ -90,6 +92,8 @@ export interface Tag {
   count: number;
 }
 
+import type { ClaudeMdDistributionPath } from './claudeMd';
+
 export interface AppSettings {
   skillSourceDir: string;
   mcpSourceDir: string;
@@ -100,6 +104,8 @@ export interface AppSettings {
   claudeCommand: string;        // 启动 Claude Code 的命令
   hasCompletedImport: boolean;  // 是否已完成首次导入
   warpOpenMode: 'tab' | 'window';  // Warp 打开模式：新 Tab 或新窗口
+  /** CLAUDE.md 分发目标路径 */
+  claudeMdDistributionPath?: ClaudeMdDistributionPath;
 }
 
 export interface ConfigStatus {
@@ -249,3 +255,7 @@ export interface AppData {
 // ==================== 插件相关类型导出 ====================
 
 export * from './plugin';
+
+// ==================== CLAUDE.md 相关类型导出 ====================
+
+export * from './claudeMd';

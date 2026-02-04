@@ -1,3 +1,10 @@
+/**
+ * NOTE: This component is NOT used by SkillsPage.tsx!
+ * SkillsPage has its own inline detail panel implementation.
+ * This component is only used by CategoryPage and TagPage.
+ * If you need to modify the Skills detail panel on the main Skills page,
+ * edit src/pages/SkillsPage.tsx instead.
+ */
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Sparkles,
@@ -510,7 +517,10 @@ export function SkillDetailPanel({ skill, isOpen, onClose }: SkillDetailPanelPro
       {/* Instructions Section */}
       <div className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold text-[#18181B]">Instructions</h3>
-        <div className="rounded-lg border border-[#E5E5E5] bg-white p-4">
+        <div
+          className="overflow-y-auto rounded-lg border border-[#E5E5E5] bg-white p-4"
+          style={{ maxHeight: '480px' }}
+        >
           <div className="whitespace-pre-wrap text-xs font-normal leading-relaxed text-[#52525B]">
             {selectedSkill.description && (
               <p className="mb-3 rounded bg-[#FAFAFA] p-2 text-[#71717A]">

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Plug, Layers, Folder, Plus, Settings, Repeat } from 'lucide-react';
+import { Sparkles, Plug, FileText, Layers, Folder, Plus, Settings, Repeat } from 'lucide-react';
 import { Category, Tag } from '@/types';
 import { CategoryInlineInput, TagInlineInput } from '@/components/sidebar';
 import { ColorPicker } from '@/components/common';
@@ -35,7 +35,7 @@ const startDrag = async (e: React.MouseEvent) => {
 };
 
 export interface SidebarProps {
-  activeNav: 'skills' | 'mcp-servers' | 'scenes' | 'projects' | 'settings' | null;
+  activeNav: 'skills' | 'mcp-servers' | 'claude-md' | 'scenes' | 'projects' | 'settings' | null;
   activeCategory?: string | null;
   activeTags?: string[];
   categories: Category[];
@@ -43,6 +43,7 @@ export interface SidebarProps {
   counts: {
     skills: number;
     mcpServers: number;
+    claudeMd: number;
     scenes: number;
     projects: number;
   };
@@ -78,6 +79,7 @@ export interface SidebarProps {
 const navItems = [
   { id: 'skills', label: 'Skills', icon: Sparkles, countKey: 'skills' as const },
   { id: 'mcp-servers', label: 'MCP Servers', icon: Plug, countKey: 'mcpServers' as const },
+  { id: 'claude-md', label: 'CLAUDE.md', icon: FileText, countKey: 'claudeMd' as const },
   { id: 'scenes', label: 'Scenes', icon: Layers, countKey: 'scenes' as const },
   { id: 'projects', label: 'Projects', icon: Folder, countKey: 'projects' as const },
 ];

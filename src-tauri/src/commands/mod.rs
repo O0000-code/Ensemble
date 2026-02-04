@@ -1,4 +1,5 @@
 pub mod classify;
+pub mod claude_md;
 pub mod config;
 pub mod data;
 pub mod dialog;
