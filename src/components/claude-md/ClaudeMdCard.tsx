@@ -134,10 +134,11 @@ export const ClaudeMdCard: React.FC<ClaudeMdCardProps> = ({
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#FAFAFA]">
           <FileText className="h-5 w-5 text-[#52525B]" />
         </div>
-        {/* Badge - positioned at top-right, shows source type (where the file came from) */}
-        {/* Global (purple): from ~/.claude/, Project (cyan): from project, Local (orange): local */}
+        {/* Badge - positioned at top-right */}
+        {/* If isGlobal=true: purple globe (current global) */}
+        {/* If isGlobal=false: show based on sourceType */}
         <div className="absolute -right-1 -top-1">
-          <ClaudeMdBadge type={file.sourceType} />
+          <ClaudeMdBadge type={file.isGlobal ? 'global' : file.sourceType} />
         </div>
       </div>
 
