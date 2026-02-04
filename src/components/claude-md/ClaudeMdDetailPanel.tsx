@@ -295,16 +295,16 @@ export function ClaudeMdDetailPanel({ file, isOpen, onClose }: ClaudeMdDetailPan
   // Detail Content
   const detailContent = (
     <div className="flex flex-col gap-7">
-      {/* Info Section - gap 16px */}
-      <section className="flex flex-col gap-4">
-        {/* Info Row - gap 32px: Type, File Size, Modified */}
-        <div className="flex gap-8">
-          <InfoItem label="Type" value={getTypeLabel(selectedFile.sourceType)} />
-          <InfoItem label="File Size" value={formatFileSize(selectedFile.size)} />
-          <InfoItem label="Modified" value={formatRelativeTime(selectedFile.updatedAt)} />
-        </div>
+      {/* Info Row - Type, File Size, Modified */}
+      <div className="flex gap-8">
+        <InfoItem label="Type" value={getTypeLabel(selectedFile.sourceType)} />
+        <InfoItem label="File Size" value={formatFileSize(selectedFile.size)} />
+        <InfoItem label="Modified" value={formatRelativeTime(selectedFile.updatedAt)} />
+      </div>
 
-        {/* Category Item - gap 8px */}
+      {/* Category & Tags Section */}
+      <div className="flex flex-col gap-4">
+        {/* Category Item */}
         <div className="flex flex-col gap-2">
           <span className="text-[11px] font-medium text-[#71717A]">Category</span>
           <Dropdown
@@ -317,7 +317,7 @@ export function ClaudeMdDetailPanel({ file, isOpen, onClose }: ClaudeMdDetailPan
           />
         </div>
 
-        {/* Tags Item - gap 8px */}
+        {/* Tags Item */}
         <div className="flex flex-col gap-2">
           <span className="text-[11px] font-medium text-[#71717A]">Tags</span>
           <div className="flex flex-wrap items-center gap-2">
@@ -403,7 +403,7 @@ export function ClaudeMdDetailPanel({ file, isOpen, onClose }: ClaudeMdDetailPan
             )}
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Content Section - gap 12px */}
       <section className="flex flex-col gap-3">
