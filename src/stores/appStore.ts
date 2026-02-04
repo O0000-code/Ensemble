@@ -23,9 +23,6 @@ interface AppState {
   isLoading: boolean;
   error: string | null;
 
-  // Sidebar state
-  sidebarCollapsed: boolean;
-
   // Editing state - Categories
   editingCategoryId: string | null;
   isAddingCategory: boolean;
@@ -65,10 +62,6 @@ interface AppState {
   stopEditingTag: () => void;
   startAddingTag: () => void;
   stopAddingTag: () => void;
-
-  // Sidebar Actions
-  toggleSidebar: () => void;
-  setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -91,9 +84,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   isAddingCategory: false,
   editingTagId: null,
   isAddingTag: false,
-
-  // Sidebar state initial value
-  sidebarCollapsed: false,
 
   // Frontend-only Actions
   setActiveCategory: (categoryId) => set({ activeCategory: categoryId }),
@@ -342,8 +332,4 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   stopAddingTag: () => set({ isAddingTag: false }),
-
-  // Sidebar Actions
-  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
-  setSidebarCollapsed: (collapsed: boolean) => set({ sidebarCollapsed: collapsed }),
 }));

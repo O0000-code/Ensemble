@@ -1,5 +1,6 @@
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Plug, Layers, Folder, Plus, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sparkles, Plug, Layers, Folder, Plus, Settings, Repeat } from 'lucide-react';
 import { Category, Tag } from '@/types';
 import { CategoryInlineInput, TagInlineInput } from '@/components/sidebar';
 import { ColorPicker } from '@/components/common';
@@ -68,9 +69,9 @@ export interface SidebarProps {
   onTagSave?: (id: string | null, name: string) => void;
   onTagEditCancel?: () => void;
 
-  // Collapse 相关 props
-  isCollapsed?: boolean;
-  onToggleCollapse?: () => void;
+  // Refresh 相关 props
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 // Navigation items configuration
@@ -111,11 +112,30 @@ export function Sidebar({
   onTagContextMenu,
   onTagSave,
   onTagEditCancel,
-  // Collapse 相关 props
-  isCollapsed = false,
-  onToggleCollapse,
+  // Refresh 相关 props
+  onRefresh,
+  isRefreshing = false,
 }: SidebarProps) {
   const navigate = useNavigate();
+  const [isClickAnimating, setIsClickAnimating] = useState(false);
+
+  // Handle refresh button click with animation
+  const handleRefreshClick = useCallback(() => {
+    if (isRefreshing || isClickAnimating) return;
+
+    // Start click animation
+    setIsClickAnimating(true);
+
+    // Call refresh after a tiny delay for visual feedback
+    setTimeout(() => {
+      onRefresh?.();
+    }, 50);
+
+    // Reset click animation after a longer cooldown to prevent rapid clicks
+    setTimeout(() => {
+      setIsClickAnimating(false);
+    }, 1500);
+  }, [isRefreshing, isClickAnimating, onRefresh]);
 
   // Handle navigation item click
   const handleNavClick = (navId: string) => {
@@ -158,17 +178,18 @@ export function Sidebar({
         {/* Traffic Lights 占位区 - 为系统原生红绿灯预留空间，不绘制任何内容 */}
         <div className="w-[52px]" aria-hidden="true" />
 
-        {/* Collapse Button */}
+        {/* Refresh Button */}
         <button
-          onClick={onToggleCollapse}
-          className="w-6 h-6 flex items-center justify-center rounded-[6px] hover:bg-[#F4F4F5] transition-colors"
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          onClick={handleRefreshClick}
+          className="w-6 h-6 flex items-center justify-center rounded-[6px] hover:bg-[#F4F4F5] transition-colors active:scale-95"
+          aria-label="Refresh data"
         >
-          {isCollapsed ? (
-            <ChevronRight size={16} className="text-[#D4D4D8]" />
-          ) : (
-            <ChevronLeft size={16} className="text-[#D4D4D8]" />
-          )}
+          <Repeat
+            size={14}
+            className={`text-[#D4D4D8] transition-transform ${
+              isRefreshing ? 'refresh-spinning' : ''
+            } ${isClickAnimating && !isRefreshing ? 'refresh-click' : ''}`}
+          />
         </button>
       </header>
 

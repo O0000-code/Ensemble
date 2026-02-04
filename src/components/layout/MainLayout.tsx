@@ -23,6 +23,7 @@ export default function MainLayout() {
   const navigate = useNavigate();
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const {
     activeCategory,
@@ -53,9 +54,6 @@ export default function MainLayout() {
     addTag,
     updateTag,
     deleteTag,
-    // Sidebar collapse state
-    sidebarCollapsed,
-    toggleSidebar,
   } = useAppStore();
 
   const { loadSettings, hasCompletedImport } = useSettingsStore();
@@ -418,6 +416,26 @@ export default function MainLayout() {
     stopAddingTag();
   };
 
+  // Handle refresh - reload all data
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing || !isTauri()) return;
+
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        initApp(),
+        loadSkills(),
+        loadMcps(),
+        loadScenes(),
+        loadProjects(),
+      ]);
+    } catch (error) {
+      console.error('Failed to refresh data:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [isRefreshing, initApp, loadSkills, loadMcps, loadScenes, loadProjects]);
+
   // Show loading state during initialization
   if (isInitializing) {
     return (
@@ -489,9 +507,9 @@ export default function MainLayout() {
           onTagContextMenu={handleTagContextMenu}
           onTagSave={handleTagSave}
           onTagEditCancel={handleTagEditCancel}
-          // Collapse state
-          isCollapsed={sidebarCollapsed}
-          onToggleCollapse={toggleSidebar}
+          // Refresh
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
         />
 
         {/* Main Content */}
