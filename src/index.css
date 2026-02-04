@@ -150,54 +150,59 @@ body {
 }
 
 /* ============================================================================
-   Auto Classify Success Animation - "Rainbow Converges to Golden Light"
+   Auto Classify Success Animation - Rainbow Gradient Theme
 
-   Narrative: Rainbow energy gathers → Golden light blooms → Order established
-   Physics metaphor: Seven colors merge into white/golden light (prism effect)
+   Design: Use the same rainbow colors as the loading state for natural transition
    ============================================================================ */
 
-/* Golden check icon: spring-based entrance with sparkle feeling */
+/* Rainbow check icon: spring-based entrance */
 @keyframes classify-success-icon {
   0% {
     transform: scale(0) rotate(-180deg);
     opacity: 0;
-    filter: brightness(2);
   }
   50% {
-    transform: scale(1.35) rotate(15deg);
+    transform: scale(1.3) rotate(12deg);
     opacity: 1;
-    filter: brightness(1.5);
   }
   70% {
-    transform: scale(0.85) rotate(-8deg);
-    filter: brightness(1.2);
+    transform: scale(0.9) rotate(-6deg);
   }
   85% {
-    transform: scale(1.1) rotate(3deg);
-    filter: brightness(1.1);
+    transform: scale(1.08) rotate(2deg);
   }
   100% {
     transform: scale(1) rotate(0deg);
-    filter: brightness(1);
   }
 }
 
-/* Background: Rainbow hints → Golden warmth → Fade out */
+/* Background: Rainbow gradient flash */
 @keyframes classify-success-bg {
   0% {
     background: linear-gradient(
       135deg,
+      rgba(239, 68, 68, 0.12),
+      rgba(249, 115, 22, 0.12),
+      rgba(234, 179, 8, 0.12),
+      rgba(34, 197, 94, 0.12),
+      rgba(6, 182, 212, 0.12),
+      rgba(59, 130, 246, 0.12),
+      rgba(139, 92, 246, 0.12)
+    );
+    border-color: #8b5cf6;
+  }
+  50% {
+    background: linear-gradient(
+      135deg,
       rgba(239, 68, 68, 0.15),
+      rgba(249, 115, 22, 0.15),
       rgba(234, 179, 8, 0.15),
       rgba(34, 197, 94, 0.15),
+      rgba(6, 182, 212, 0.15),
       rgba(59, 130, 246, 0.15),
       rgba(139, 92, 246, 0.15)
     );
-    border-color: #a855f7;
-  }
-  35% {
-    background: linear-gradient(135deg, #FFFBEB, #FEF3C7);
-    border-color: #FBBF24;
+    border-color: #22c55e;
   }
   100% {
     background-color: transparent;
@@ -205,63 +210,85 @@ body {
   }
 }
 
-/* Golden bloom: Light radiates outward like sun rays */
+/* Rainbow bloom: Multi-color glow radiates outward */
 @keyframes classify-success-bloom {
   0% {
     box-shadow:
-      0 0 0 0 rgba(251, 191, 36, 0.6),
-      0 0 0 0 rgba(255, 248, 231, 0.4),
-      inset 0 0 0 0 rgba(251, 191, 36, 0.1);
+      0 0 0 0 rgba(139, 92, 246, 0.4),
+      0 0 0 0 rgba(59, 130, 246, 0.3),
+      0 0 0 0 rgba(34, 197, 94, 0.2);
   }
   40% {
     box-shadow:
-      0 0 20px 6px rgba(251, 191, 36, 0.5),
-      0 0 40px 12px rgba(255, 248, 231, 0.3),
-      inset 0 0 12px 2px rgba(251, 191, 36, 0.15);
+      0 0 12px 4px rgba(139, 92, 246, 0.35),
+      0 0 20px 8px rgba(59, 130, 246, 0.25),
+      0 0 28px 12px rgba(34, 197, 94, 0.15);
   }
   100% {
     box-shadow:
-      0 0 8px 2px rgba(251, 191, 36, 0.15),
-      0 0 16px 4px rgba(255, 248, 231, 0.08),
-      inset 0 0 4px 1px rgba(251, 191, 36, 0.05);
+      0 0 6px 2px rgba(139, 92, 246, 0.1),
+      0 0 10px 4px rgba(59, 130, 246, 0.05),
+      0 0 14px 6px rgba(34, 197, 94, 0.02);
   }
 }
 
-/* Sparkle burst: tiny particles of light */
+/* Sparkle effect */
 @keyframes classify-success-sparkle {
   0% {
     filter: brightness(1) saturate(1);
   }
-  25% {
-    filter: brightness(1.3) saturate(1.2);
-  }
-  50% {
-    filter: brightness(1.15) saturate(1.1);
+  30% {
+    filter: brightness(1.2) saturate(1.15);
   }
   100% {
     filter: brightness(1) saturate(1);
   }
 }
 
+/* Rainbow gradient check icon */
 .classify-success-icon {
-  animation: classify-success-icon 450ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: classify-success-icon 400ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   transform-origin: center center;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #F59E0B;  /* amber-500: Golden check mark */
+  background: linear-gradient(
+    135deg,
+    #ef4444 0%,
+    #f97316 16%,
+    #eab308 33%,
+    #22c55e 50%,
+    #06b6d4 66%,
+    #3b82f6 83%,
+    #8b5cf6 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .classify-success-bg {
   animation:
-    classify-success-bg 600ms cubic-bezier(0.4, 0, 0.2, 1) forwards,
-    classify-success-bloom 600ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
-    classify-success-sparkle 600ms ease-out forwards;
+    classify-success-bg 700ms cubic-bezier(0.4, 0, 0.2, 1) forwards,
+    classify-success-bloom 700ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+    classify-success-sparkle 700ms ease-out forwards;
 }
 
-/* Success text styling - golden */
+/* Success text styling - rainbow gradient */
 .classify-success-text {
-  color: #D97706;  /* amber-600 */
+  background: linear-gradient(
+    90deg,
+    #ef4444,
+    #f97316,
+    #eab308,
+    #22c55e,
+    #06b6d4,
+    #3b82f6,
+    #8b5cf6
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   font-weight: 500;
 }
 
@@ -279,6 +306,28 @@ body {
 }
 
 @keyframes ai-icon-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Simple CSS Spinner - perfectly centered rotation */
+.ai-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: #8b5cf6;
+  border-right-color: #3b82f6;
+  border-bottom-color: #22c55e;
+  border-left-color: #f97316;
+  animation: ai-spinner-rotate 0.8s linear infinite;
+}
+
+@keyframes ai-spinner-rotate {
   from {
     transform: rotate(0deg);
   }

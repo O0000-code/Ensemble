@@ -299,9 +299,9 @@ export function ClaudeMdPage() {
         `}
       >
         {isAutoClassifying ? (
-          <Loader2 className="h-3.5 w-3.5 ai-icon-spin" />
+          <span className="ai-spinner" />
         ) : classifySuccess ? (
-          <Check className="h-3.5 w-3.5 text-amber-500 classify-success-icon" />
+          <Check className="h-3.5 w-3.5 classify-success-icon" />
         ) : (
           <Sparkles className="h-3.5 w-3.5" />
         )}

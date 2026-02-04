@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Sparkles, Plug, FileText, Loader2 } from 'lucide-react';
+import { Sparkles, Plug, FileText } from 'lucide-react';
 import PageHeader from '../components/layout/PageHeader';
 import { SkillListItem } from '../components/skills/SkillListItem';
 import { SkillDetailPanel } from '../components/skills/SkillDetailPanel';
@@ -170,7 +170,7 @@ export function CategoryPage() {
             <Button
               variant="secondary"
               size="small"
-              icon={isClassifying ? <Loader2 className="ai-icon-spin" /> : <Sparkles />}
+              icon={isClassifying ? <span className="ai-spinner" /> : <Sparkles />}
               onClick={handleAutoClassify}
               disabled={isClassifying}
               className={`min-w-[120px] ${isClassifying ? 'ai-classifying' : ''}`}
@@ -200,7 +200,7 @@ export function CategoryPage() {
           <Button
             variant="secondary"
             size="small"
-            icon={isClassifying ? <Loader2 className="ai-icon-spin" /> : <Sparkles />}
+            icon={isClassifying ? <span className="ai-spinner" /> : <Sparkles />}
             onClick={handleAutoClassify}
             disabled={isClassifying}
             className={`min-w-[120px] ${isClassifying ? 'ai-classifying' : ''}`}

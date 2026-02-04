@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Sparkles, Plug, FileText, Loader2 } from 'lucide-react';
+import { Sparkles, Plug, FileText } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { useSkillsStore } from '@/stores/skillsStore';
 import { useMcpsStore } from '@/stores/mcpsStore';
@@ -182,7 +182,7 @@ export function TagPage() {
           <Button
             variant="secondary"
             size="small"
-            icon={isClassifying ? <Loader2 className="ai-icon-spin" /> : <Sparkles />}
+            icon={isClassifying ? <span className="ai-spinner" /> : <Sparkles />}
             onClick={handleAutoClassify}
             disabled={isClassifying}
             className={`min-w-[120px] ${isClassifying ? 'ai-classifying' : ''}`}

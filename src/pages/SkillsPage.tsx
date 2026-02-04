@@ -695,8 +695,8 @@ export function SkillsPage() {
               variant="secondary"
               size="small"
               icon={
-                isClassifying ? <Loader2 className="ai-icon-spin" /> :
-                classifySuccess ? <Check className="classify-success-icon text-amber-500" /> :
+                isClassifying ? <span className="ai-spinner" /> :
+                classifySuccess ? <Check className="classify-success-icon" /> :
                 <Sparkles />
               }
               onClick={handleAutoClassify}
