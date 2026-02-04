@@ -1,10 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ShieldCheck, Github, BookOpen, FileText, ChevronDown, Check } from 'lucide-react';
+import { Github, BookOpen, FileText, ChevronDown, Check } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
-import Toggle from '@/components/common/Toggle';
-import Modal from '@/components/common/Modal';
-import { Input } from '@/components/common/Input';
 import Button from '@/components/common/Button';
 import { useSettingsStore, useImportStore } from '@/stores';
 import { safeInvoke } from '@/utils/tauri';
@@ -191,80 +188,10 @@ function CustomSelect({ value, options, onChange, className = '' }: CustomSelect
 }
 
 // ============================================================================
-// API Key Modal Component
-// ============================================================================
-
-interface ApiKeyModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  currentKey: string;
-  onSave: (key: string) => void;
-}
-
-function ApiKeyModal({ isOpen, onClose, currentKey, onSave }: ApiKeyModalProps) {
-  const [apiKey, setApiKey] = useState(currentKey);
-
-  const handleSave = () => {
-    onSave(apiKey);
-    onClose();
-  };
-
-  const handleClear = () => {
-    setApiKey('');
-    onSave('');
-    onClose();
-  };
-
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Configure API Key"
-      subtitle="Enter your Anthropic API key for auto-classification"
-      maxWidth="480px"
-    >
-      <div className="p-6 flex flex-col gap-5">
-        <Input
-          label="Anthropic API Key"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder="sk-ant-api03-..."
-          type="password"
-        />
-
-        <div className="flex items-center gap-2 text-[11px] text-[#A1A1AA]">
-          <ShieldCheck size={14} className="text-[#A1A1AA] flex-shrink-0" />
-          <span className="italic">
-            Your API key is stored locally and never shared with any external services.
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between pt-2">
-          {currentKey && (
-            <Button variant="danger" size="small" onClick={handleClear}>
-              Clear Key
-            </Button>
-          )}
-          <div className="flex items-center gap-2 ml-auto">
-            <Button variant="secondary" size="small" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button variant="primary" size="small" onClick={handleSave}>
-              Save
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-// ============================================================================
 // Main Settings Page Component
 // ============================================================================
 
 export function SettingsPage() {
-  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [quickActionStatus, setQuickActionStatus] = useState<'idle' | 'installing' | 'success' | 'error'>('idle');
   const [_quickActionMessage, setQuickActionMessage] = useState('');
 
@@ -272,21 +199,15 @@ export function SettingsPage() {
     skillSourceDir,
     mcpSourceDir,
     claudeConfigDir,
-    anthropicApiKey,
-    autoClassifyNewItems,
     terminalApp,
     claudeCommand,
     warpOpenMode,
     claudeMdDistributionPath,
     stats,
-    setAnthropicApiKey,
-    setAutoClassifyNewItems,
     setTerminalApp,
     setClaudeCommand,
     setWarpOpenMode,
     setClaudeMdDistributionPath,
-    getMaskedApiKey,
-    hasApiKey,
     selectDirectory,
   } = useSettingsStore();
 
@@ -449,55 +370,6 @@ export function SettingsPage() {
                   ]}
                 />
               </Row>
-            </Card>
-          </section>
-
-          {/* Auto Classify Section */}
-          <section>
-            <SectionHeader
-              title="Auto Classify"
-              description="Use Claude to automatically categorize and tag Skills and MCPs"
-            />
-            <Card>
-              {/* Anthropic API Key */}
-              <Row>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-medium text-[#18181B]">
-                    Anthropic API Key
-                  </span>
-                  <span className="text-xs text-[#71717A]">
-                    {hasApiKey() ? getMaskedApiKey() : 'Not configured'}
-                  </span>
-                </div>
-                <ActionButton onClick={() => setIsApiKeyModalOpen(true)}>
-                  Configure
-                </ActionButton>
-              </Row>
-
-              {/* Auto-classify Toggle */}
-              <Row>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-medium text-[#18181B]">
-                    Auto-classify new items
-                  </span>
-                  <span className="text-xs text-[#71717A]">
-                    Automatically classify newly added Skills and MCPs
-                  </span>
-                </div>
-                <Toggle
-                  checked={autoClassifyNewItems}
-                  onChange={setAutoClassifyNewItems}
-                  size="medium"
-                />
-              </Row>
-
-              {/* Security Hint */}
-              <div className="flex items-center gap-1.5 px-5 py-3">
-                <ShieldCheck size={12} className="text-[#A1A1AA] flex-shrink-0" />
-                <span className="text-[11px] text-[#A1A1AA] italic">
-                  Your API key is stored locally and never shared.
-                </span>
-              </div>
             </Card>
           </section>
 
@@ -729,14 +601,6 @@ export function SettingsPage() {
           </section>
         </div>
       </div>
-
-      {/* API Key Modal */}
-      <ApiKeyModal
-        isOpen={isApiKeyModalOpen}
-        onClose={() => setIsApiKeyModalOpen(false)}
-        currentKey={anthropicApiKey}
-        onSave={setAnthropicApiKey}
-      />
     </div>
   );
 }
