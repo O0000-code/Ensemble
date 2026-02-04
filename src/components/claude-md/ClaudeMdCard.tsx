@@ -162,19 +162,24 @@ export const ClaudeMdCard: React.FC<ClaudeMdCardProps> = ({
           <FileIcon className="h-5 w-5 text-[#52525B]" />
         </div>
         {/* Badge - positioned at top-right */}
-        {/* If isGlobal=true: purple globe (current global) */}
-        {/* If isGlobal=false: show based on sourceType, but 'global' sourceType shows as 'project' */}
-        <div className="absolute -right-1 -top-1">
-          <ClaudeMdBadge
-            type={
-              file.isGlobal
-                ? 'global'
-                : file.sourceType === 'global'
-                  ? 'project'
-                  : file.sourceType
-            }
-          />
-        </div>
+        {/* Only show badge for global or local types */}
+        {/* Project badge is hidden - project is the most common/default type */}
+        {(() => {
+          const badgeType = file.isGlobal
+            ? 'global'
+            : file.sourceType === 'global'
+              ? 'project'
+              : file.sourceType;
+
+          // Hide project badge - it's the default, no badge needed
+          if (badgeType === 'project') return null;
+
+          return (
+            <div className="absolute -right-1 -top-1">
+              <ClaudeMdBadge type={badgeType} />
+            </div>
+          );
+        })()}
       </div>
 
       {/* Info - flex-1, gap 3px */}

@@ -1,7 +1,7 @@
 // src/pages/ClaudeMdPage.tsx
 
 import React, { useState, useMemo } from 'react';
-import { FileText, Radar, Download, Loader2 } from 'lucide-react';
+import { FileText, FileSearch2, Download, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout';
 import { ClaudeMdCard } from '@/components/claude-md/ClaudeMdCard';
 import { ClaudeMdDetailPanel } from '@/components/claude-md/ClaudeMdDetailPanel';
@@ -236,7 +236,7 @@ export function ClaudeMdPage() {
   // Header actions - always show both Scan System and Import buttons
   const headerActions = (
     <div className="flex items-center gap-2.5">
-      {/* Scan System Button - Secondary style, icon=radar */}
+      {/* Scan System Button - Secondary style, icon=file-search */}
       <button
         onClick={handleScan}
         disabled={isScanning}
@@ -254,7 +254,7 @@ export function ClaudeMdPage() {
         {isScanning ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
         ) : (
-          <Radar className="h-3.5 w-3.5" />
+          <FileSearch2 className="h-3.5 w-3.5" />
         )}
         {isScanning ? 'Scanning...' : 'Scan System'}
       </button>
