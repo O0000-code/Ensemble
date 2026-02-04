@@ -285,3 +285,7 @@ export * from './plugin';
 // ==================== CLAUDE.md 相关类型导出 ====================
 
 export * from './claudeMd';
+
+// ==================== Trash 相关类型导出 ====================
+
+export * from './trash';

@@ -3,7 +3,7 @@ pub mod types;
 mod utils;
 
 use commands::claude_md::migrate_claude_md_storage;
-use commands::{classify, claude_md, config, data, dialog, import, mcps, plugins, skills, symlink, usage};
+use commands::{classify, claude_md, config, data, dialog, import, mcps, plugins, skills, symlink, trash, usage};
 use tauri::{Emitter, Manager};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -135,6 +135,11 @@ pub fn run() {
             claude_md::unset_global_claude_md,
             claude_md::distribute_claude_md,
             claude_md::distribute_scene_claude_md,
+            // Trash recovery commands
+            trash::list_trashed_items,
+            trash::restore_skill,
+            trash::restore_mcp,
+            trash::restore_claude_md,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

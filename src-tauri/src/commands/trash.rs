@@ -1,0 +1,449 @@
+use crate::commands::data::{read_app_data, write_app_data};
+use crate::types::{ClaudeMdFile, McpConfigFile, TrashedClaudeMd, TrashedItems, TrashedMcp, TrashedSkill};
+use crate::utils::{expand_path, get_app_data_dir, parse_skill_md};
+use chrono::{DateTime, NaiveDateTime, Utc};
+use regex::Regex;
+use std::fs;
+use std::path::Path;
+
+// ============================================================================
+// Helper functions
+// ============================================================================
+
+/// Parse timestamp from file/directory name
+/// Format: {name}_{YYYYMMDD_HHMMSS} or {name}_{YYYYMMDD_HHMMSS}.json
+/// Returns (original_name, deleted_at_iso)
+fn parse_timestamp_from_name(name: &str, is_json: bool) -> (String, Option<String>) {
+    // Remove .json extension if present
+    let name_without_ext = if is_json {
+        name.strip_suffix(".json").unwrap_or(name)
+    } else {
+        name
+    };
+
+    // Pattern: {name}_{YYYYMMDD_HHMMSS}
+    let re = Regex::new(r"^(.+)_(\d{8}_\d{6})$").unwrap();
+
+    if let Some(caps) = re.captures(name_without_ext) {
+        let original_name = caps.get(1).map(|m| m.as_str()).unwrap_or(name_without_ext);
+        let timestamp_str = caps.get(2).map(|m| m.as_str()).unwrap_or("");
+
+        // Parse timestamp: YYYYMMDD_HHMMSS
+        if let Ok(naive) = NaiveDateTime::parse_from_str(timestamp_str, "%Y%m%d_%H%M%S") {
+            let datetime: DateTime<Utc> = DateTime::from_naive_utc_and_offset(naive, Utc);
+            let final_name = if is_json {
+                format!("{}.json", original_name)
+            } else {
+                original_name.to_string()
+            };
+            return (final_name, Some(datetime.to_rfc3339()));
+        }
+    }
+
+    // No timestamp found, return original name
+    let final_name = if is_json && !name.ends_with(".json") {
+        format!("{}.json", name_without_ext)
+    } else {
+        name.to_string()
+    };
+    (final_name, None)
+}
+
+/// Get file modification time as ISO string
+fn get_file_modified_time(path: &Path) -> Option<String> {
+    fs::metadata(path)
+        .ok()
+        .and_then(|m| m.modified().ok())
+        .map(|t| {
+            let datetime: DateTime<Utc> = t.into();
+            datetime.to_rfc3339()
+        })
+}
+
+/// Read skill description from SKILL.md
+fn read_skill_description(skill_dir: &Path) -> String {
+    let skill_md_path = skill_dir.join("SKILL.md");
+    if skill_md_path.exists() {
+        if let Ok(content) = fs::read_to_string(&skill_md_path) {
+            let (frontmatter, _) = parse_skill_md(&content);
+            return frontmatter.description.unwrap_or_default();
+        }
+    }
+    String::new()
+}
+
+/// Read MCP description from JSON file
+fn read_mcp_description(mcp_path: &Path) -> String {
+    if mcp_path.exists() {
+        if let Ok(content) = fs::read_to_string(mcp_path) {
+            if let Ok(config) = serde_json::from_str::<McpConfigFile>(&content) {
+                return config.description.unwrap_or_default();
+            }
+        }
+    }
+    String::new()
+}
+
+/// Read CLAUDE.md name from info.json
+fn read_claude_md_info(claude_md_dir: &Path) -> Option<String> {
+    let info_path = claude_md_dir.join("info.json");
+    if info_path.exists() {
+        if let Ok(content) = fs::read_to_string(&info_path) {
+            if let Ok(info) = serde_json::from_str::<serde_json::Value>(&content) {
+                return info.get("name").and_then(|n| n.as_str()).map(|s| s.to_string());
+            }
+        }
+    }
+    None
+}
+
+// ============================================================================
+// Trash commands
+// ============================================================================
+
+/// List all trashed items (skills, MCPs, and CLAUDE.md files)
+///
+/// Scans the trash directories and returns information about deleted items.
+#[tauri::command]
+pub fn list_trashed_items(ensemble_dir: String) -> Result<TrashedItems, String> {
+    let ensemble_path = expand_path(&ensemble_dir);
+
+    let mut skills: Vec<TrashedSkill> = Vec::new();
+    let mut mcps: Vec<TrashedMcp> = Vec::new();
+    let mut claude_md_files: Vec<TrashedClaudeMd> = Vec::new();
+
+    // Scan trashed skills
+    let skills_trash_dir = ensemble_path.join("trash").join("skills");
+    if skills_trash_dir.exists() {
+        if let Ok(entries) = fs::read_dir(&skills_trash_dir) {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let entry_path = entry.path();
+
+                // Skip hidden files/directories
+                if entry_path.file_name()
+                    .map(|n| n.to_string_lossy().starts_with('.'))
+                    .unwrap_or(true)
+                {
+                    continue;
+                }
+
+                // Only process directories
+                if !entry_path.is_dir() {
+                    continue;
+                }
+
+                let dir_name = entry_path.file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("")
+                    .to_string();
+
+                let (original_name, deleted_at) = parse_timestamp_from_name(&dir_name, false);
+                let deleted_at = deleted_at
+                    .or_else(|| get_file_modified_time(&entry_path))
+                    .unwrap_or_else(|| Utc::now().to_rfc3339());
+
+                let description = read_skill_description(&entry_path);
+
+                skills.push(TrashedSkill {
+                    id: dir_name.clone(),
+                    name: original_name,
+                    path: entry_path.to_string_lossy().to_string(),
+                    deleted_at,
+                    description,
+                });
+            }
+        }
+    }
+
+    // Scan trashed MCPs
+    let mcps_trash_dir = ensemble_path.join("trash").join("mcps");
+    if mcps_trash_dir.exists() {
+        if let Ok(entries) = fs::read_dir(&mcps_trash_dir) {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let entry_path = entry.path();
+
+                // Only process .json files
+                if entry_path.extension().map_or(true, |ext| ext != "json") {
+                    continue;
+                }
+
+                // Skip hidden files
+                if entry_path.file_name()
+                    .map(|n| n.to_string_lossy().starts_with('.'))
+                    .unwrap_or(true)
+                {
+                    continue;
+                }
+
+                let file_name = entry_path.file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("")
+                    .to_string();
+
+                let (original_name, deleted_at) = parse_timestamp_from_name(&file_name, true);
+                let deleted_at = deleted_at
+                    .or_else(|| get_file_modified_time(&entry_path))
+                    .unwrap_or_else(|| Utc::now().to_rfc3339());
+
+                let description = read_mcp_description(&entry_path);
+
+                mcps.push(TrashedMcp {
+                    id: file_name.clone(),
+                    name: original_name.trim_end_matches(".json").to_string(),
+                    path: entry_path.to_string_lossy().to_string(),
+                    deleted_at,
+                    description,
+                });
+            }
+        }
+    }
+
+    // Scan trashed CLAUDE.md files
+    let claude_md_trash_dir = ensemble_path.join("trash").join("claude-md");
+    if claude_md_trash_dir.exists() {
+        if let Ok(entries) = fs::read_dir(&claude_md_trash_dir) {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let entry_path = entry.path();
+
+                // Skip hidden files/directories
+                if entry_path.file_name()
+                    .map(|n| n.to_string_lossy().starts_with('.'))
+                    .unwrap_or(true)
+                {
+                    continue;
+                }
+
+                // Only process directories
+                if !entry_path.is_dir() {
+                    continue;
+                }
+
+                let dir_name = entry_path.file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("")
+                    .to_string();
+
+                let (original_id, deleted_at) = parse_timestamp_from_name(&dir_name, false);
+                let deleted_at = deleted_at
+                    .or_else(|| get_file_modified_time(&entry_path))
+                    .unwrap_or_else(|| Utc::now().to_rfc3339());
+
+                // Try to read name from info.json, fallback to ID
+                let name = read_claude_md_info(&entry_path)
+                    .unwrap_or_else(|| format!("CLAUDE.md ({})", &original_id[..8.min(original_id.len())]));
+
+                claude_md_files.push(TrashedClaudeMd {
+                    id: dir_name.clone(),
+                    name,
+                    path: entry_path.to_string_lossy().to_string(),
+                    deleted_at,
+                });
+            }
+        }
+    }
+
+    // Sort by deleted_at (newest first)
+    skills.sort_by(|a, b| b.deleted_at.cmp(&a.deleted_at));
+    mcps.sort_by(|a, b| b.deleted_at.cmp(&a.deleted_at));
+    claude_md_files.sort_by(|a, b| b.deleted_at.cmp(&a.deleted_at));
+
+    Ok(TrashedItems {
+        skills,
+        mcps,
+        claude_md_files,
+    })
+}
+
+/// Restore a skill from trash
+///
+/// Moves the skill directory from trash back to the skills directory.
+/// Returns error if a skill with the same name already exists.
+#[tauri::command]
+pub fn restore_skill(trash_path: String, ensemble_dir: String) -> Result<(), String> {
+    let trash_path = expand_path(&trash_path);
+    let ensemble_path = expand_path(&ensemble_dir);
+
+    // Verify trash path exists
+    if !trash_path.exists() {
+        return Err(format!("Trash path not found: {}", trash_path.display()));
+    }
+
+    // Get directory name and extract original name
+    let dir_name = trash_path.file_name()
+        .and_then(|n| n.to_str())
+        .ok_or("Invalid trash path")?;
+
+    let (original_name, _) = parse_timestamp_from_name(dir_name, false);
+
+    // Check if skill with same name already exists
+    let target_path = ensemble_path.join("skills").join(&original_name);
+    if target_path.exists() {
+        return Err("A skill with the same name already exists".to_string());
+    }
+
+    // Ensure skills directory exists
+    let skills_dir = ensemble_path.join("skills");
+    fs::create_dir_all(&skills_dir)
+        .map_err(|e| format!("Failed to create skills directory: {}", e))?;
+
+    // Move skill from trash to skills directory
+    fs::rename(&trash_path, &target_path)
+        .map_err(|e| format!("Failed to restore skill: {}", e))?;
+
+    Ok(())
+}
+
+/// Restore an MCP from trash
+///
+/// Moves the MCP config file from trash back to the mcps directory.
+/// Returns error if an MCP with the same name already exists.
+#[tauri::command]
+pub fn restore_mcp(trash_path: String, ensemble_dir: String) -> Result<(), String> {
+    let trash_path = expand_path(&trash_path);
+    let ensemble_path = expand_path(&ensemble_dir);
+
+    // Verify trash path exists
+    if !trash_path.exists() {
+        return Err(format!("Trash path not found: {}", trash_path.display()));
+    }
+
+    // Get file name and extract original name
+    let file_name = trash_path.file_name()
+        .and_then(|n| n.to_str())
+        .ok_or("Invalid trash path")?;
+
+    let (original_name, _) = parse_timestamp_from_name(file_name, true);
+
+    // Check if MCP with same name already exists
+    let target_path = ensemble_path.join("mcps").join(&original_name);
+    if target_path.exists() {
+        return Err("An MCP with the same name already exists".to_string());
+    }
+
+    // Ensure mcps directory exists
+    let mcps_dir = ensemble_path.join("mcps");
+    fs::create_dir_all(&mcps_dir)
+        .map_err(|e| format!("Failed to create mcps directory: {}", e))?;
+
+    // Move MCP from trash to mcps directory
+    fs::rename(&trash_path, &target_path)
+        .map_err(|e| format!("Failed to restore MCP: {}", e))?;
+
+    Ok(())
+}
+
+/// Restore a CLAUDE.md file from trash
+///
+/// Moves the CLAUDE.md directory from trash back to the claude-md directory
+/// and restores the record in data.json.
+#[tauri::command]
+pub fn restore_claude_md(trash_path: String) -> Result<(), String> {
+    let trash_path = expand_path(&trash_path);
+
+    // Verify trash path exists
+    if !trash_path.exists() {
+        return Err(format!("Trash path not found: {}", trash_path.display()));
+    }
+
+    // Get directory name and extract original ID
+    let dir_name = trash_path.file_name()
+        .and_then(|n| n.to_str())
+        .ok_or("Invalid trash path")?;
+
+    let (original_id, _) = parse_timestamp_from_name(dir_name, false);
+
+    // Target path in claude-md directory
+    let claude_md_dir = get_app_data_dir().join("claude-md");
+    let target_path = claude_md_dir.join(&original_id);
+
+    // Check if claude-md with same ID already exists
+    if target_path.exists() {
+        return Err("A CLAUDE.md file with the same ID already exists".to_string());
+    }
+
+    // Ensure claude-md directory exists
+    fs::create_dir_all(&claude_md_dir)
+        .map_err(|e| format!("Failed to create claude-md directory: {}", e))?;
+
+    // Move from trash to claude-md directory
+    fs::rename(&trash_path, &target_path)
+        .map_err(|e| format!("Failed to restore CLAUDE.md: {}", e))?;
+
+    // Restore record in data.json
+    // First, try to read info.json from the restored directory
+    let info_path = target_path.join("info.json");
+    let claude_md_path = target_path.join("CLAUDE.md");
+
+    if info_path.exists() {
+        // Read info.json to get the original ClaudeMdFile metadata
+        let info_content = fs::read_to_string(&info_path)
+            .map_err(|e| format!("Failed to read info.json: {}", e))?;
+
+        let file_info: ClaudeMdFile = serde_json::from_str(&info_content)
+            .map_err(|e| format!("Failed to parse info.json: {}", e))?;
+
+        // Update app data
+        let mut app_data = read_app_data()?;
+
+        // Check if already exists (shouldn't happen, but be safe)
+        if !app_data.claude_md_files.iter().any(|f| f.id == original_id) {
+            // Create restored file entry
+            let restored_file = ClaudeMdFile {
+                id: original_id.clone(),
+                name: file_info.name,
+                description: file_info.description,
+                source_path: file_info.source_path,
+                source_type: file_info.source_type,
+                content: String::new(), // Content is stored in independent file
+                managed_path: Some(claude_md_path.to_string_lossy().to_string()),
+                is_global: false, // Don't restore global status automatically
+                category_id: file_info.category_id,
+                tag_ids: file_info.tag_ids,
+                created_at: file_info.created_at,
+                updated_at: chrono::Utc::now().to_rfc3339(),
+                size: file_info.size,
+                icon: file_info.icon,
+            };
+
+            app_data.claude_md_files.push(restored_file);
+            write_app_data(app_data)?;
+        }
+    } else {
+        // No info.json, create a minimal record
+        let mut app_data = read_app_data()?;
+
+        if !app_data.claude_md_files.iter().any(|f| f.id == original_id) {
+            // Get file size if CLAUDE.md exists
+            let size = if claude_md_path.exists() {
+                fs::metadata(&claude_md_path)
+                    .map(|m| m.len())
+                    .unwrap_or(0)
+            } else {
+                0
+            };
+
+            let now = chrono::Utc::now().to_rfc3339();
+            let restored_file = ClaudeMdFile {
+                id: original_id.clone(),
+                name: "Restored CLAUDE.md".to_string(),
+                description: "Restored from trash".to_string(),
+                source_path: String::new(),
+                source_type: crate::types::ClaudeMdType::Project,
+                content: String::new(),
+                managed_path: Some(claude_md_path.to_string_lossy().to_string()),
+                is_global: false,
+                category_id: None,
+                tag_ids: vec![],
+                created_at: now.clone(),
+                updated_at: now,
+                size,
+                icon: None,
+            };
+
+            app_data.claude_md_files.push(restored_file);
+            write_app_data(app_data)?;
+        }
+    }
+
+    Ok(())
+}

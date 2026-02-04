@@ -786,3 +786,48 @@ pub struct SetGlobalResult {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
 }
+
+// ============================================================================
+// Trash Recovery types
+// ============================================================================
+
+/// Trashed skill information
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrashedSkill {
+    pub id: String,
+    pub name: String,
+    pub path: String,
+    pub deleted_at: String,
+    pub description: String,
+}
+
+/// Trashed MCP information
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrashedMcp {
+    pub id: String,
+    pub name: String,
+    pub path: String,
+    pub deleted_at: String,
+    pub description: String,
+}
+
+/// Trashed CLAUDE.md file information
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrashedClaudeMd {
+    pub id: String,
+    pub name: String,
+    pub path: String,
+    pub deleted_at: String,
+}
+
+/// Collection of all trashed items
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TrashedItems {
+    pub skills: Vec<TrashedSkill>,
+    pub mcps: Vec<TrashedMcp>,
+    pub claude_md_files: Vec<TrashedClaudeMd>,
+}
