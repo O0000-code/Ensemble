@@ -566,15 +566,22 @@ pub fn update_claude_md(
 }
 
 /// Delete CLAUDE.md file (remove from management)
+///
+/// Note: This is a soft delete - files are moved to trash, not permanently deleted.
+/// If the file is currently set as global, we only remove it from management
+/// but keep ~/.claude/CLAUDE.md intact.
 #[tauri::command]
 pub fn delete_claude_md(id: String) -> Result<(), String> {
     let mut app_data = read_app_data()?;
 
-    // Check if it's the current global
+    // If it's the current global, just unset the global status
+    // but DO NOT delete ~/.claude/CLAUDE.md
     if app_data.global_claude_md_id.as_ref() == Some(&id) {
-        return Err(
-            "Cannot delete the current global CLAUDE.md. Please unset it first.".to_string(),
-        );
+        app_data.global_claude_md_id = None;
+        // Also unset isGlobal on the file
+        if let Some(file) = app_data.claude_md_files.iter_mut().find(|f| f.id == id) {
+            file.is_global = false;
+        }
     }
 
     // Remove from Scene references
@@ -582,12 +589,26 @@ pub fn delete_claude_md(id: String) -> Result<(), String> {
         scene.claude_md_ids.retain(|cid| cid != &id);
     }
 
-    // Delete independent file directory
+    // Soft delete: move to trash instead of permanent deletion
     let file_dir = get_claude_md_file_dir(&id);
     if file_dir.exists() {
-        if let Err(e) = fs::remove_dir_all(&file_dir) {
-            println!("[delete_claude_md] Warning: Failed to delete directory {:?}: {}", file_dir, e);
-            // Continue with deletion from data.json even if file deletion fails
+        let trash_dir = get_app_data_dir().join("trash").join("claude-md");
+        if let Err(e) = fs::create_dir_all(&trash_dir) {
+            println!("[delete_claude_md] Warning: Failed to create trash directory: {}", e);
+        } else {
+            // Generate unique trash name with timestamp
+            let timestamp = Utc::now().format("%Y%m%d_%H%M%S");
+            let trash_dest = trash_dir.join(format!("{}_{}", id, timestamp));
+
+            if let Err(e) = fs::rename(&file_dir, &trash_dest) {
+                println!("[delete_claude_md] Warning: Failed to move to trash: {}", e);
+                // Fallback to permanent deletion if move fails
+                if let Err(e) = fs::remove_dir_all(&file_dir) {
+                    println!("[delete_claude_md] Warning: Failed to delete directory: {}", e);
+                }
+            } else {
+                println!("[delete_claude_md] Moved to trash: {:?}", trash_dest);
+            }
         }
     }
 
