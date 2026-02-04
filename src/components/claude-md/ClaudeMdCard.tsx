@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react';
 import { FileText, MoreHorizontal, Trash2 } from 'lucide-react';
 import { ClaudeMdBadge } from './ClaudeMdBadge';
 import { TagsWithTooltip } from '@/components/common/TagsWithTooltip';
+import Badge from '@/components/common/Badge';
 import type { ClaudeMdFile } from '@/types/claudeMd';
 import { useAppStore } from '@/stores/appStore';
 
@@ -65,7 +66,14 @@ export const ClaudeMdCard: React.FC<ClaudeMdCardProps> = ({
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [showMenu, setShowMenu] = useState(false);
-  const { tags: appTags } = useAppStore();
+  const { tags: appTags, categories } = useAppStore();
+
+  // Get category name and color from category ID
+  const category = file.categoryId
+    ? categories.find((c) => c.id === file.categoryId)
+    : null;
+  const categoryName = category?.name;
+  const categoryColor = category?.color || '#71717A';
 
   // Get tag names from tag IDs
   const tagNames = file.tagIds
@@ -162,11 +170,19 @@ export const ClaudeMdCard: React.FC<ClaudeMdCardProps> = ({
         </span>
       </div>
 
-      {/* Tags Section (hidden in compact mode) */}
+      {/* Category & Tags Section (hidden in compact mode) */}
       <div
         className="flex items-center gap-[6px] shrink-0"
         style={rightSectionStyle}
       >
+        {/* Category Badge - only show if category exists */}
+        {categoryName && (
+          <Badge variant="category" color={categoryColor}>
+            {categoryName.charAt(0).toUpperCase() + categoryName.slice(1)}
+          </Badge>
+        )}
+
+        {/* Tags */}
         {tagNames.length > 0 && <TagsWithTooltip tags={tagNames} />}
       </div>
 
