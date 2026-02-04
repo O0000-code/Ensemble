@@ -38,8 +38,8 @@ body {
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -47,12 +47,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-tertiary);
+  background: rgba(0, 0, 0, 0.10);
 }
 
 /* Modal Animations */
@@ -101,6 +101,32 @@ body {
 
 .icon-picker-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.15);
+}
+
+/* Sidebar scroll style - 极简精致，右侧留出更多空间 */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.04) transparent;
+  padding-right: 12px;  /* 为滚动条留出更多空间 */
+  margin-right: -12px;  /* 抵消padding */
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 4px !important;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent !important;
+  margin: 8px 0;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.04) !important;  /* 极淡 */
+  border-radius: 2px !important;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.08) !important;  /* hover时稍深 */
 }
 
 /* Refresh button animation - natural physics-based rotation */

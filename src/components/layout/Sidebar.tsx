@@ -197,11 +197,9 @@ export function Sidebar({
       </header>
 
       {/* Sidebar Content */}
-      <div className="flex-1 flex flex-col justify-between p-4 pb-2 overflow-hidden">
-        {/* Top Content */}
-        <div className="flex flex-col gap-6 overflow-y-auto">
-          {/* Navigation Section */}
-          <nav className="flex flex-col gap-0.5">
+      <div className="flex-1 flex flex-col p-4 pb-2 overflow-hidden">
+        {/* Navigation Section - 固定，不滚动 */}
+        <nav className="flex flex-col gap-0.5 flex-shrink-0">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeNav === item.id;
@@ -243,28 +241,28 @@ export function Sidebar({
             })}
           </nav>
 
-          {/* Divider */}
-          <div className="h-px bg-[#E4E4E7]" />
+        {/* Divider - 固定，不参与滚动 */}
+        <div className="h-px bg-[#E4E4E7] my-4 flex-shrink-0" />
 
-          {/* Categories Section */}
-          <section className="flex flex-col gap-3">
-            {/* Section Header */}
-            <div className="flex items-center justify-between">
-              <h3 className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.8px]">
-                Categories
-              </h3>
-              {onAddCategory && (
-                <button
-                  onClick={onAddCategory}
-                  className="w-5 h-5 flex items-center justify-center rounded hover:bg-[#F4F4F5] transition-colors"
-                  aria-label="Add category"
-                >
-                  <Plus size={12} className="text-[#A1A1AA]" />
-                </button>
-              )}
-            </div>
+        {/* Categories Section Header - 固定，不参与滚动 */}
+        <div className="flex items-center justify-between flex-shrink-0 mb-3">
+          <h3 className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.8px]">
+            Categories
+          </h3>
+          {onAddCategory && (
+            <button
+              onClick={onAddCategory}
+              className="w-5 h-5 flex items-center justify-center rounded hover:bg-[#F4F4F5] transition-colors"
+              aria-label="Add category"
+            >
+              <Plus size={12} className="text-[#A1A1AA]" />
+            </button>
+          )}
+        </div>
 
-            {/* Categories List */}
+        {/* Scrollable Area - Categories列表 + Tags 自适应高度，整体滚动 */}
+        <div className="flex-1 overflow-y-auto sidebar-scroll min-h-0">
+          {/* Categories List */}
             {categories.length > 0 ? (
               <div className="flex flex-col gap-0.5">
                 {categories.map((category) => {
@@ -364,13 +362,9 @@ export function Sidebar({
                 )}
               </div>
             )}
-          </section>
-
-          {/* Divider */}
-          <div className="h-px bg-[#E4E4E7]" />
 
           {/* Tags Section */}
-          <section className="flex flex-col gap-3">
+          <section className="flex flex-col gap-3 pt-4 border-t border-[#E4E4E7] mt-4">
             {/* Section Header */}
             <div className="flex items-center justify-between">
               <h3 className="text-[10px] font-semibold text-[#A1A1AA] uppercase tracking-[0.8px]">
@@ -473,8 +467,8 @@ export function Sidebar({
           </section>
         </div>
 
-        {/* Sidebar Footer */}
-        <footer className="pt-4 -ml-1.5">
+        {/* Sidebar Footer - 固定 */}
+        <footer className="pt-4 -ml-1.5 flex-shrink-0">
           <button
             onClick={handleSettingsClick}
             className={`
