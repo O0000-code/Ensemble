@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import ContextMenu from '../common/ContextMenu';
-import { ImportDialog } from '../common/ImportDialog';
 import { LauncherModal } from '../launcher';
 import { useAppStore } from '@/stores/appStore';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -569,8 +568,6 @@ export default function MainLayout() {
         />
       )}
 
-      {/* Import Dialog for first-time config import */}
-      <ImportDialog />
 
       {/* Launcher Modal for Finder Quick Action */}
       <LauncherModal

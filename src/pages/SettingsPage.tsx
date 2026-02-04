@@ -2,15 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Github, BookOpen, FileText, ChevronDown, Check } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
-import Button from '@/components/common/Button';
-import { useSettingsStore, useImportStore } from '@/stores';
+import { useSettingsStore } from '@/stores';
 import { safeInvoke } from '@/utils/tauri';
 
 // ============================================================================
 // Settings Page
 // ============================================================================
 // Central configuration hub for Ensemble application.
-// Includes Storage, Auto Classify, and About sections.
+// Includes CLAUDE.md, Launch Configuration, and About sections.
 
 // ============================================================================
 // Reusable Components
@@ -59,22 +58,6 @@ function Row({ children, noBorder = false }: RowProps) {
     >
       {children}
     </div>
-  );
-}
-
-interface ActionButtonProps {
-  onClick: () => void;
-  children: React.ReactNode;
-}
-
-function ActionButton({ onClick, children }: ActionButtonProps) {
-  return (
-    <button
-      onClick={onClick}
-      className="text-xs font-medium text-[#71717A] hover:text-[#18181B] transition-colors"
-    >
-      {children}
-    </button>
   );
 }
 
@@ -196,32 +179,15 @@ export function SettingsPage() {
   const [_quickActionMessage, setQuickActionMessage] = useState('');
 
   const {
-    skillSourceDir,
-    mcpSourceDir,
-    claudeConfigDir,
     terminalApp,
     claudeCommand,
     warpOpenMode,
     claudeMdDistributionPath,
-    stats,
     setTerminalApp,
     setClaudeCommand,
     setWarpOpenMode,
     setClaudeMdDistributionPath,
-    selectDirectory,
   } = useSettingsStore();
-
-  const { detectExistingConfig, isDetecting } = useImportStore();
-
-  const handleChangeDir = (type: 'skills' | 'mcp' | 'claude') => {
-    // Map from page type names to store type names
-    const typeMap: Record<string, 'skill' | 'mcp' | 'claude'> = {
-      skills: 'skill',
-      mcp: 'mcp',
-      claude: 'claude',
-    };
-    selectDirectory(typeMap[type]);
-  };
 
   const handleInstallQuickAction = async () => {
     setQuickActionStatus('installing');
@@ -260,87 +226,6 @@ export function SettingsPage() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-[600px] mx-auto px-7 py-8 flex flex-col gap-8">
-          {/* Storage Section */}
-          <section>
-            <SectionHeader
-              title="Storage"
-              description="Configure where Ensemble stores Skills and MCP configurations"
-            />
-            <Card>
-              {/* Skills Source Directory */}
-              <Row>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-medium text-[#18181B]">
-                    Skills Source Directory
-                  </span>
-                  <span className="text-xs text-[#71717A]">{skillSourceDir}</span>
-                </div>
-                <ActionButton onClick={() => handleChangeDir('skills')}>
-                  Change
-                </ActionButton>
-              </Row>
-
-              {/* MCP Servers Source Directory */}
-              <Row>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-medium text-[#18181B]">
-                    MCP Servers Source Directory
-                  </span>
-                  <span className="text-xs text-[#71717A]">{mcpSourceDir}</span>
-                </div>
-                <ActionButton onClick={() => handleChangeDir('mcp')}>
-                  Change
-                </ActionButton>
-              </Row>
-
-              {/* Claude Code Config Directory */}
-              <Row>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-medium text-[#18181B]">
-                    Claude Code Config Directory
-                  </span>
-                  <span className="text-xs text-[#71717A]">{claudeConfigDir}</span>
-                </div>
-                <ActionButton onClick={() => handleChangeDir('claude')}>
-                  Change
-                </ActionButton>
-              </Row>
-
-              {/* Stats Row */}
-              <Row>
-                <div className="flex items-center gap-2 text-[11px] text-[#71717A]">
-                  <span>Skills {stats.skillsCount}</span>
-                  <span className="text-[#A1A1AA]">·</span>
-                  <span>MCPs {stats.mcpsCount}</span>
-                  <span className="text-[#A1A1AA]">·</span>
-                  <span>Scenes {stats.scenesCount}</span>
-                  <span className="text-[#A1A1AA]">·</span>
-                  <span>Size {stats.totalSize}</span>
-                </div>
-              </Row>
-
-              {/* Sync Configurations */}
-              <Row noBorder>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-[13px] font-medium text-[#18181B]">
-                    Sync Configurations
-                  </span>
-                  <span className="text-xs text-[#71717A]">
-                    Import new Skills and MCPs from Claude Code
-                  </span>
-                </div>
-                <Button
-                  variant="secondary"
-                  size="small"
-                  onClick={() => detectExistingConfig()}
-                  disabled={isDetecting}
-                >
-                  {isDetecting ? 'Detecting...' : 'Detect & Import'}
-                </Button>
-              </Row>
-            </Card>
-          </section>
-
           {/* CLAUDE.md Section */}
           <section>
             <SectionHeader
