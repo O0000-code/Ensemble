@@ -85,7 +85,7 @@ const navItems = [
 ];
 
 // Maximum tags to display before showing "+N"
-const MAX_VISIBLE_TAGS = 6;
+const MAX_VISIBLE_TAGS = 10;
 
 export function Sidebar({
   activeNav,
@@ -120,6 +120,7 @@ export function Sidebar({
 }: SidebarProps) {
   const navigate = useNavigate();
   const [isClickAnimating, setIsClickAnimating] = useState(false);
+  const [showAllTags, setShowAllTags] = useState(false);
 
   // Handle refresh button click with animation
   const handleRefreshClick = useCallback(() => {
@@ -167,7 +168,7 @@ export function Sidebar({
   };
 
   // Calculate visible tags and remaining count
-  const visibleTags = tags.slice(0, MAX_VISIBLE_TAGS);
+  const visibleTags = showAllTags ? tags : tags.slice(0, MAX_VISIBLE_TAGS);
   const remainingTagsCount = tags.length - MAX_VISIBLE_TAGS;
 
   return (
@@ -436,13 +437,14 @@ export function Sidebar({
                   );
                 })}
 
-                {/* Show "+N" button if there are more tags */}
+                {/* Show "+N" button if there are more tags, or "Collapse" when expanded */}
                 {remainingTagsCount > 0 && (
                   <button
+                    onClick={() => setShowAllTags(!showAllTags)}
                     className="px-2.5 py-[5px] rounded text-[11px] font-medium text-[#A1A1AA] border border-[#E5E5E5] hover:bg-[#F4F4F5] transition-colors"
-                    aria-label={`Show ${remainingTagsCount} more tags`}
+                    aria-label={showAllTags ? 'Show less tags' : `Show ${remainingTagsCount} more tags`}
                   >
-                    +{remainingTagsCount}
+                    {showAllTags ? 'Less' : `+${remainingTagsCount}`}
                   </button>
                 )}
 
