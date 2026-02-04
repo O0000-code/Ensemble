@@ -1,6 +1,6 @@
 // src/pages/ClaudeMdPage.tsx
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { FileText, Radar, Download, Loader2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout';
 import { ClaudeMdCard } from '@/components/claude-md/ClaudeMdCard';
@@ -169,10 +169,8 @@ export function ClaudeMdPage() {
     [files, selectedFileId]
   );
 
-  // Load files on mount
-  useEffect(() => {
-    loadFiles();
-  }, [loadFiles]);
+  // Note: Files are already loaded in MainLayout, no need to load here
+  // This prevents the flickering caused by redundant loading state changes
 
   // Handlers
   const handleSearchChange = (value: string) => {
