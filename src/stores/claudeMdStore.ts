@@ -277,16 +277,16 @@ export const useClaudeMdStore = create<ClaudeMdState>((set, get) => ({
     const file = get().files.find((f) => f.id === id);
     if (!file) return;
 
-    // Check if it's global
-    if (file.isGlobal) {
-      set({ error: 'Cannot delete the current global CLAUDE.md. Please unset it first.' });
-      return;
-    }
+    // Note: Global files can be deleted - backend will unset global status
+    // and move to trash without touching ~/.claude/CLAUDE.md
 
     // Optimistic update
+    // If deleting global file, also clear globalFileId
+    const isGlobal = file.isGlobal;
     set((state) => ({
       files: state.files.filter((f) => f.id !== id),
       selectedFileId: state.selectedFileId === id ? null : state.selectedFileId,
+      globalFileId: isGlobal ? null : state.globalFileId,
     }));
 
     try {
@@ -297,6 +297,7 @@ export const useClaudeMdStore = create<ClaudeMdState>((set, get) => ({
       set((state) => ({
         files: [...state.files, file],
         error: message,
+        globalFileId: isGlobal ? id : state.globalFileId,
       }));
     }
   },
