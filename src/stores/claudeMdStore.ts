@@ -317,15 +317,10 @@ export const useClaudeMdStore = create<ClaudeMdState>((set, get) => ({
       const result = await safeInvoke<SetGlobalResult>('set_global_claude_md', { id });
 
       if (result?.success) {
-        // Update local state - set isGlobal for all files
-        set((state) => ({
-          files: state.files.map((f) => ({
-            ...f,
-            isGlobal: f.id === id,
-          })),
-          globalFileId: id,
-          isSetting: false,
-        }));
+        // Reload files from backend to get any auto-imported files
+        // (e.g., "Original Global" when replacing unmanaged global)
+        await get().loadFiles();
+        set({ isSetting: false });
       } else {
         set({
           error: result?.error || 'Failed to set global',
