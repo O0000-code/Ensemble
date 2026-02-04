@@ -135,8 +135,9 @@ export const ClaudeMdCard: React.FC<ClaudeMdCardProps> = ({
           <FileText className="h-5 w-5 text-[#52525B]" />
         </div>
         {/* Badge - positioned at top-right, x=28 (right -4px), y=-4 (top -4px) */}
+        {/* If file is set as global, show global badge regardless of sourceType */}
         <div className="absolute -right-1 -top-1">
-          <ClaudeMdBadge type={file.sourceType} />
+          <ClaudeMdBadge type={file.isGlobal ? 'global' : file.sourceType} />
         </div>
       </div>
 
