@@ -510,8 +510,8 @@ export function SkillDetailPanel({ skill, isOpen, onClose }: SkillDetailPanelPro
       {/* Instructions Section */}
       <div className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold text-[#18181B]">Instructions</h3>
-        <div className="overflow-hidden rounded-lg border border-[#E5E5E5] bg-white p-4">
-          <div className="max-h-[480px] overflow-auto whitespace-pre-wrap text-xs font-normal leading-relaxed text-[#52525B]">
+        <div className="max-h-[480px] overflow-y-auto rounded-lg border border-[#E5E5E5] bg-white p-4">
+          <div className="whitespace-pre-wrap text-xs font-normal leading-relaxed text-[#52525B]">
             {selectedSkill.description && (
               <p className="mb-3 rounded bg-[#FAFAFA] p-2 text-[#71717A]">
                 {selectedSkill.description}
