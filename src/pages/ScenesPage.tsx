@@ -20,6 +20,7 @@ import {
   Zap,
   FileCode,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { SlidePanel } from '@/components/layout/SlidePanel';
@@ -32,6 +33,7 @@ import { CreateSceneModal } from '@/components/scenes/CreateSceneModal';
 import { useScenesStore } from '@/stores/scenesStore';
 import { useSkillsStore } from '@/stores/skillsStore';
 import { useMcpsStore } from '@/stores/mcpsStore';
+import { useProjectsStore } from '@/stores/projectsStore';
 import type { Skill, McpServer } from '@/types';
 
 // ============================================================================
@@ -67,14 +69,6 @@ const getSceneIcon = (iconName: string) => sceneIconMap[iconName] || Layers;
 const getSkillIcon = (category: string) => skillIconMap[category] || skillIconMap.default;
 const getMcpIcon = (category: string) => mcpIconMap[category] || mcpIconMap.default;
 
-// Mock projects data
-const mockProjects = [
-  { id: 'proj-1', name: 'Ensemble App', sceneId: 'scene-1' },
-  { id: 'proj-2', name: 'Marketing Site', sceneId: 'scene-1' },
-  { id: 'proj-3', name: 'API Gateway', sceneId: 'scene-2' },
-  { id: 'proj-4', name: 'Analytics Dashboard', sceneId: 'scene-3' },
-  { id: 'proj-5', name: 'Mobile App', sceneId: 'scene-7' },
-];
 
 // Format date
 const formatDate = (dateStr: string) => {
@@ -151,6 +145,7 @@ export const ScenesPage: React.FC = () => {
   const setFilter = useScenesStore((state) => state.setFilter);
   const skills = useSkillsStore((state) => state.skills);
   const mcpServers = useMcpsStore((state) => state.mcpServers);
+  const projects = useProjectsStore((state) => state.projects);
 
   // Local state - selected scene for detail panel
   const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
@@ -198,8 +193,8 @@ export const ScenesPage: React.FC = () => {
   // Get projects using this scene
   const usingProjects = useMemo(() => {
     if (!selectedScene) return [];
-    return mockProjects.filter((p) => p.sceneId === selectedScene.id);
-  }, [selectedScene]);
+    return projects.filter((p) => p.sceneId === selectedScene.id);
+  }, [selectedScene, projects]);
 
   // Handle scene click - now sets selected state instead of navigating
   const handleSceneClick = (sceneId: string) => {
@@ -289,23 +284,50 @@ export const ScenesPage: React.FC = () => {
     setEditingScene(null);
   };
 
-  // Handle delete from list item dropdown menu
-  const handleDeleteScene = async (id: string) => {
+  // State for delete confirmation
+  const [deleteConfirmState, setDeleteConfirmState] = useState<{
+    isOpen: boolean;
+    sceneId: string | null;
+    sceneName: string;
+  }>({ isOpen: false, sceneId: null, sceneName: '' });
+
+  // Handle delete from list item dropdown menu - show confirmation first
+  const handleDeleteScene = (id: string) => {
     const scene = scenes.find((s) => s.id === id);
     if (!scene) return;
 
-    const projectsUsingScene = mockProjects.filter((p) => p.sceneId === id);
+    // Check if any real projects are using this scene
+    const projectsUsingScene = projects.filter((p) => p.sceneId === id);
     if (projectsUsingScene.length > 0) {
-      alert('Cannot delete a scene that is being used by projects.');
+      window.alert(`Cannot delete "${scene.name}" because it is being used by ${projectsUsingScene.length} project(s).`);
       return;
     }
 
-    if (confirm(`Are you sure you want to delete "${scene.name}"?`)) {
+    // Show confirmation state instead of window.confirm
+    setDeleteConfirmState({ isOpen: true, sceneId: id, sceneName: scene.name });
+  };
+
+  // Actually perform the delete after confirmation
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmState.sceneId) return;
+
+    const id = deleteConfirmState.sceneId;
+    setDeleteConfirmState({ isOpen: false, sceneId: null, sceneName: '' });
+
+    try {
       await deleteScene(id);
       if (selectedSceneId === id) {
-        setSelectedSceneId(null); // Clear selection if deleting selected scene
+        setSelectedSceneId(null);
       }
+    } catch (error) {
+      console.error('Failed to delete scene:', error);
+      window.alert('Failed to delete scene. Please try again.');
     }
+  };
+
+  // Cancel delete
+  const handleCancelDelete = () => {
+    setDeleteConfirmState({ isOpen: false, sceneId: null, sceneName: '' });
   };
 
   // Handle icon click
@@ -618,6 +640,41 @@ export const ScenesPage: React.FC = () => {
           isOpen={iconPickerState.isOpen}
           onClose={handleIconPickerClose}
         />
+      )}
+
+      {/* Delete Confirmation Dialog - Design: Delete Confirm - B */}
+      {deleteConfirmState.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="flex w-[320px] flex-col gap-6 rounded-xl border border-[#E5E5E5] bg-white px-7 pt-7 pb-5 shadow-xl">
+            {/* Top - Title & Description */}
+            <div className="flex flex-col gap-2.5">
+              <h3 className="text-[15px] font-semibold text-[#18181B]">
+                Delete "{deleteConfirmState.sceneName}"?
+              </h3>
+              <p className="text-[13px] leading-[1.4] text-[#71717A]">
+                Are you sure you want to delete "{deleteConfirmState.sceneName}"?
+                <br />
+                This action cannot be undone.
+              </p>
+            </div>
+            {/* Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={handleCancelDelete}
+                className="flex h-[38px] flex-1 items-center justify-center rounded-md border border-[#E5E5E5] text-[13px] font-medium text-[#52525B] transition-colors hover:bg-[#F4F4F5]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex h-[38px] flex-1 items-center justify-center gap-1.5 rounded-md bg-[#18181B] text-[13px] font-medium text-white transition-colors hover:bg-[#27272A]"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
