@@ -4,13 +4,22 @@ mod utils;
 
 use commands::claude_md::migrate_claude_md_storage;
 use commands::{classify, claude_md, config, data, dialog, import, mcps, plugins, skills, symlink, trash, usage};
-use tauri::{Emitter, Manager};
+use tauri::{Emitter, Manager, RunEvent, WindowEvent};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        // Handle window close: hide instead of quit (macOS standard behavior)
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                // Prevent the window from actually closing
+                api.prevent_close();
+                // Hide the window instead - app continues running in background
+                let _ = window.hide();
+            }
+        })
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -24,6 +33,15 @@ pub fn run() {
             if let Err(e) = migrate_claude_md_storage() {
                 eprintln!("[Migration] Failed to migrate CLAUDE.md storage: {}", e);
                 // Don't fail startup on migration error, just log it
+            }
+
+            // If app was launched with --launch argument, hide the window initially
+            // Frontend will show it if needed (when folder has no Scene)
+            let args: Vec<String> = std::env::args().collect();
+            if args.iter().any(|a| a == "--launch") {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.hide();
+                }
             }
 
             Ok(())
@@ -142,6 +160,18 @@ pub fn run() {
             trash::restore_mcp,
             trash::restore_claude_md,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            // Handle macOS Dock icon click when window is hidden
+            if let RunEvent::Reopen { has_visible_windows, .. } = event {
+                if !has_visible_windows {
+                    // Show the main window when Dock icon is clicked
+                    if let Some(window) = app.get_webview_window("main") {
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                }
+            }
+        });
 }
