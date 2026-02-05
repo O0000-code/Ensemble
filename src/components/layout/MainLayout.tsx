@@ -163,7 +163,8 @@ export default function MainLayout() {
     try {
       const { getCurrentWindow } = await import('@tauri-apps/api/window');
       const win = getCurrentWindow();
-      await win.setFocus();
+      await win.show();     // Make window visible first (required on macOS for hidden/minimized windows)
+      await win.setFocus(); // Then bring to front
     } catch (e) {
       console.error('Failed to focus window:', e);
     }
