@@ -158,13 +158,12 @@ export default function MainLayout() {
   }, []);
 
   // Helper to focus the main window when UI needs to be shown
+  // Uses Rust command for more reliable window activation on macOS
   const focusWindow = async () => {
     if (!isTauri()) return;
     try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      const win = getCurrentWindow();
-      await win.show();     // Make window visible first (required on macOS for hidden/minimized windows)
-      await win.setFocus(); // Then bring to front
+      // Use Rust command which is more reliable for bringing background apps to front on macOS
+      await safeInvoke('bring_window_to_front', {});
     } catch (e) {
       console.error('Failed to focus window:', e);
     }

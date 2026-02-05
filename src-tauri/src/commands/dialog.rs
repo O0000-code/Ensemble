@@ -1,5 +1,22 @@
 use std::process::Command;
+use tauri::Manager;
 use tauri_plugin_dialog::DialogExt;
+
+/// Bring the main window to the foreground (macOS)
+/// This is more reliable than JavaScript window APIs for background apps
+#[tauri::command]
+pub async fn bring_window_to_front(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        // On macOS, we need to: unminimize -> show -> set_focus
+        // This sequence reliably brings a background app to the foreground
+        window.unminimize().map_err(|e| e.to_string())?;
+        window.show().map_err(|e| e.to_string())?;
+        window.set_focus().map_err(|e| e.to_string())?;
+        Ok(())
+    } else {
+        Err("Main window not found".to_string())
+    }
+}
 
 /// Reveal a path in Finder (macOS)
 #[tauri::command]
