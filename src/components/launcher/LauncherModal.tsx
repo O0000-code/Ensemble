@@ -137,7 +137,7 @@ export function LauncherModal({ isOpen, folderPath, onClose }: LauncherModalProp
     >
       <div className="modal-dialog-animate flex h-[500px] w-[480px] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_25px_50px_rgba(0,0,0,0.1)]">
         {/* Modal Header */}
-        <div className="flex flex-col gap-4 px-6 py-5">
+        <div className="flex flex-col gap-3 px-6 pt-5 pb-2">
           {/* Header Top - Title and Close */}
           <div className="flex items-center justify-between">
             <h2 className="text-[18px] font-semibold text-[#18181B]">Launch Claude Code</h2>
@@ -160,7 +160,7 @@ export function LauncherModal({ isOpen, folderPath, onClose }: LauncherModalProp
         {/* Modal Body */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* Scene Label */}
-          <div className="border-b border-[#E5E5E5] px-6 py-3">
+          <div className="border-b border-[#E5E5E5] px-6 py-2">
             <span className="text-xs font-medium text-[#71717A]">Select Scene</span>
           </div>
 
