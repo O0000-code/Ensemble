@@ -15,7 +15,7 @@ export interface CreateModalState {
   description: string;
   selectedSkillIds: string[];
   selectedMcpIds: string[];
-  selectedClaudeMdIds: string[];
+  selectedClaudeMdId: string | null;
   activeTab: 'skills' | 'mcps' | 'claudeMd';
   search: string;
   categoryFilter: string;
@@ -55,9 +55,9 @@ interface ScenesState {
   selectAllMcps: (mcpIds: string[]) => void;
   clearAllSelections: () => void;
 
-  // CLAUDE.md selection
+  // CLAUDE.md selection (single select only)
   toggleClaudeMdSelection: (id: string) => void;
-  selectAllClaudeMd: (ids: string[]) => void;
+  setClaudeMdSelection: (id: string | null) => void;
 
   // Getters for available skills/mcps/claudeMd
   getAvailableSkills: () => Skill[];
@@ -75,7 +75,7 @@ const initialCreateModalState: CreateModalState = {
   description: '',
   selectedSkillIds: [],
   selectedMcpIds: [],
-  selectedClaudeMdIds: [],
+  selectedClaudeMdId: null,
   activeTab: 'skills',
   search: '',
   categoryFilter: '',
@@ -145,7 +145,7 @@ export const useScenesStore = create<ScenesState>((set, get) => ({
         icon: 'layers',
         skillIds: createModal.selectedSkillIds,
         mcpIds: createModal.selectedMcpIds,
-        claudeMdIds: createModal.selectedClaudeMdIds,
+        claudeMdIds: createModal.selectedClaudeMdId ? [createModal.selectedClaudeMdId] : [],
       });
 
       if (!scene) {
@@ -286,30 +286,25 @@ export const useScenesStore = create<ScenesState>((set, get) => ({
         ...state.createModal,
         selectedSkillIds: [],
         selectedMcpIds: [],
-        selectedClaudeMdIds: [],
+        selectedClaudeMdId: null,
       },
     })),
 
-  // CLAUDE.md selection
+  // CLAUDE.md selection (single select only - a Scene can have at most one CLAUDE.md)
   toggleClaudeMdSelection: (id) =>
-    set((state) => {
-      const { selectedClaudeMdIds } = state.createModal;
-      const newIds = selectedClaudeMdIds.includes(id)
-        ? selectedClaudeMdIds.filter((cid) => cid !== id)
-        : [...selectedClaudeMdIds, id];
-      return {
-        createModal: {
-          ...state.createModal,
-          selectedClaudeMdIds: newIds,
-        },
-      };
-    }),
-
-  selectAllClaudeMd: (ids) =>
     set((state) => ({
       createModal: {
         ...state.createModal,
-        selectedClaudeMdIds: ids,
+        // Toggle: if already selected, deselect; otherwise select the new one
+        selectedClaudeMdId: state.createModal.selectedClaudeMdId === id ? null : id,
+      },
+    })),
+
+  setClaudeMdSelection: (id) =>
+    set((state) => ({
+      createModal: {
+        ...state.createModal,
+        selectedClaudeMdId: id,
       },
     })),
 

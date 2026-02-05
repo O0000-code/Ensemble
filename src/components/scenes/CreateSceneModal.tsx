@@ -372,7 +372,8 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
   const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>([]);
   const [selectedMcpIds, setSelectedMcpIds] = useState<string[]>([]);
-  const [selectedClaudeMdIds, setSelectedClaudeMdIds] = useState<string[]>([]);
+  // Single select for CLAUDE.md - a Scene can have at most one CLAUDE.md
+  const [selectedClaudeMdId, setSelectedClaudeMdId] = useState<string | null>(null);
 
   // Reset form when modal opens or initialScene changes
   useEffect(() => {
@@ -382,13 +383,14 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
         setDescription(initialScene.description);
         setSelectedSkillIds(initialScene.skillIds || []);
         setSelectedMcpIds(initialScene.mcpIds || []);
-        setSelectedClaudeMdIds(initialScene.claudeMdIds || []);
+        // Take the first CLAUDE.md ID if exists (single select)
+        setSelectedClaudeMdId(initialScene.claudeMdIds?.[0] || null);
       } else {
         setName('');
         setDescription('');
         setSelectedSkillIds([]);
         setSelectedMcpIds([]);
-        setSelectedClaudeMdIds([]);
+        setSelectedClaudeMdId(null);
       }
       setActiveTab('skills');
       setSearchQuery('');
@@ -553,14 +555,12 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
   const handleClearAll = useCallback(() => {
     setSelectedSkillIds([]);
     setSelectedMcpIds([]);
-    setSelectedClaudeMdIds([]);
+    setSelectedClaudeMdId(null);
   }, []);
 
-  // CLAUDE.md selection handler
+  // CLAUDE.md selection handler (single select - toggle behavior)
   const handleToggleClaudeMd = useCallback((id: string) => {
-    setSelectedClaudeMdIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    setSelectedClaudeMdId((prev) => (prev === id ? null : id));
   }, []);
 
   const handleSubmit = useCallback(() => {
@@ -570,7 +570,8 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
       description: description.trim(),
       skillIds: selectedSkillIds,
       mcpIds: selectedMcpIds,
-      claudeMdIds: selectedClaudeMdIds,
+      // Convert single selection to array for backend compatibility
+      claudeMdIds: selectedClaudeMdId ? [selectedClaudeMdId] : [],
     };
 
     if (isEditMode && initialScene && onUpdateScene) {
@@ -579,7 +580,7 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
       onCreateScene(sceneData);
     }
     onClose();
-  }, [name, description, selectedSkillIds, selectedMcpIds, selectedClaudeMdIds, onCreateScene, onUpdateScene, onClose, isEditMode, initialScene]);
+  }, [name, description, selectedSkillIds, selectedMcpIds, selectedClaudeMdId, onCreateScene, onUpdateScene, onClose, isEditMode, initialScene]);
 
   // Get selected items for display
   const selectedSkills = useMemo(
@@ -592,9 +593,10 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
     [mcpServers, selectedMcpIds]
   );
 
-  const selectedClaudeMdFiles = useMemo(
-    () => claudeMdFiles.filter((f) => selectedClaudeMdIds.includes(f.id)),
-    [claudeMdFiles, selectedClaudeMdIds]
+  // Get the selected CLAUDE.md file (single select)
+  const selectedClaudeMdFile = useMemo(
+    () => (selectedClaudeMdId ? claudeMdFiles.find((f) => f.id === selectedClaudeMdId) || null : null),
+    [claudeMdFiles, selectedClaudeMdId]
   );
 
   if (!isOpen) return null;
@@ -702,12 +704,12 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
                     </div>
                     <span
                       className={`rounded px-2.5 py-1 text-xs font-medium ${
-                        selectedClaudeMdIds.length > 0
+                        selectedClaudeMdId
                           ? 'bg-[#E0E7FF] text-[#4F46E5]'
                           : 'bg-[#F4F4F5] text-[#18181B]'
                       }`}
                     >
-                      {selectedClaudeMdIds.length} selected
+                      {selectedClaudeMdId ? '1 selected' : '0 selected'}
                     </span>
                   </div>
                 </div>
@@ -951,102 +953,105 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
                           file.sourcePath.toLowerCase().includes(query)
                         );
                       })
-                      .map((file) => (
-                        <div
-                          key={file.id}
-                          onClick={() => handleToggleClaudeMd(file.id)}
-                          className={`
-                            relative
-                            flex
-                            cursor-pointer
-                            items-center
-                            gap-3.5
-                            rounded-lg
-                            border
-                            px-4
-                            py-3.5
-                            transition-colors
-                            ${
-                              selectedClaudeMdIds.includes(file.id)
-                                ? 'border-[#E5E5E5] bg-[#FAFAFA]'
-                                : 'border-[#E5E5E5] bg-white hover:bg-[#FAFAFA]'
-                            }
-                          `}
-                        >
-                          {/* Checkbox */}
+                      .map((file) => {
+                        const isSelected = selectedClaudeMdId === file.id;
+                        return (
                           <div
+                            key={file.id}
+                            onClick={() => handleToggleClaudeMd(file.id)}
                             className={`
+                              relative
                               flex
-                              h-5
-                              w-5
-                              flex-shrink-0
+                              cursor-pointer
                               items-center
-                              justify-center
-                              rounded
+                              gap-3.5
+                              rounded-lg
+                              border
+                              px-4
+                              py-3.5
                               transition-colors
                               ${
-                                selectedClaudeMdIds.includes(file.id)
-                                  ? 'bg-[#18181B]'
-                                  : 'border-2 border-[#D4D4D4]'
+                                isSelected
+                                  ? 'border-[#E5E5E5] bg-[#FAFAFA]'
+                                  : 'border-[#E5E5E5] bg-white hover:bg-[#FAFAFA]'
                               }
                             `}
                           >
-                            {selectedClaudeMdIds.includes(file.id) && (
-                              <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
-                            )}
-                          </div>
-
-                          {/* Icon Container */}
-                          <div
-                            className={`
-                              flex
-                              h-9
-                              w-9
-                              flex-shrink-0
-                              items-center
-                              justify-center
-                              rounded-lg
-                              ${selectedClaudeMdIds.includes(file.id) ? 'bg-white' : 'bg-[#FAFAFA]'}
-                            `}
-                          >
-                            <FileText
-                              className={`h-[18px] w-[18px] ${
-                                selectedClaudeMdIds.includes(file.id)
-                                  ? 'text-[#18181B]'
-                                  : 'text-[#52525B]'
-                              }`}
-                            />
-                          </div>
-
-                          {/* Info */}
-                          <div className="flex min-w-0 flex-1 flex-col gap-1">
-                            <span
+                            {/* Checkbox (single select behavior) */}
+                            <div
                               className={`
-                                text-[13px]
+                                flex
+                                h-5
+                                w-5
+                                flex-shrink-0
+                                items-center
+                                justify-center
+                                rounded
+                                transition-colors
                                 ${
-                                  selectedClaudeMdIds.includes(file.id)
-                                    ? 'font-semibold text-[#18181B]'
-                                    : 'font-medium text-[#18181B]'
+                                  isSelected
+                                    ? 'bg-[#18181B]'
+                                    : 'border-2 border-[#D4D4D4]'
                                 }
                               `}
                             >
-                              {file.name}
-                            </span>
-                            <span
+                              {isSelected && (
+                                <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
+                              )}
+                            </div>
+
+                            {/* Icon Container */}
+                            <div
                               className={`
-                                truncate text-xs font-normal
-                                ${
-                                  selectedClaudeMdIds.includes(file.id)
-                                    ? 'text-[#52525B]'
-                                    : 'text-[#71717A]'
-                                }
+                                flex
+                                h-9
+                                w-9
+                                flex-shrink-0
+                                items-center
+                                justify-center
+                                rounded-lg
+                                ${isSelected ? 'bg-white' : 'bg-[#FAFAFA]'}
                               `}
                             >
-                              {file.sourcePath}
-                            </span>
+                              <FileText
+                                className={`h-[18px] w-[18px] ${
+                                  isSelected
+                                    ? 'text-[#18181B]'
+                                    : 'text-[#52525B]'
+                                }`}
+                              />
+                            </div>
+
+                            {/* Info */}
+                            <div className="flex min-w-0 flex-1 flex-col gap-1">
+                              <span
+                                className={`
+                                  text-[13px]
+                                  ${
+                                    isSelected
+                                      ? 'font-semibold text-[#18181B]'
+                                      : 'font-medium text-[#18181B]'
+                                  }
+                                `}
+                              >
+                                {file.name}
+                              </span>
+                              <span
+                                className={`
+                                  truncate text-xs font-normal
+                                  ${
+                                    isSelected
+                                      ? 'text-[#52525B]'
+                                      : 'text-[#71717A]'
+                                  }
+                                `}
+                              >
+                                {file.sourcePath}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
 
                     {distributableClaudeMd.length === 0 && (
                       <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -1068,7 +1073,7 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
             {/* Right Header */}
             <div className="flex h-14 items-center justify-between border-b border-[#E5E5E5] px-5">
               <span className="text-sm font-semibold text-[#18181B]">Selected Items</span>
-              {(selectedSkillIds.length > 0 || selectedMcpIds.length > 0 || selectedClaudeMdIds.length > 0) && (
+              {(selectedSkillIds.length > 0 || selectedMcpIds.length > 0 || selectedClaudeMdId !== null) && (
                 <button
                   onClick={handleClearAll}
                   className="rounded px-2.5 py-1 text-[11px] font-medium text-[#DC2626] transition-colors hover:bg-[#FEE2E2]"
@@ -1123,24 +1128,22 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
                   )}
                 </CollapsibleGroup>
 
-                {/* CLAUDE.md Group */}
+                {/* CLAUDE.md Group (single select) */}
                 <CollapsibleGroup
                   title="CLAUDE.md"
-                  count={selectedClaudeMdFiles.length}
+                  count={selectedClaudeMdFile ? 1 : 0}
                   icon={<FileText className="h-3.5 w-3.5 text-[#4F46E5]" />}
                 >
-                  {selectedClaudeMdFiles.length > 0 ? (
-                    selectedClaudeMdFiles.map((file) => (
-                      <SelectedItem
-                        key={file.id}
-                        id={file.id}
-                        name={file.name}
-                        type="claudeMd"
-                        onRemove={handleToggleClaudeMd}
-                      />
-                    ))
+                  {selectedClaudeMdFile ? (
+                    <SelectedItem
+                      key={selectedClaudeMdFile.id}
+                      id={selectedClaudeMdFile.id}
+                      name={selectedClaudeMdFile.name}
+                      type="claudeMd"
+                      onRemove={handleToggleClaudeMd}
+                    />
                   ) : (
-                    <p className="py-2 text-xs text-[#A1A1AA]">No CLAUDE.md files selected</p>
+                    <p className="py-2 text-xs text-[#A1A1AA]">No CLAUDE.md file selected</p>
                   )}
                 </CollapsibleGroup>
               </div>
