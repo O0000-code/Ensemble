@@ -289,19 +289,6 @@ export const ScenesPage: React.FC = () => {
     setEditingScene(null);
   };
 
-  // Handle delete from detail panel
-  const handleDelete = () => {
-    if (!selectedScene) return;
-    if (usingProjects.length > 0) {
-      alert('Cannot delete a scene that is being used by projects.');
-      return;
-    }
-    if (confirm(`Are you sure you want to delete "${selectedScene.name}"?`)) {
-      deleteScene(selectedScene.id);
-      setSelectedSceneId(null); // Clear selection after delete
-    }
-  };
-
   // Handle delete from list item dropdown menu
   const handleDeleteScene = async (id: string) => {
     const scene = scenes.find((s) => s.id === id);

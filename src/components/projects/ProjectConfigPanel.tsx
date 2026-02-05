@@ -8,7 +8,6 @@ import {
   X,
   Minus,
   Layers,
-  FileText,
 } from 'lucide-react';
 import { Button, Input, Dropdown, ICON_MAP } from '../common';
 import type { DropdownOption } from '../common/Dropdown';
