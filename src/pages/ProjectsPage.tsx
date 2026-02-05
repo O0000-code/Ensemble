@@ -5,6 +5,7 @@ import { Button, EmptyState, IconPicker } from '../components/common';
 import { NewProjectItem, ProjectConfigPanel, ProjectCard } from '../components/projects';
 import { useProjectsStore } from '../stores/projectsStore';
 import { useScenesStore } from '../stores/scenesStore';
+import { safeInvoke } from '@/utils/tauri';
 import type { Scene } from '../types';
 
 // ============================================================================
@@ -197,7 +198,7 @@ export function ProjectsPage() {
         icon={<Folder className="h-3.5 w-3.5" />}
         onClick={() => {
           // Open folder in system file manager
-          console.log('Open folder:', selectedProject.path);
+          safeInvoke('reveal_in_finder', { path: selectedProject.path });
         }}
       >
         Open Folder

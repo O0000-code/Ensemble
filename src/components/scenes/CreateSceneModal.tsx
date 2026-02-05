@@ -26,18 +26,30 @@ import { useClaudeMdStore } from '@/stores/claudeMdStore';
 // Types
 // ============================================================================
 
+interface SceneData {
+  name: string;
+  description: string;
+  skillIds: string[];
+  mcpIds: string[];
+  claudeMdIds?: string[];
+}
+
 interface CreateSceneModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateScene: (scene: {
+  onCreateScene: (scene: SceneData) => void;
+  onUpdateScene?: (id: string, scene: SceneData) => void;
+  skills: Skill[];
+  mcpServers: McpServer[];
+  /** Scene to edit - when provided, modal opens in edit mode */
+  initialScene?: {
+    id: string;
     name: string;
     description: string;
     skillIds: string[];
     mcpIds: string[];
     claudeMdIds?: string[];
-  }) => void;
-  skills: Skill[];
-  mcpServers: McpServer[];
+  };
 }
 
 type TabType = 'skills' | 'mcps' | 'claudeMd';
@@ -336,9 +348,14 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
   isOpen,
   onClose,
   onCreateScene,
+  onUpdateScene,
   skills,
   mcpServers,
+  initialScene,
 }) => {
+  // Determine if we're in edit mode
+  const isEditMode = !!initialScene;
+
   // Plugin state for filtering
   const { pluginEnabledStatus, loadInstalledPlugins } = usePluginsStore();
 
@@ -346,7 +363,7 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
   const { getDistributableClaudeMd } = useScenesStore();
   const { files: claudeMdFiles, loadFiles: loadClaudeMdFiles } = useClaudeMdStore();
 
-  // Local state
+  // Local state - initialize with initialScene values if in edit mode
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('skills');
@@ -356,6 +373,29 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
   const [selectedSkillIds, setSelectedSkillIds] = useState<string[]>([]);
   const [selectedMcpIds, setSelectedMcpIds] = useState<string[]>([]);
   const [selectedClaudeMdIds, setSelectedClaudeMdIds] = useState<string[]>([]);
+
+  // Reset form when modal opens or initialScene changes
+  useEffect(() => {
+    if (isOpen) {
+      if (initialScene) {
+        setName(initialScene.name);
+        setDescription(initialScene.description);
+        setSelectedSkillIds(initialScene.skillIds || []);
+        setSelectedMcpIds(initialScene.mcpIds || []);
+        setSelectedClaudeMdIds(initialScene.claudeMdIds || []);
+      } else {
+        setName('');
+        setDescription('');
+        setSelectedSkillIds([]);
+        setSelectedMcpIds([]);
+        setSelectedClaudeMdIds([]);
+      }
+      setActiveTab('skills');
+      setSearchQuery('');
+      setCategoryFilter('');
+      setTagFilter([]);
+    }
+  }, [isOpen, initialScene]);
 
   // Get distributable CLAUDE.md files (exclude global ones)
   const distributableClaudeMd = useMemo(() => getDistributableClaudeMd(), [claudeMdFiles]);
@@ -381,21 +421,6 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
     if (!mcp.pluginId) return false;
     return pluginEnabledStatus[mcp.pluginId] === true;
   }, [pluginEnabledStatus]);
-
-  // Reset state when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setName('');
-      setDescription('');
-      setActiveTab('skills');
-      setSearchQuery('');
-      setCategoryFilter('');
-      setTagFilter([]);
-      setSelectedSkillIds([]);
-      setSelectedMcpIds([]);
-      setSelectedClaudeMdIds([]);
-    }
-  }, [isOpen]);
 
   // Handle keyboard events
   useEffect(() => {
@@ -538,17 +563,23 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
     );
   }, []);
 
-  const handleCreate = useCallback(() => {
+  const handleSubmit = useCallback(() => {
     if (!name.trim()) return;
-    onCreateScene({
+    const sceneData = {
       name: name.trim(),
       description: description.trim(),
       skillIds: selectedSkillIds,
       mcpIds: selectedMcpIds,
       claudeMdIds: selectedClaudeMdIds,
-    });
+    };
+
+    if (isEditMode && initialScene && onUpdateScene) {
+      onUpdateScene(initialScene.id, sceneData);
+    } else {
+      onCreateScene(sceneData);
+    }
     onClose();
-  }, [name, description, selectedSkillIds, selectedMcpIds, selectedClaudeMdIds, onCreateScene, onClose]);
+  }, [name, description, selectedSkillIds, selectedMcpIds, selectedClaudeMdIds, onCreateScene, onUpdateScene, onClose, isEditMode, initialScene]);
 
   // Get selected items for display
   const selectedSkills = useMemo(
@@ -580,7 +611,7 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
         {/* Modal Header */}
         <div className="flex h-16 flex-shrink-0 items-center justify-between border-b border-[#E5E5E5] px-7">
           <div className="flex flex-col gap-1">
-            <h2 className="text-lg font-semibold text-[#18181B]">Create New Scene</h2>
+            <h2 className="text-lg font-semibold text-[#18181B]">{isEditMode ? 'Edit Scene' : 'Create New Scene'}</h2>
             <p className="text-[13px] font-normal text-[#71717A]">
               Configure skills and MCP servers for this development context
             </p>
@@ -688,11 +719,11 @@ export const CreateSceneModal: React.FC<CreateSceneModalProps> = ({
               {/* Action Buttons */}
               <div className="flex flex-col gap-3">
                 <button
-                  onClick={handleCreate}
+                  onClick={handleSubmit}
                   disabled={!name.trim()}
                   className="flex h-11 items-center justify-center rounded-lg bg-[#18181B] text-sm font-medium text-white transition-colors hover:bg-[#27272A] disabled:cursor-not-allowed disabled:bg-[#18181B]/50"
                 >
-                  Create Scene
+                  {isEditMode ? 'Save Changes' : 'Create Scene'}
                 </button>
                 <button
                   onClick={onClose}

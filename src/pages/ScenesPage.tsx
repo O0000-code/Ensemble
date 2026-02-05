@@ -6,7 +6,6 @@ import {
   Plus,
   Layers,
   Pencil,
-  Trash2,
   Folder,
   AlertTriangle,
   Code,
@@ -158,6 +157,7 @@ export const ScenesPage: React.FC = () => {
 
   // Modal state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingScene, setEditingScene] = useState<Scene | null>(null);
 
   // Icon Picker state
   const [iconPickerState, setIconPickerState] = useState<{
@@ -244,6 +244,49 @@ export const ScenesPage: React.FC = () => {
     }
 
     setIsCreateModalOpen(false);
+  };
+
+  // Handle update scene - calls backend to persist
+  const handleUpdateScene = async (
+    id: string,
+    sceneData: {
+      name: string;
+      description: string;
+      skillIds: string[];
+      mcpIds: string[];
+      claudeMdIds?: string[];
+    }
+  ) => {
+    try {
+      await safeInvoke('update_scene', {
+        id,
+        name: sceneData.name.trim(),
+        description: sceneData.description.trim(),
+        skillIds: sceneData.skillIds,
+        mcpIds: sceneData.mcpIds,
+        claudeMdIds: sceneData.claudeMdIds,
+      });
+
+      // Update local state
+      useScenesStore.getState().setScenes(
+        scenes.map((scene) =>
+          scene.id === id
+            ? {
+                ...scene,
+                name: sceneData.name.trim(),
+                description: sceneData.description.trim(),
+                skillIds: sceneData.skillIds,
+                mcpIds: sceneData.mcpIds,
+                claudeMdIds: sceneData.claudeMdIds,
+              }
+            : scene
+        )
+      );
+    } catch (error) {
+      console.error('Failed to update scene:', error);
+    }
+
+    setEditingScene(null);
   };
 
   // Handle delete from detail panel
@@ -403,19 +446,14 @@ export const ScenesPage: React.FC = () => {
         }
         headerRight={
           selectedScene && (
-            <div className="flex items-center gap-2">
-              <Button variant="secondary" size="small" icon={<Pencil />}>
-                Edit
-              </Button>
-              <Button
-                variant="danger"
-                size="small"
-                icon={<Trash2 />}
-                onClick={handleDelete}
-              >
-                Delete
-              </Button>
-            </div>
+            <Button
+              variant="secondary"
+              size="small"
+              icon={<Pencil />}
+              onClick={() => setEditingScene(selectedScene)}
+            >
+              Edit
+            </Button>
           )
         }
       >
@@ -569,6 +607,17 @@ export const ScenesPage: React.FC = () => {
         onCreateScene={handleCreateScene}
         skills={skills}
         mcpServers={mcpServers}
+      />
+
+      {/* Edit Scene Modal */}
+      <CreateSceneModal
+        isOpen={!!editingScene}
+        onClose={() => setEditingScene(null)}
+        onCreateScene={handleCreateScene}
+        onUpdateScene={handleUpdateScene}
+        skills={skills}
+        mcpServers={mcpServers}
+        initialScene={editingScene || undefined}
       />
 
       {/* Icon Picker */}
