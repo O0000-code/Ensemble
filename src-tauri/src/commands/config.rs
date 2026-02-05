@@ -4,45 +4,47 @@ use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::fs;
 
-/// Write MCP configuration to project's settings.local.json
+/// Write MCP configuration to project's .mcp.json (project root)
+/// Note: Claude Code reads project-level MCP config from .mcp.json, not settings.local.json
 #[tauri::command]
 pub fn write_mcp_config(project_path: String, mcp_servers: Vec<McpServer>) -> Result<(), String> {
     let project_dir = expand_path(&project_path);
-    let claude_dir = project_dir.join(".claude");
-    let settings_path = claude_dir.join("settings.local.json");
+    let mcp_path = project_dir.join(".mcp.json");
 
-    // Ensure .claude directory exists
-    fs::create_dir_all(&claude_dir).map_err(|e| e.to_string())?;
+    // If no MCP servers, delete the config file if it exists
+    if mcp_servers.is_empty() {
+        if mcp_path.exists() {
+            fs::remove_file(&mcp_path).map_err(|e| e.to_string())?;
+        }
+        return Ok(());
+    }
 
-    // Load existing settings or create new
-    let mut settings: Value = if settings_path.exists() {
-        let content = fs::read_to_string(&settings_path).map_err(|e| e.to_string())?;
-        serde_json::from_str(&content).unwrap_or(json!({}))
-    } else {
-        json!({})
-    };
-
-    // Build mcpServers object
+    // Build mcpServers object with proper format for Claude Code
     let mut mcp_config: HashMap<String, Value> = HashMap::new();
     for mcp in mcp_servers {
         let mut server_config = json!({
+            "type": "stdio",
             "command": mcp.command,
             "args": mcp.args,
         });
 
         if let Some(env) = mcp.env {
-            server_config["env"] = json!(env);
+            if !env.is_empty() {
+                server_config["env"] = json!(env);
+            }
         }
 
-        mcp_config.insert(mcp.name, server_config);
+        mcp_config.insert(mcp.name.clone(), server_config);
     }
 
-    // Update settings
-    settings["mcpServers"] = json!(mcp_config);
+    // Create config object
+    let config = json!({
+        "mcpServers": mcp_config
+    });
 
-    // Write back
-    let json = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
-    fs::write(&settings_path, json).map_err(|e| e.to_string())?;
+    // Write to .mcp.json
+    let json = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
+    fs::write(&mcp_path, json).map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -113,13 +115,45 @@ pub fn clear_project_config(projectPath: String) -> Result<(), String> {
         }
     }
 
-    // Clear MCP settings
+    // Clear MCP config (.mcp.json in project root)
+    let mcp_path = project_dir.join(".mcp.json");
+    if mcp_path.exists() {
+        fs::remove_file(&mcp_path).map_err(|e| e.to_string())?;
+    }
+
+    // Also clean up legacy settings.local.json mcpServers if present
     if settings_path.exists() {
-        let content = fs::read_to_string(&settings_path).map_err(|e| e.to_string())?;
-        let mut settings: Value = serde_json::from_str(&content).unwrap_or(json!({}));
-        settings["mcpServers"] = json!({});
-        let json = serde_json::to_string_pretty(&settings).map_err(|e| e.to_string())?;
-        fs::write(&settings_path, json).map_err(|e| e.to_string())?;
+        if let Ok(content) = fs::read_to_string(&settings_path) {
+            if let Ok(mut settings) = serde_json::from_str::<Value>(&content) {
+                if settings.get("mcpServers").is_some() {
+                    if let Some(obj) = settings.as_object_mut() {
+                        obj.remove("mcpServers");
+                    }
+                    if let Ok(json) = serde_json::to_string_pretty(&settings) {
+                        let _ = fs::write(&settings_path, json);
+                    }
+                }
+            }
+        }
+    }
+
+    // Clear CLAUDE.md files (all possible distribution paths)
+    // 1. Project root: CLAUDE.md
+    let claude_md_root = project_dir.join("CLAUDE.md");
+    if claude_md_root.exists() {
+        let _ = fs::remove_file(&claude_md_root);
+    }
+
+    // 2. Claude directory: .claude/CLAUDE.md
+    let claude_md_dir = claude_dir.join("CLAUDE.md");
+    if claude_md_dir.exists() {
+        let _ = fs::remove_file(&claude_md_dir);
+    }
+
+    // 3. Local: CLAUDE.local.md
+    let claude_md_local = project_dir.join("CLAUDE.local.md");
+    if claude_md_local.exists() {
+        let _ = fs::remove_file(&claude_md_local);
     }
 
     Ok(())
@@ -157,12 +191,13 @@ pub fn get_project_config_status(project_path: String) -> Result<ProjectConfigSt
         0
     };
 
-    // Count MCPs from settings
-    let mcp_count = if settings_path.exists() {
-        fs::read_to_string(&settings_path)
+    // Count MCPs from .mcp.json (project root)
+    let mcp_path = project_dir.join(".mcp.json");
+    let mcp_count = if mcp_path.exists() {
+        fs::read_to_string(&mcp_path)
             .ok()
             .and_then(|content| serde_json::from_str::<Value>(&content).ok())
-            .and_then(|settings| settings["mcpServers"].as_object().map(|m| m.len() as u32))
+            .and_then(|config| config["mcpServers"].as_object().map(|m| m.len() as u32))
             .unwrap_or(0)
     } else {
         0

@@ -3,6 +3,7 @@ import type { Project, Scene } from '../types';
 import { useScenesStore } from './scenesStore';
 import { useSkillsStore } from './skillsStore';
 import { useMcpsStore } from './mcpsStore';
+import { useSettingsStore } from './settingsStore';
 import { isTauri, safeInvoke } from '@/utils/tauri';
 
 // ============================================================================
@@ -224,11 +225,24 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
 
     set({ syncingProjectId: id, error: null });
     try {
+      // Sync Skills (symlinks) and MCP config (.mcp.json)
       await safeInvoke('sync_project_config', {
         projectPath: project.path,
         skillPaths: skillPaths,
         mcpServers: mcpServers,
       });
+
+      // Distribute CLAUDE.md files if scene has any
+      if (scene.claudeMdIds && scene.claudeMdIds.length > 0) {
+        // Get distribution path from settings (default: '.claude/CLAUDE.md')
+        const claudeMdDistributionPath = useSettingsStore.getState().claudeMdDistributionPath;
+        await safeInvoke('distribute_scene_claude_md', {
+          claudeMdIds: scene.claudeMdIds,
+          projectPath: project.path,
+          targetPath: claudeMdDistributionPath,
+          conflictResolution: 'backup',  // Backup existing files
+        });
+      }
 
       // Update lastSynced
       const now = new Date().toISOString();
