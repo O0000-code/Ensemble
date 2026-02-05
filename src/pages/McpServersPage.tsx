@@ -159,6 +159,7 @@ export const McpServersPage: React.FC = () => {
     isClassifying,
     classifySuccess,
     isFadingOut,
+    showRestoreAnimation,
   } = useMcpsStore();
 
   const { categories, tags: appTags, addTag: addGlobalTag } = useAppStore();
@@ -673,7 +674,7 @@ export const McpServersPage: React.FC = () => {
                 icon={
                   isClassifying ? <span className="ai-spinner" /> :
                   classifySuccess ? <Check className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`} /> :
-                  <Sparkles className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''} />
+                  <Sparkles className={showRestoreAnimation ? 'classify-fade-in' : ''} />
                 }
                 onClick={() => autoClassify()}
                 disabled={isClassifying || classifySuccess}
@@ -684,7 +685,7 @@ export const McpServersPage: React.FC = () => {
                 ) : classifySuccess ? (
                   <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>Done!</span>
                 ) : (
-                  <span className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''}>Auto Classify</span>
+                  <span className={showRestoreAnimation ? 'classify-fade-in' : ''}>Auto Classify</span>
                 )}
               </Button>
             </div>
@@ -735,7 +736,7 @@ export const McpServersPage: React.FC = () => {
               icon={
                 isClassifying ? <span className="ai-spinner" /> :
                 classifySuccess ? <Check className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`} /> :
-                <Sparkles className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''} />
+                <Sparkles className={showRestoreAnimation ? 'classify-fade-in' : ''} />
               }
               onClick={() => autoClassify()}
               disabled={isClassifying || classifySuccess}
@@ -746,7 +747,7 @@ export const McpServersPage: React.FC = () => {
               ) : classifySuccess ? (
                 <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>Done!</span>
               ) : (
-                <span className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''}>Auto Classify</span>
+                <span className={showRestoreAnimation ? 'classify-fade-in' : ''}>Auto Classify</span>
               )}
             </Button>
           </div>

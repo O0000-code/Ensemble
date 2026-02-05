@@ -50,6 +50,7 @@ interface ClaudeMdState {
   isAutoClassifying: boolean;
   classifySuccess: boolean;
   isFadingOut: boolean;
+  showRestoreAnimation: boolean;
 
   // Error state
   error: string | null;
@@ -125,6 +126,7 @@ export const useClaudeMdStore = create<ClaudeMdState>((set, get) => ({
   isAutoClassifying: false,
   classifySuccess: false,
   isFadingOut: false,
+  showRestoreAnimation: false,
   error: null,
 
   // ========================================================================
@@ -522,7 +524,11 @@ export const useClaudeMdStore = create<ClaudeMdState>((set, get) => ({
       setTimeout(() => {
         set({ isFadingOut: true });
         setTimeout(() => {
-          set({ classifySuccess: false, isFadingOut: false });
+          set({ classifySuccess: false, isFadingOut: false, showRestoreAnimation: true });
+          // Reset showRestoreAnimation after the fade-in animation completes
+          setTimeout(() => {
+            set({ showRestoreAnimation: false });
+          }, 200);
         }, 200);
       }, 1500);
     } catch (error) {

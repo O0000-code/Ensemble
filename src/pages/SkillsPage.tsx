@@ -191,6 +191,7 @@ export function SkillsPage() {
     isClassifying,
     classifySuccess,
     isFadingOut,
+    showRestoreAnimation,
     error,
     clearError,
     loadSkills,
@@ -682,7 +683,7 @@ export function SkillsPage() {
         onSearchChange={handleSearchChange}
         searchPlaceholder="Search skills..."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <Button
               variant="secondary"
               size="small"
@@ -698,7 +699,7 @@ export function SkillsPage() {
               icon={
                 isClassifying ? <span className="ai-spinner" /> :
                 classifySuccess ? <Check className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`} /> :
-                <Sparkles className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''} />
+                <Sparkles className={showRestoreAnimation ? 'classify-fade-in' : ''} />
               }
               onClick={handleAutoClassify}
               disabled={isClassifying || classifySuccess}
@@ -709,7 +710,7 @@ export function SkillsPage() {
               ) : classifySuccess ? (
                 <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>Done!</span>
               ) : (
-                <span className={!isClassifying && !classifySuccess ? 'classify-fade-in' : ''}>Auto Classify</span>
+                <span className={showRestoreAnimation ? 'classify-fade-in' : ''}>Auto Classify</span>
               )}
             </Button>
           </div>

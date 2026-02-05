@@ -7,7 +7,7 @@ import { ClaudeMdCard } from '@/components/claude-md/ClaudeMdCard';
 import { ClaudeMdDetailPanel } from '@/components/claude-md/ClaudeMdDetailPanel';
 import { ImportClaudeMdModal } from '@/components/modals/ImportClaudeMdModal';
 import { ScanClaudeMdModal } from '@/components/modals/ScanClaudeMdModal';
-import { IconPicker } from '@/components/common';
+import { IconPicker, Button } from '@/components/common';
 import { useClaudeMdStore } from '@/stores/claudeMdStore';
 
 // ============================================================================
@@ -117,6 +117,7 @@ export function ClaudeMdPage() {
     isAutoClassifying,
     classifySuccess,
     isFadingOut,
+    showRestoreAnimation,
     autoClassify,
     error,
     clearError,
@@ -242,79 +243,47 @@ export function ClaudeMdPage() {
   const headerActions = (
     <div className="flex items-center gap-2.5">
       {/* Scan System Button - Secondary style, icon=file-search */}
-      <button
+      <Button
+        variant="secondary"
+        size="small"
+        icon={isScanning ? <Loader2 className="animate-spin" /> : <FileSearch2 />}
         onClick={handleScan}
         disabled={isScanning}
-        className="
-          flex h-8 items-center gap-1.5
-          rounded-md border border-[#E5E5E5]
-          bg-transparent
-          px-3
-          text-xs font-medium text-[#71717A]
-          hover:bg-[#F4F4F5]
-          disabled:opacity-50
-          transition-colors
-        "
       >
-        {isScanning ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <FileSearch2 className="h-3.5 w-3.5" />
-        )}
         {isScanning ? 'Scanning...' : 'Scan System'}
-      </button>
+      </Button>
 
       {/* Import Button - Secondary style, icon=download */}
-      <button
+      <Button
+        variant="secondary"
+        size="small"
+        icon={<Download />}
         onClick={handleImport}
-        className="
-          flex h-8 items-center gap-1.5
-          rounded-md border border-[#E5E5E5]
-          bg-transparent
-          px-3
-          text-xs font-medium text-[#71717A]
-          hover:bg-[#F4F4F5]
-          transition-colors
-        "
       >
-        <Download className="h-3.5 w-3.5" />
         Import
-      </button>
+      </Button>
 
       {/* Auto Classify Button - rightmost position */}
-      <button
+      <Button
+        variant="secondary"
+        size="small"
+        icon={
+          isAutoClassifying ? <span className="ai-spinner" /> :
+          classifySuccess ? <Check className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`} /> :
+          <Sparkles className={showRestoreAnimation ? 'classify-fade-in' : ''} />
+        }
         onClick={() => autoClassify()}
         disabled={isAutoClassifying || classifySuccess}
-        className={`
-          flex h-8 items-center gap-1.5
-          rounded-md border border-[#E5E5E5]
-          bg-transparent
-          px-3
-          text-xs font-medium text-[#71717A]
-          hover:bg-[#F4F4F5]
-          disabled:opacity-50
-          transition-colors
-          w-[132px]
-          ${isAutoClassifying ? 'ai-classifying' : ''}
-          ${classifySuccess ? 'classify-success-bg' : ''}
-          ${isFadingOut ? 'classify-fading-out' : ''}
-        `}
+        className={`w-[132px] ${isAutoClassifying ? 'ai-classifying' : ''} ${classifySuccess ? 'classify-success-bg' : ''} ${isFadingOut ? 'classify-fading-out' : ''}`}
       >
-        {isAutoClassifying ? (
-          <span className="ai-spinner" />
-        ) : classifySuccess ? (
-          <Check className={`h-3.5 w-3.5 classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`} />
-        ) : (
-          <Sparkles className={`h-3.5 w-3.5 ${!isAutoClassifying && !classifySuccess ? 'classify-fade-in' : ''}`} />
-        )}
         {isAutoClassifying ? (
           <span className="ai-classifying-text">Classifying...</span>
         ) : classifySuccess ? (
           <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>Done!</span>
         ) : (
-          <span className={!isAutoClassifying && !classifySuccess ? 'classify-fade-in' : ''}>Auto Classify</span>
+          <span className={showRestoreAnimation ? 'classify-fade-in' : ''}>Auto Classify</span>
         )}
-      </button>
+      </Button>
     </div>
   );
 

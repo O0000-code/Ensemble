@@ -29,6 +29,7 @@ interface McpsState {
   isClassifying: boolean;
   classifySuccess: boolean;
   isFadingOut: boolean;
+  showRestoreAnimation: boolean;
 
   // Actions
   setMcpServers: (servers: McpServer[]) => void;
@@ -67,6 +68,7 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
   isClassifying: false,
   classifySuccess: false,
   isFadingOut: false,
+  showRestoreAnimation: false,
 
   setMcpServers: (servers) => set({ mcpServers: servers }),
 
@@ -426,7 +428,11 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
       setTimeout(() => {
         set({ isFadingOut: true });
         setTimeout(() => {
-          set({ classifySuccess: false, isFadingOut: false });
+          set({ classifySuccess: false, isFadingOut: false, showRestoreAnimation: true });
+          // Reset showRestoreAnimation after the fade-in animation completes
+          setTimeout(() => {
+            set({ showRestoreAnimation: false });
+          }, 200);
         }, 200);
       }, 1500);
     } catch (error) {

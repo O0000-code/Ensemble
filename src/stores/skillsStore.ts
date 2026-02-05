@@ -36,6 +36,7 @@ interface SkillsState {
   isClassifying: boolean;
   classifySuccess: boolean;
   isFadingOut: boolean;
+  showRestoreAnimation: boolean;
 
   // Usage stats
   usageStats: Record<string, SkillUsage>;
@@ -81,6 +82,7 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
   isClassifying: false,
   classifySuccess: false,
   isFadingOut: false,
+  showRestoreAnimation: false,
   error: null,
   usageStats: {},
   isLoadingUsage: false,
@@ -406,7 +408,11 @@ export const useSkillsStore = create<SkillsState>((set, get) => ({
       setTimeout(() => {
         set({ isFadingOut: true });
         setTimeout(() => {
-          set({ classifySuccess: false, isFadingOut: false });
+          set({ classifySuccess: false, isFadingOut: false, showRestoreAnimation: true });
+          // Reset showRestoreAnimation after the fade-in animation completes
+          setTimeout(() => {
+            set({ showRestoreAnimation: false });
+          }, 200);
         }, 200);
       }, 1500);
     } catch (error) {
