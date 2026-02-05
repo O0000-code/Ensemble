@@ -118,11 +118,12 @@ export function LauncherModal({ isOpen, folderPath, onClose }: LauncherModalProp
     }
   };
 
-  // Get skill and MCP counts for a scene
-  const getSceneCounts = (scene: { skillIds: string[]; mcpIds: string[] }) => {
+  // Get skill, MCP, and CLAUDE.md counts for a scene
+  const getSceneCounts = (scene: { skillIds: string[]; mcpIds: string[]; claudeMdIds?: string[] }) => {
     return {
       skillCount: scene.skillIds.length,
       mcpCount: scene.mcpIds.length,
+      claudeMdCount: scene.claudeMdIds?.length ?? 0,
     };
   };
 
@@ -175,7 +176,7 @@ export function LauncherModal({ isOpen, folderPath, onClose }: LauncherModalProp
             ) : (
               scenes.map((scene) => {
                 const isSelected = selectedSceneId === scene.id;
-                const { skillCount, mcpCount } = getSceneCounts(scene);
+                const { skillCount, mcpCount, claudeMdCount } = getSceneCounts(scene);
 
                 return (
                   <div
@@ -201,7 +202,7 @@ export function LauncherModal({ isOpen, folderPath, onClose }: LauncherModalProp
                         {scene.name}
                       </span>
                       <span className="text-xs text-[#71717A]">
-                        {skillCount} Skills · {mcpCount} MCPs
+                        {skillCount} Skills · {mcpCount} MCPs{claudeMdCount > 0 ? ` · ${claudeMdCount} Docs` : ''}
                       </span>
                     </div>
                   </div>
