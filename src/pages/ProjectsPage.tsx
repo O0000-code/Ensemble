@@ -71,6 +71,26 @@ export function ProjectsPage() {
     setIconPickerState({ isOpen: false, projectId: null, triggerRef: null });
   };
 
+  // Handle scene change - clear old config, update scene, then sync new config
+  const handleSceneChange = async (projectId: string, newSceneId: string) => {
+    // Skip if scene hasn't changed
+    const project = projects.find((p) => p.id === projectId);
+    if (!project || project.sceneId === newSceneId) return;
+
+    try {
+      // 1. Clear existing configuration
+      await clearProjectConfig(projectId);
+
+      // 2. Update project with new scene
+      await updateProject(projectId, { sceneId: newSceneId });
+
+      // 3. Sync new configuration
+      await syncProject(projectId);
+    } catch (error) {
+      console.error('Failed to change scene:', error);
+    }
+  };
+
   // Handle delete project
   const handleDeleteProject = async (id: string) => {
     await deleteProject(id);
@@ -224,7 +244,7 @@ export function ProjectsPage() {
       scene={selectedScene}
       scenes={scenes}
       onOpenFolder={() => console.log('Open folder:', selectedProject.path)}
-      onChangeScene={(sceneId) => updateProject(selectedProject.id, { sceneId })}
+      onChangeScene={(sceneId) => handleSceneChange(selectedProject.id, sceneId)}
       onSync={() => syncProject(selectedProject.id)}
       onClearConfig={() => clearProjectConfig(selectedProject.id)}
       onIconClick={(ref) => handleIconClick(selectedProject.id, ref)}

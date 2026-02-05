@@ -54,10 +54,21 @@ export function Dropdown({
   const updatePosition = () => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
+      const dropdownWidth = Math.max(rect.width, multiple ? 220 : 200); // 最小宽度
+
+      // 检查是否会超出窗口右边界
+      let left = rect.left;
+      const windowWidth = window.innerWidth;
+      const rightOverflow = left + dropdownWidth - windowWidth;
+      if (rightOverflow > 0) {
+        // 调整位置，使下拉框不超出右边界，留 8px 边距
+        left = Math.max(8, windowWidth - dropdownWidth - 8);
+      }
+
       setDropdownPosition({
         top: rect.bottom + 4, // 4px gap
-        left: rect.left,
-        width: Math.max(rect.width, multiple ? 220 : 200), // 最小宽度
+        left: left,
+        width: dropdownWidth,
       });
     }
   };
