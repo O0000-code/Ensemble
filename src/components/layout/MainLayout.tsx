@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import ContextMenu from '../common/ContextMenu';
@@ -18,6 +18,13 @@ import { ErrorBoundary } from '../common/ErrorBoundary';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import type { Category, Tag } from '@/types';
 
+// Module-level flags to prevent duplicate launch processing
+// These persist across React component remounts (unlike refs which can be reset by StrictMode)
+let hasProcessedLaunchArgsGlobal = false;
+// Track the last processed event to prevent duplicate handling from multiple listeners
+let lastProcessedEventTime = 0;
+const EVENT_DEBOUNCE_MS = 1000; // Ignore duplicate events within 1 second
+
 export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -25,9 +32,6 @@ export default function MainLayout() {
   const [initError, setInitError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Ref to prevent duplicate launch args processing (React StrictMode causes effects to run twice in dev mode)
-  // Note: This is only an issue in development; production builds work correctly
-  const hasProcessedLaunchArgs = useRef(false);
 
   const {
     activeCategory,
@@ -235,7 +239,9 @@ export default function MainLayout() {
     if (!isTauri() || isInitializing) return;
 
     // Prevent duplicate execution (React StrictMode causes effects to run twice in dev mode)
-    if (hasProcessedLaunchArgs.current) return;
+    // Using module-level variable because it persists across component remounts
+    if (hasProcessedLaunchArgsGlobal) return;
+    hasProcessedLaunchArgsGlobal = true;
 
     const checkLaunchArgs = async () => {
       try {
@@ -245,8 +251,6 @@ export default function MainLayout() {
           const launchIndex = args.indexOf('--launch');
           if (launchIndex !== -1 && args[launchIndex + 1]) {
             const path = args[launchIndex + 1];
-            // Mark as processed before executing to prevent duplicate runs
-            hasProcessedLaunchArgs.current = true;
             // Use smart launch handler instead of directly opening launcher
             await handleLaunchPath(path);
           }
@@ -268,7 +272,15 @@ export default function MainLayout() {
     const setupListener = async () => {
       unlisten = await listen<string>('second-instance-launch', async (event) => {
         const path = event.payload;
-        console.log('[MainLayout] Received second-instance-launch event with path:', path);
+        const now = Date.now();
+
+        // Debounce: ignore duplicate events within the debounce window
+        // This handles the case where StrictMode registers multiple listeners in dev mode
+        if (now - lastProcessedEventTime < EVENT_DEBOUNCE_MS) {
+          return;
+        }
+        lastProcessedEventTime = now;
+
         await handleLaunchPath(path);
       });
     };
