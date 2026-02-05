@@ -246,6 +246,23 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
                 {scene.mcpIds.length} MCPs
               </span>
             </div>
+
+            {/* CLAUDE.md Count - only show if > 0 */}
+            {(scene.claudeMdIds?.length ?? 0) > 0 && (
+              <div
+                className="flex items-center overflow-hidden whitespace-nowrap"
+                style={{
+                  gap: compact ? 0 : '6px',
+                  maxWidth: compact ? 0 : '120px',
+                  transition: `gap ${TRANSITION_BASE}, max-width ${TRANSITION_BASE}`,
+                }}
+              >
+                <FileText className="h-3 w-3 text-[#A1A1AA] shrink-0" />
+                <span className="text-[11px] font-normal text-[#71717A]">
+                  {scene.claudeMdIds?.length} Docs
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Active Badge */}

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Folder, MoreHorizontal, Trash2, Layers, Sparkles, Plug } from 'lucide-react';
+import { Folder, MoreHorizontal, Trash2, Layers, Sparkles, Plug, FileText } from 'lucide-react';
 import type { Project, Scene } from '../../types';
 
 // ============================================================================
@@ -171,6 +171,22 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                 {scene.mcpIds.length} MCPs
               </span>
             </div>
+
+            {/* CLAUDE.md Count - only show if > 0 */}
+            {(scene.claudeMdIds?.length ?? 0) > 0 && (
+              <div
+                className="flex items-center overflow-hidden whitespace-nowrap"
+                style={{
+                  gap: compact ? 0 : '6px',
+                  transition: 'gap 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
+              >
+                <FileText className="h-3 w-3 text-[#A1A1AA] shrink-0" />
+                <span className="text-[11px] font-normal text-[#71717A]">
+                  {scene.claudeMdIds?.length} Docs
+                </span>
+              </div>
+            )}
           </div>
         )}
 

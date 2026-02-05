@@ -486,13 +486,15 @@ export const ScenesPage: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Used By */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-[11px] font-medium text-[#71717A]">Used By</span>
-                  <span className="text-[13px] font-medium text-[#18181B]">
-                    {usingProjects.length} projects
-                  </span>
-                </div>
+                {/* CLAUDE.md Count - only show if > 0 */}
+                {(selectedScene.claudeMdIds?.length ?? 0) > 0 && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[11px] font-medium text-[#71717A]">CLAUDE.md</span>
+                    <span className="text-[13px] font-medium text-[#18181B]">
+                      {selectedScene.claudeMdIds?.length} docs
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -8,6 +8,7 @@ import {
   X,
   Minus,
   Layers,
+  FileText,
 } from 'lucide-react';
 import { Button, Input, Dropdown, ICON_MAP } from '../common';
 import type { DropdownOption } from '../common/Dropdown';
@@ -60,6 +61,7 @@ function ViewModePanel({
   // Calculate stats from scene
   const skillsCount = scene?.skillIds?.length || 0;
   const mcpsCount = scene?.mcpIds?.length || 0;
+  const claudeMdCount = scene?.claudeMdIds?.length || 0;
   const isSynced = !!project.lastSynced;
 
   // Scene dropdown options
@@ -114,7 +116,7 @@ function ViewModePanel({
             </span>
             {scene && (
               <span className="text-[12px] font-normal text-[#71717A]">
-                {skillsCount} Skills · {mcpsCount} MCPs
+                {skillsCount} Skills · {mcpsCount} MCPs{claudeMdCount > 0 ? ` · ${claudeMdCount} Docs` : ''}
               </span>
             )}
           </div>
@@ -155,6 +157,16 @@ function ViewModePanel({
             count={mcpsCount}
             isSynced={isSynced && mcpsCount > 0}
           />
+
+          {/* CLAUDE.md Card - only show if > 0 */}
+          {claudeMdCount > 0 && (
+            <ConfigCard
+              title="CLAUDE.md"
+              path=".claude/CLAUDE.md"
+              count={claudeMdCount}
+              isSynced={isSynced && claudeMdCount > 0}
+            />
+          )}
         </div>
       </div>
 
