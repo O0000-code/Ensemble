@@ -256,7 +256,7 @@ export default function MainLayout() {
           }
         }
       } catch (e) {
-        console.log('No launch args or error checking:', e);
+        // Expected when no launch args provided
       }
     };
 

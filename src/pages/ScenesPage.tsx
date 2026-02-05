@@ -213,11 +213,8 @@ export const ScenesPage: React.FC = () => {
     skillIds: string[];
     mcpIds: string[];
   }) => {
-    console.log('handleCreateScene called with:', sceneData);
-
     try {
       // Directly call Tauri backend with snake_case parameters
-      console.log('Calling safeInvoke add_scene...');
       const newScene = await safeInvoke<Scene>('add_scene', {
         name: sceneData.name.trim(),
         description: sceneData.description.trim(),
@@ -225,8 +222,6 @@ export const ScenesPage: React.FC = () => {
         skillIds: sceneData.skillIds,
         mcpIds: sceneData.mcpIds,
       });
-      console.log('safeInvoke result:', newScene);
-
       if (newScene) {
         // Update local state with the new scene from backend
         useScenesStore.getState().setScenes([...scenes, newScene]);

@@ -139,12 +139,10 @@ export const useClaudeMdStore = create<ClaudeMdState>((set, get) => ({
       return;
     }
 
-    console.log('[ClaudeMdStore] loadFiles called');
     set({ isLoading: true, error: null });
 
     try {
       const files = await safeInvoke<ClaudeMdFile[]>('get_claude_md_files');
-      console.log('[ClaudeMdStore] get_claude_md_files result:', files);
       const globalFile = files?.find(f => f.isGlobal);
 
       set({
@@ -152,7 +150,6 @@ export const useClaudeMdStore = create<ClaudeMdState>((set, get) => ({
         globalFileId: globalFile?.id || null,
         isLoading: false,
       });
-      console.log('[ClaudeMdStore] Files loaded, count:', files?.length || 0);
     } catch (error) {
       const message = typeof error === 'string' ? error : String(error);
       console.error('[ClaudeMdStore] loadFiles error:', message);
@@ -202,27 +199,22 @@ export const useClaudeMdStore = create<ClaudeMdState>((set, get) => ({
       return null;
     }
 
-    console.log('[ClaudeMdStore] importFile called with:', options);
     set({ isImporting: true, error: null });
 
     try {
       const result = await safeInvoke<ClaudeMdImportResult>('import_claude_md', {
         options: options,
       });
-      console.log('[ClaudeMdStore] import_claude_md result:', result);
 
       if (result?.success && result.file) {
-        console.log('[ClaudeMdStore] Import success, adding file:', result.file);
         set((state) => {
           const newFiles = [...state.files, result.file!];
-          console.log('[ClaudeMdStore] New files array length:', newFiles.length);
           return {
             files: newFiles,
             isImporting: false,
           };
         });
       } else {
-        console.log('[ClaudeMdStore] Import failed:', result?.error);
         set({
           error: result?.error || 'Import failed',
           isImporting: false,
