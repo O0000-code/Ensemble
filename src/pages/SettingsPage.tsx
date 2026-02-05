@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Github, BookOpen, FileText, ChevronDown, Check } from 'lucide-react';
 import { TrashRecoveryModal } from '@/components/modals';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { useSettingsStore } from '@/stores';
+import { useSettingsStore, useSkillsStore, useMcpsStore } from '@/stores';
+import { useClaudeMdStore } from '@/stores/claudeMdStore';
 import { safeInvoke } from '@/utils/tauri';
 
 // ============================================================================
@@ -207,6 +208,22 @@ export function SettingsPage() {
     setWarpOpenMode,
     setClaudeMdDistributionPath,
   } = useSettingsStore();
+
+  // Get reload functions from stores to refresh data after recovery
+  const { loadSkills } = useSkillsStore();
+  const { loadMcps } = useMcpsStore();
+  const { loadFiles: loadClaudeMdFiles } = useClaudeMdStore();
+
+  // Callback to refresh all data after trash recovery
+  const handleRestoreComplete = useCallback(async () => {
+    // Reload all data stores in parallel for better performance
+    // This ensures sidebar counts and lists update without page refresh
+    await Promise.all([
+      loadSkills(),
+      loadMcps(),
+      loadClaudeMdFiles(),
+    ]);
+  }, [loadSkills, loadMcps, loadClaudeMdFiles]);
 
   const handleInstallQuickAction = async () => {
     setQuickActionStatus('installing');
@@ -534,6 +551,7 @@ export function SettingsPage() {
       <TrashRecoveryModal
         isOpen={showTrashModal}
         onClose={() => setShowTrashModal(false)}
+        onRestoreComplete={handleRestoreComplete}
       />
     </div>
   );
