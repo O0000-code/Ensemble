@@ -246,9 +246,8 @@ pub async fn auto_classify(
 }
 
 /// Validate Anthropic API key (deprecated - kept for backward compatibility)
-#[deprecated(note = "API key validation is no longer required as we now use Claude CLI")]
-#[tauri::command]
-pub async fn validate_api_key(api_key: String) -> Result<bool, String> {
+#[allow(dead_code)]
+async fn validate_api_key(api_key: String) -> Result<bool, String> {
     if api_key.is_empty() {
         return Ok(false);
     }

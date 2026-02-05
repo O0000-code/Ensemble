@@ -120,7 +120,6 @@ pub fn run() {
             dialog::bring_window_to_front,
             // Classify (Anthropic API)
             classify::auto_classify,
-            classify::validate_api_key,
             // Import commands
             import::detect_existing_config,
             import::backup_before_import,
