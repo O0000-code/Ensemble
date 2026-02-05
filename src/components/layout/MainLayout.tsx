@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import ContextMenu from '../common/ContextMenu';
@@ -24,6 +24,10 @@ export default function MainLayout() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Ref to prevent duplicate launch args processing (React StrictMode causes effects to run twice in dev mode)
+  // Note: This is only an issue in development; production builds work correctly
+  const hasProcessedLaunchArgs = useRef(false);
 
   const {
     activeCategory,
@@ -230,6 +234,9 @@ export default function MainLayout() {
   useEffect(() => {
     if (!isTauri() || isInitializing) return;
 
+    // Prevent duplicate execution (React StrictMode causes effects to run twice in dev mode)
+    if (hasProcessedLaunchArgs.current) return;
+
     const checkLaunchArgs = async () => {
       try {
         const args = await safeInvoke<string[]>('get_launch_args');
@@ -238,6 +245,8 @@ export default function MainLayout() {
           const launchIndex = args.indexOf('--launch');
           if (launchIndex !== -1 && args[launchIndex + 1]) {
             const path = args[launchIndex + 1];
+            // Mark as processed before executing to prevent duplicate runs
+            hasProcessedLaunchArgs.current = true;
             // Use smart launch handler instead of directly opening launcher
             await handleLaunchPath(path);
           }
