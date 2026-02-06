@@ -1,5 +1,9 @@
 # Ensemble
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/O0000-code/Ensemble)](https://github.com/O0000-code/Ensemble/releases)
+[![macOS](https://img.shields.io/badge/macOS-12.0%2B-black?logo=apple)](https://github.com/O0000-code/Ensemble/releases)
+
 A macOS desktop application for managing [Claude Code](https://docs.anthropic.com/en/docs/claude-code) configurations -- Skills, MCP Servers, and CLAUDE.md files -- with visual organization, one-click project deployment, and Finder integration.
 
 ## Overview
