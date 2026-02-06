@@ -2,10 +2,10 @@
 
 ## System Requirements
 
-- **Operating System**: macOS 11.0 (Big Sur) or later (macOS 12.0+ recommended)
+- **Operating System**: macOS 12.0 (Monterey) or later
 - **Architecture**: Apple Silicon (M1/M2/M3/M4) or Intel x86_64
 - **Disk Space**: ~100MB for the application, plus data storage in `~/.ensemble/`
-- **Claude Code**: Must be installed and configured ([claude.ai/claude-code](https://claude.ai/claude-code))
+- **Claude Code**: Must be installed and configured ([Claude Code](https://docs.anthropic.com/en/docs/claude-code))
 
 ## Option 1: Download Pre-built Release
 
