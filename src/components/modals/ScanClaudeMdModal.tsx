@@ -2,6 +2,7 @@ import { useEffect, useCallback, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Check, Info, Globe, Folder, User, Loader2 } from 'lucide-react';
 import { useClaudeMdStore } from '@/stores/claudeMdStore';
+import { Tooltip } from '@/components/common/Tooltip';
 import type { ClaudeMdScanItem, ClaudeMdType } from '@/types/claudeMd';
 
 type TabType = 'user' | 'project' | 'local';
@@ -423,12 +424,14 @@ export function ScanClaudeMdModal({
         {/* Modal Footer */}
         <div className="flex items-center justify-between py-4 px-6 border-t border-[#E5E5E5] flex-shrink-0">
           {/* Info Button */}
-          <button
-            className="w-7 h-7 flex items-center justify-center rounded-[6px] hover:bg-[#FAFAFA] transition-colors"
-            aria-label="More information"
-          >
-            <Info className="w-4 h-4 text-[#A1A1AA]" />
-          </button>
+          <Tooltip content="Scans project directories for CLAUDE.md configuration files" position="top">
+            <button
+              className="w-7 h-7 flex items-center justify-center rounded-[6px] hover:bg-[#FAFAFA] transition-colors"
+              aria-label="More information"
+            >
+              <Info className="w-4 h-4 text-[#A1A1AA]" />
+            </button>
+          </Tooltip>
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2.5">

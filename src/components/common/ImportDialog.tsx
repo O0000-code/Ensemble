@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useImportStore } from '@/stores/importStore';
 import Button from './Button';
 import { X, Check, Sparkles, Plug, Info, CheckCircle } from 'lucide-react';
+import { Tooltip } from '@/components/common/Tooltip';
 
 /**
  * ImportDialog Component
@@ -382,9 +383,11 @@ export function ImportDialog() {
         {/* Modal Footer */}
         <div className="flex items-center justify-between py-4 px-6 border-t border-[#E5E5E5] flex-shrink-0">
           {/* Info Icon */}
-          <div className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#FAFAFA] cursor-pointer">
-            <Info className="w-4 h-4 text-[#A1A1AA]" />
-          </div>
+          <Tooltip content="Items will be copied to ~/.ensemble/ for centralized management" position="top">
+            <div className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[#FAFAFA] cursor-pointer">
+              <Info className="w-4 h-4 text-[#A1A1AA]" />
+            </div>
+          </Tooltip>
 
           {/* Buttons */}
           <div className="flex items-center gap-2.5">

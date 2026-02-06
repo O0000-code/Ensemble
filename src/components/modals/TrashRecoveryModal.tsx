@@ -2,6 +2,7 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Check, Info, Wand2, Server, FileText } from 'lucide-react';
 import { useTrashStore } from '@/stores/trashStore';
+import { Tooltip } from '@/components/common/Tooltip';
 import type { TrashedSkill, TrashedMcp, TrashedClaudeMd } from '@/types';
 
 type TabType = 'skills' | 'mcps' | 'claudemd';
@@ -488,12 +489,14 @@ export function TrashRecoveryModal({
             {/* Modal Footer */}
             <div className="flex items-center justify-between py-4 px-6 border-t border-[#E5E5E5]">
               {/* Info Button */}
-              <button
-                className="w-7 h-7 flex items-center justify-center rounded-[6px] hover:bg-[#FAFAFA] transition-colors"
-                aria-label="More information"
-              >
-                <Info className="w-4 h-4 text-[#A1A1AA]" />
-              </button>
+              <Tooltip content="Recover previously deleted items from trash" position="top">
+                <button
+                  className="w-7 h-7 flex items-center justify-center rounded-[6px] hover:bg-[#FAFAFA] transition-colors"
+                  aria-label="More information"
+                >
+                  <Info className="w-4 h-4 text-[#A1A1AA]" />
+                </button>
+              </Tooltip>
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2.5">
@@ -577,12 +580,14 @@ export function TrashRecoveryModal({
             {/* Modal Footer */}
             <div className="flex items-center justify-between py-4 px-6 border-t border-[#E5E5E5]">
               {/* Info Button */}
-              <button
-                className="w-7 h-7 flex items-center justify-center rounded-[6px] hover:bg-[#FAFAFA] transition-colors"
-                aria-label="More information"
-              >
-                <Info className="w-4 h-4 text-[#A1A1AA]" />
-              </button>
+              <Tooltip content="Recover previously deleted items from trash" position="top">
+                <button
+                  className="w-7 h-7 flex items-center justify-center rounded-[6px] hover:bg-[#FAFAFA] transition-colors"
+                  aria-label="More information"
+                >
+                  <Info className="w-4 h-4 text-[#A1A1AA]" />
+                </button>
+              </Tooltip>
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2.5">
@@ -666,12 +671,14 @@ export function TrashRecoveryModal({
             {/* Modal Footer */}
             <div className="flex items-center justify-between py-4 px-6 border-t border-[#E5E5E5]">
               {/* Info Button */}
-              <button
-                className="w-7 h-7 flex items-center justify-center rounded-[6px] hover:bg-[#FAFAFA] transition-colors"
-                aria-label="More information"
-              >
-                <Info className="w-4 h-4 text-[#A1A1AA]" />
-              </button>
+              <Tooltip content="Recover previously deleted items from trash" position="top">
+                <button
+                  className="w-7 h-7 flex items-center justify-center rounded-[6px] hover:bg-[#FAFAFA] transition-colors"
+                  aria-label="More information"
+                >
+                  <Info className="w-4 h-4 text-[#A1A1AA]" />
+                </button>
+              </Tooltip>
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2.5">

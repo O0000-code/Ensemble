@@ -4,6 +4,7 @@ import { X, Check, Info, Puzzle, HardDrive, Store } from 'lucide-react';
 import { useImportStore } from '@/stores/importStore';
 import { usePluginsStore } from '@/stores/pluginsStore';
 import { truncateToFirstSentence } from '@/utils/text';
+import { Tooltip } from '@/components/common/Tooltip';
 import type { DetectedSkill } from '@/types';
 import type { DetectedPluginSkill, PluginImportItem } from '@/types/plugin';
 
@@ -415,12 +416,14 @@ export function ImportSkillsModal({
             {/* Modal Footer */}
             <div className="flex items-center justify-between py-4 px-6 border-t border-[#E5E5E5]">
               {/* Info Button */}
-              <button
-                className="w-7 h-7 flex items-center justify-center rounded-[6px] hover:bg-[#FAFAFA] transition-colors"
-                aria-label="More information"
-              >
-                <Info className="w-4 h-4 text-[#A1A1AA]" />
-              </button>
+              <Tooltip content="Scans ~/.claude/skills/ and ~/.agents/skills/ for available Skills" position="top">
+                <button
+                  className="w-7 h-7 flex items-center justify-center rounded-[6px] hover:bg-[#FAFAFA] transition-colors"
+                  aria-label="More information"
+                >
+                  <Info className="w-4 h-4 text-[#A1A1AA]" />
+                </button>
+              </Tooltip>
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2.5">
@@ -518,12 +521,14 @@ export function ImportSkillsModal({
             {/* Modal Footer */}
             <div className="flex items-center justify-between py-4 px-6 border-t border-[#E5E5E5]">
               {/* Info Button */}
-              <button
-                className="w-7 h-7 flex items-center justify-center rounded-[6px] hover:bg-[#FAFAFA] transition-colors"
-                aria-label="More information"
-              >
-                <Info className="w-4 h-4 text-[#A1A1AA]" />
-              </button>
+              <Tooltip content="Shows Skills from installed Claude Code plugins" position="top">
+                <button
+                  className="w-7 h-7 flex items-center justify-center rounded-[6px] hover:bg-[#FAFAFA] transition-colors"
+                  aria-label="More information"
+                >
+                  <Info className="w-4 h-4 text-[#A1A1AA]" />
+                </button>
+              </Tooltip>
 
               {/* Action Buttons */}
               <div className="flex items-center gap-2.5">

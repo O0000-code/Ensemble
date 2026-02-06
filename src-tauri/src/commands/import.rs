@@ -167,6 +167,59 @@ pub fn detect_existing_config(claude_config_dir: String) -> Result<ExistingConfi
         }
     }
 
+    // ========================================================================
+    // 1b. Also detect Skills in ~/.agents/skills/ directory
+    //     This is where `npx skill` installs skills. Deduplicate by name.
+    // ========================================================================
+    if let Some(home_dir_path) = dirs::home_dir() {
+        let agents_skills_dir = home_dir_path.join(".agents").join("skills");
+        if agents_skills_dir.exists() && agents_skills_dir.is_dir() {
+            // Collect existing skill names to avoid duplicates
+            let existing_names: std::collections::HashSet<String> =
+                detected_skills.iter().map(|s| s.name.clone()).collect();
+
+            if let Ok(entries) = fs::read_dir(&agents_skills_dir) {
+                for entry in entries.filter_map(|e| e.ok()) {
+                    let entry_path = entry.path();
+
+                    let skill_name = entry_path
+                        .file_name()
+                        .map(|n| n.to_string_lossy().to_string())
+                        .unwrap_or_default();
+
+                    // Skip hidden directories and already-detected skills
+                    if skill_name.starts_with('.') || existing_names.contains(&skill_name) {
+                        continue;
+                    }
+
+                    if !entry_path.is_dir() {
+                        continue;
+                    }
+
+                    let skill_md_path = entry_path.join("SKILL.md");
+                    if !skill_md_path.exists() {
+                        continue;
+                    }
+
+                    let real_path = fs::canonicalize(&entry_path)
+                        .unwrap_or_else(|_| entry_path.clone())
+                        .to_string_lossy()
+                        .to_string();
+
+                    let description = fs::read_to_string(&skill_md_path)
+                        .ok()
+                        .and_then(|content| parse_skill_description(&content));
+
+                    detected_skills.push(DetectedSkill {
+                        name: skill_name,
+                        path: real_path,
+                        description,
+                    });
+                }
+            }
+        }
+    }
+
     // 2. Detect MCPs from ~/.claude.json (NOT ~/.claude/settings.json)
     // MCP configuration is stored in ~/.claude.json, not ~/.claude/settings.json
     let mut detected_mcps = Vec::new();
