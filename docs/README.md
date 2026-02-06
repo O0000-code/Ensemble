@@ -1,28 +1,61 @@
 # Ensemble Documentation
 
-Welcome to the Ensemble documentation. This guide will help you get started with managing your Claude Code configurations.
+Welcome to the Ensemble documentation. This guide covers everything you need to install, use, and contribute to Ensemble -- a macOS desktop application for managing Claude Code configurations.
 
-## Table of Contents
+For a high-level overview, see the [project README](../README.md).
 
-- [Installation Guide](./installation.md) - How to install and set up Ensemble
-- [Usage Guide](./usage.md) - How to use Ensemble effectively
-- [Development Guide](./development.md) - How to contribute to Ensemble
+---
 
-## Quick Links
+## Documentation Index
 
-### Getting Started
-1. [Download Ensemble](./installation.md#download)
-2. [First-time Setup](./usage.md#first-time-setup)
-3. [Import Existing Configurations](./usage.md#importing-configurations)
+| Document | Description |
+|----------|-------------|
+| [Installation Guide](./installation.md) | System requirements, download, build from source, and verification |
+| [Usage Guide](./usage.md) | Core concepts, features, and day-to-day workflows |
+| [Development Guide](./development.md) | Architecture, tech stack, project structure, and contributing |
 
-### Core Concepts
-- [Skills](./usage.md#skills) - Claude Code skill modules
-- [MCP Servers](./usage.md#mcp-servers) - Model Context Protocol servers
-- [Scenes](./usage.md#scenes) - Configuration bundles
-- [Projects](./usage.md#projects) - Project-level deployments
-- [CLAUDE.md](./usage.md#claudemd) - Context files
+---
 
-### Advanced Topics
-- [AI Auto-Classification](./usage.md#auto-classification)
-- [Finder Integration](./usage.md#finder-integration)
-- [Terminal Support](./usage.md#terminal-support)
+## Getting Started
+
+1. **Install** -- [Download a pre-built release](./installation.md#download) or [build from source](./installation.md#build-from-source)
+2. **First-Time Setup** -- [Launch and import existing configurations](./usage.md#first-time-setup)
+3. **Learn the Core Concepts** -- Read about the five building blocks below
+
+---
+
+## Core Concepts
+
+These are the primary modules you will work with inside Ensemble. Each section links to its detailed description in the [Usage Guide](./usage.md).
+
+| Concept | Description | Link |
+|---------|-------------|------|
+| **Skills** | Claude Code skill modules (markdown files that give Claude specialized capabilities). Managed in `~/.ensemble/skills/` with global or project-level scope. | [Usage Guide -- Skills](./usage.md#skills) |
+| **MCP Servers** | Model Context Protocol servers that extend Claude Code with additional tools and data sources. Configurations stored in `~/.ensemble/mcps/`. | [Usage Guide -- MCP Servers](./usage.md#mcp-servers) |
+| **Scenes** | Configuration bundles that combine multiple Skills, MCP Servers, and CLAUDE.md files into reusable templates. | [Usage Guide -- Scenes](./usage.md#scenes) |
+| **Projects** | Link Scenes to local project directories so configurations can be deployed with one click. | [Usage Guide -- Projects](./usage.md#projects) |
+| **CLAUDE.md** | Context files that provide instructions to Claude Code at the global or project level. | [Usage Guide -- CLAUDE.md](./usage.md#claudemd) |
+
+---
+
+## Additional Features
+
+| Feature | Description | Link |
+|---------|-------------|------|
+| **AI Auto-Classification** | Use the Anthropic API to automatically categorize, tag, and assign icons to Skills, MCPs, and CLAUDE.md files. | [Usage Guide -- Auto-Classification](./usage.md#auto-classification) |
+| **Finder Integration** | Install a Quick Action to open project folders with Claude Code directly from Finder's right-click menu. | [Usage Guide -- Finder Integration](./usage.md#finder-integration) |
+| **Terminal Support** | Choose your preferred terminal (Terminal.app, iTerm2, Warp, or Alacritty) for launching Claude Code sessions. | [Usage Guide -- Terminal Support](./usage.md#terminal-support) |
+| **Trash & Recovery** | Deleted items are moved to trash and can be restored from Settings. | [Usage Guide -- Trash & Recovery](./usage.md#trash--recovery) |
+
+---
+
+## For Contributors
+
+If you want to contribute to Ensemble, the [Development Guide](./development.md) covers:
+
+- [Architecture Overview](./development.md#architecture-overview) -- Tauri 2 + React + Rust
+- [Tech Stack](./development.md#tech-stack) -- Frontend and backend dependencies
+- [Development Setup](./development.md#development-setup) -- Prerequisites and getting started
+- [Project Structure](./development.md#project-structure) -- Frontend and backend layout
+- [Building](./development.md#building) -- Development and production builds
+- [Contributing](./development.md#contributing) -- Code style, PR process, and issue reporting

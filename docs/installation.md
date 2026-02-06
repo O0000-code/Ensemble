@@ -3,34 +3,41 @@
 ## System Requirements
 
 - **Operating System**: macOS 12.0 (Monterey) or later
-- **Architecture**: Apple Silicon (M1/M2/M3) or Intel
-- **Disk Space**: ~100MB
-- **Claude Code**: Must be installed and configured
+- **Architecture**: Apple Silicon (M1/M2/M3/M4) or Intel x86_64
+- **Disk Space**: ~100MB for the application, plus data storage in `~/.ensemble/`
+- **Claude Code**: Must be installed and configured ([claude.ai/claude-code](https://claude.ai/claude-code))
 
-## Download
-
-### Pre-built Release
+## Option 1: Download Pre-built Release
 
 1. Go to the [Releases](https://github.com/O0000-code/Ensemble/releases) page
 2. Download the latest `.dmg` file for your architecture
-3. Open the DMG and drag Ensemble to your Applications folder
+3. Open the DMG and drag **Ensemble** to your Applications folder
 4. Launch Ensemble from Applications
 
-### First Launch
+### Handling the macOS Security Warning
 
-On first launch, macOS may show a security warning because Ensemble is not notarized. To open it:
+Ensemble is not notarized by Apple. On first launch, macOS will block the app. To open it:
 
-1. Right-click (or Control-click) the Ensemble app
-2. Select "Open" from the context menu
-3. Click "Open" in the dialog that appears
+1. Right-click (or Control-click) the Ensemble app in your Applications folder
+2. Select **"Open"** from the context menu
+3. Click **"Open"** in the confirmation dialog
 
-This only needs to be done once.
+This only needs to be done once. Subsequent launches will work normally.
 
-## Build from Source
+## Option 2: Build from Source
 
 ### Prerequisites
 
-1. **Node.js 18+**
+Install the following tools before building:
+
+1. **Xcode Command Line Tools** (required for compiling native code on macOS)
+
+   ```bash
+   xcode-select --install
+   ```
+
+2. **Node.js 18 or later**
+
    ```bash
    # Using Homebrew
    brew install node
@@ -40,16 +47,16 @@ This only needs to be done once.
    nvm use 18
    ```
 
-2. **Rust 1.77+**
+   Verify: `node --version` should output `v18.x.x` or higher.
+
+3. **Rust 1.77.2 or later**
+
    ```bash
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   source ~/.cargo/env
+   source "$HOME/.cargo/env"
    ```
 
-3. **Xcode Command Line Tools**
-   ```bash
-   xcode-select --install
-   ```
+   Verify: `rustc --version` should output `1.77.2` or higher.
 
 ### Build Steps
 
@@ -65,30 +72,72 @@ npm install
 npm run tauri build
 ```
 
-The built application will be in `src-tauri/target/release/bundle/`.
+The build process will:
+1. Compile the TypeScript/React frontend via Vite (`npm run build`)
+2. Compile the Rust backend via Cargo
+3. Bundle everything into a macOS application
+
+### Build Output
+
+After a successful build, the artifacts are located at:
+
+| Artifact | Path |
+|----------|------|
+| macOS App Bundle | `src-tauri/target/release/bundle/macos/Ensemble.app` |
+| DMG Installer | `src-tauri/target/release/bundle/dmg/Ensemble_<version>_<arch>.dmg` |
+
+You can copy `Ensemble.app` directly to your `/Applications` folder, or open the generated DMG.
 
 ### Development Mode
 
-For development with hot-reload:
+For development with hot-reload (frontend changes reflect instantly):
 
 ```bash
 npm run tauri dev
 ```
 
+This starts the Vite dev server on `http://localhost:1420` and launches the Tauri application window. Changes to frontend code will hot-reload automatically. Changes to Rust code in `src-tauri/` will trigger a recompile and restart.
+
+## First Launch
+
+When Ensemble starts for the first time, it automatically creates its data directory at `~/.ensemble/` with the following structure:
+
+```
+~/.ensemble/
+├── data.json           # Application data (categories, tags, scenes, projects)
+├── settings.json       # User settings and preferences
+├── skills/             # Managed skill files
+├── mcps/               # MCP server configuration files
+├── claude-md/          # Managed CLAUDE.md files
+└── trash/              # Soft-deleted items (recoverable from within the app)
+    ├── skills/
+    ├── mcps/
+    └── claude-md/
+```
+
+On first launch, Ensemble will also create default categories (Development, Writing, Analysis) and offer to import any existing Skills and MCP configurations from your Claude Code setup (`~/.claude/` and `~/.claude.json`).
+
 ## Verification
 
-After installation, verify Ensemble is working:
+After installation, verify Ensemble is working correctly:
 
 1. Launch the application
 2. You should see the main interface with sidebar navigation
-3. Check Settings to configure your preferences
+3. If you have existing Claude Code configurations, Ensemble will offer to import them
+4. Check **Settings** to review and configure your preferences
 
 ## Uninstallation
 
-To completely remove Ensemble:
+To completely remove Ensemble and all its data:
 
-1. Quit the application
-2. Delete from Applications folder
-3. Optionally remove data: `rm -rf ~/.ensemble`
+1. Quit the application (right-click the Dock icon and select **Quit**, or press `Cmd+Q`)
+2. Delete `Ensemble.app` from your Applications folder
+3. Remove the data directory:
 
-Note: Removing `~/.ensemble` will delete all your managed configurations.
+   ```bash
+   rm -rf ~/.ensemble
+   ```
+
+**Warning**: Removing `~/.ensemble` will permanently delete all your managed Skills, MCP configurations, CLAUDE.md files, categories, tags, scenes, and project associations. This action cannot be undone.
+
+Note: Ensemble does not modify your original Claude Code configuration files (`~/.claude/`, `~/.claude.json`). Uninstalling Ensemble will not affect your Claude Code setup, though any symlinks Ensemble created in project directories will become broken and should be cleaned up manually.
