@@ -42,7 +42,7 @@ Core workflow:
 
 ### Projects
 - Associate local project folders with Scenes
-- Sync configurations via symlinks (Skills) and `~/.claude.json` entries (MCPs)
+- Sync configurations via symlinks (Skills) and `.mcp.json` (MCPs)
 - Clear and re-sync configurations as needed
 
 ### Organization

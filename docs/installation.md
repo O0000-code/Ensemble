@@ -2,7 +2,7 @@
 
 ## System Requirements
 
-- **Operating System**: macOS 12.0 (Monterey) or later
+- **Operating System**: macOS 11.0 (Big Sur) or later (macOS 12.0+ recommended)
 - **Architecture**: Apple Silicon (M1/M2/M3/M4) or Intel x86_64
 - **Disk Space**: ~100MB for the application, plus data storage in `~/.ensemble/`
 - **Claude Code**: Must be installed and configured ([claude.ai/claude-code](https://claude.ai/claude-code))
@@ -141,3 +141,9 @@ To completely remove Ensemble and all its data:
 **Warning**: Removing `~/.ensemble` will permanently delete all your managed Skills, MCP configurations, CLAUDE.md files, categories, tags, scenes, and project associations. This action cannot be undone.
 
 Note: Ensemble does not modify your original Claude Code configuration files (`~/.claude/`, `~/.claude.json`). Uninstalling Ensemble will not affect your Claude Code setup, though any symlinks Ensemble created in project directories will become broken and should be cleaned up manually.
+
+To also remove the Finder Quick Action (if installed):
+
+   ```bash
+   rm -rf ~/Library/Services/Open\ with\ Ensemble.workflow
+   ```

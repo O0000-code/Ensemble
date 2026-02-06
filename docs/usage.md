@@ -22,7 +22,7 @@ Skills are Claude Code's skill modules -- markdown files (each containing a `SKI
   - `project` -- The skill is only deployed to specific projects when synced via a Scene. The symlink in `~/.claude/skills/` is removed if it existed.
 - **Import Sources**:
   - **Local Skills** from `~/.claude/skills/` (detected during first-time setup or via the import dialog)
-  - **Plugin-installed Skills** from Claude Code plugins (detected from `~/.agents/skills/` and plugin directories)
+  - **Plugin-installed Skills** from Claude Code plugins (detected from plugin cache directories under `~/.claude/plugins/`)
 
 **Managing Skills:**
 
@@ -136,7 +136,7 @@ CLAUDE.md files provide context and instructions to Claude Code at different lev
 - This copies/syncs the file content to `~/.claude/CLAUDE.md`, making it active for all Claude Code sessions.
 - Only one file can be global at a time. Setting a new global file replaces the previous one.
 - If an unmanaged `~/.claude/CLAUDE.md` already exists, it is backed up and imported as "Original Global" before being replaced.
-- Click "Unset Global" to remove the global status (this does not delete `~/.claude/CLAUDE.md`).
+- Click "Unset Global" to remove the global status and delete the `~/.claude/CLAUDE.md` file.
 
 **Distribution to Projects:**
 

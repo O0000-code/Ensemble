@@ -18,7 +18,7 @@ For a high-level overview, see the [project README](../README.md).
 
 ## Getting Started
 
-1. **Install** -- [Download a pre-built release](./installation.md#download) or [build from source](./installation.md#build-from-source)
+1. **Install** -- [Download a pre-built release](./installation.md#option-1-download-pre-built-release) or [build from source](./installation.md#option-2-build-from-source)
 2. **First-Time Setup** -- [Launch and import existing configurations](./usage.md#first-time-setup)
 3. **Learn the Core Concepts** -- Read about the five building blocks below
 
@@ -42,10 +42,10 @@ These are the primary modules you will work with inside Ensemble. Each section l
 
 | Feature | Description | Link |
 |---------|-------------|------|
-| **AI Auto-Classification** | Use the Anthropic API to automatically categorize, tag, and assign icons to Skills, MCPs, and CLAUDE.md files. | [Usage Guide -- Auto-Classification](./usage.md#auto-classification) |
-| **Finder Integration** | Install a Quick Action to open project folders with Claude Code directly from Finder's right-click menu. | [Usage Guide -- Finder Integration](./usage.md#finder-integration) |
+| **AI Auto-Classification** | Use the Claude CLI to automatically categorize, tag, and assign icons to Skills, MCPs, and CLAUDE.md files. | [Usage Guide -- Auto-Classification](./usage.md#auto-classification) |
+| **Finder Integration** | Install a Quick Action to open project folders with Claude Code directly from Finder's right-click menu. | [Usage Guide -- Finder Integration](./usage.md#finder-integration-macos) |
 | **Terminal Support** | Choose your preferred terminal (Terminal.app, iTerm2, Warp, or Alacritty) for launching Claude Code sessions. | [Usage Guide -- Terminal Support](./usage.md#terminal-support) |
-| **Trash & Recovery** | Deleted items are moved to trash and can be restored from Settings. | [Usage Guide -- Trash & Recovery](./usage.md#trash--recovery) |
+| **Trash & Recovery** | Deleted items are moved to trash and can be restored from Settings. | [Usage Guide -- Trash & Recovery](./usage.md#trash-and-recovery) |
 
 ---
 
@@ -56,6 +56,6 @@ If you want to contribute to Ensemble, the [Development Guide](./development.md)
 - [Architecture Overview](./development.md#architecture-overview) -- Tauri 2 + React + Rust
 - [Tech Stack](./development.md#tech-stack) -- Frontend and backend dependencies
 - [Development Setup](./development.md#development-setup) -- Prerequisites and getting started
-- [Project Structure](./development.md#project-structure) -- Frontend and backend layout
+- [Project Structure](./development.md#project-structure-complete) -- Frontend and backend layout
 - [Building](./development.md#building) -- Development and production builds
 - [Contributing](./development.md#contributing) -- Code style, PR process, and issue reporting
