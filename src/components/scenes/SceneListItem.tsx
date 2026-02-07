@@ -134,7 +134,7 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
       }}
     >
       {/* Left Section - align to start in compact mode */}
-      <div className={`flex gap-3.5 ${compact ? 'items-start' : 'items-center'}`}>
+      <div className={`flex min-w-0 flex-1 gap-3.5 ${compact ? 'items-start' : 'items-center'}`}>
         {/* Icon Container */}
         <div
           ref={iconRef}
@@ -197,7 +197,7 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
       </div>
 
       {/* Right Section Wrapper - keeps stats and menu together */}
-      <div className="flex items-center">
+      <div className="flex items-center shrink-0">
         {/* Stats Section - visible in full mode */}
         <div
           className="flex items-center"
@@ -205,7 +205,7 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
             opacity: compact ? 0 : 1,
             maxWidth: compact ? 0 : '400px',
             gap: compact ? 0 : '24px',
-            overflow: compact ? 'hidden' : 'visible',
+            overflow: 'hidden' as const,
             transition: `opacity ${TRANSITION_BASE}, max-width ${TRANSITION_BASE}, gap ${TRANSITION_BASE}`,
           }}
         >
