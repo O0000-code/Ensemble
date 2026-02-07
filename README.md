@@ -62,6 +62,8 @@ Core workflow:
 - Configurable terminal: Terminal.app, iTerm2, Warp, or Alacritty
 - Customizable launch command
 
+![Finder Integration - Open with Ensemble](docs/screenshots/finder-integration.png)
+
 ### Trash and Recovery
 - Deleted Skills, MCPs, and CLAUDE.md files are moved to trash
 - Recover deleted items from Settings
