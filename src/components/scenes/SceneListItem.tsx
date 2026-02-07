@@ -134,7 +134,7 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
       }}
     >
       {/* Left Section - align to start in compact mode */}
-      <div className={`flex min-w-0 flex-1 gap-3.5 ${compact ? 'items-start' : 'items-center'}`}>
+      <div className={`flex min-w-0 flex-1 overflow-hidden gap-3.5 ${compact ? 'items-start' : 'items-center'}`}>
         {/* Icon Container */}
         <div
           ref={iconRef}
