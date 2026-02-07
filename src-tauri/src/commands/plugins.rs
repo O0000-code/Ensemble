@@ -546,6 +546,25 @@ pub fn detect_plugin_mcps(imported_plugin_mcps: Vec<String>) -> Result<Vec<Detec
     let enabled_plugins = read_enabled_plugins().unwrap_or_default();
     let imported_set: std::collections::HashSet<_> = imported_plugin_mcps.into_iter().collect();
 
+    // Build a set of MCP names that already exist on disk (from any source)
+    let mcps_dir = crate::utils::get_ensemble_dir().join("mcps");
+    let existing_mcp_names: std::collections::HashSet<String> = if mcps_dir.exists() {
+        fs::read_dir(&mcps_dir)
+            .ok()
+            .map(|entries| {
+                entries
+                    .filter_map(|e| e.ok())
+                    .filter_map(|e| {
+                        let name = e.file_name().to_string_lossy().to_string();
+                        name.strip_suffix(".json").map(|n| n.to_string())
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
+    } else {
+        std::collections::HashSet::new()
+    };
+
     let mut detected_mcps = Vec::new();
 
     // Iterate through marketplaces
@@ -633,9 +652,10 @@ pub fn detect_plugin_mcps(imported_plugin_mcps: Vec<String>) -> Result<Vec<Detec
 
             // Process each MCP server in the file
             for (mcp_name, mcp_config) in mcp_file.servers {
-                // Check if already imported (using pluginId|mcpName combination for precise tracking)
+                // Check if already imported (via plugin tracking OR same-name file on disk)
                 let import_key = format!("{}|{}", plugin_id, mcp_name);
-                let is_imported = imported_set.contains(&import_key);
+                let is_imported = imported_set.contains(&import_key)
+                    || existing_mcp_names.contains(&mcp_name);
 
                 detected_mcps.push(DetectedPluginMcp {
                     plugin_id: plugin_id.clone(),
@@ -794,14 +814,10 @@ pub fn import_plugin_mcps(items: Vec<PluginImportItem>, dest_dir: String) -> Res
         // Destination: dest_dir/{mcp_name}.json
         let dest_mcp_path = dest_path.join(format!("{}.json", item.item_name));
 
-        // Check if destination already exists
+        // Check if destination already exists (same-name MCP from another source)
         if dest_mcp_path.exists() {
-            // Still track as imported since it exists (was imported before)
-            // Use pluginId|mcpName combination for precise tracking
-            let import_key = format!("{}|{}", item.plugin_id, item.item_name);
-            if !imported_plugin_ids.contains(&import_key) {
-                imported_plugin_ids.push(import_key);
-            }
+            // Don't add to imported_plugin_ids — the detect function handles
+            // this via file existence check, avoiding phantom "imported" state
             continue;
         }
 

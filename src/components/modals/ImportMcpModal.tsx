@@ -69,11 +69,13 @@ export function ImportMcpModal({
   const isDetecting = isDetectingMcps;
   const totalMcps = detectedMcps.length;
 
-  // Plugin MCPs
+  // Plugin MCPs - show all detected, but only allow selecting unimported ones
+  const allPluginMcps = usePluginsStore.getState().detectedPluginMcps;
   const unimportedPluginMcps = getUnimportedPluginMcps();
-  const totalPluginMcps = unimportedPluginMcps.length;
+  const totalPluginMcps = allPluginMcps.length;
+  const totalUnimportedPluginMcps = unimportedPluginMcps.length;
   const selectedPluginCount = selectedPluginMcps.size;
-  const allPluginSelected = totalPluginMcps > 0 && selectedPluginCount === totalPluginMcps;
+  const allPluginSelected = totalUnimportedPluginMcps > 0 && selectedPluginCount === totalUnimportedPluginMcps;
 
   // Create unique key for MCP (name + scope + projectPath)
   const getMcpKey = (mcp: DetectedMcp) =>
@@ -349,7 +351,7 @@ export function ImportMcpModal({
             <div className="w-px h-4 bg-[#E5E5E5]" />
             {/* Count */}
             <span className="text-[12px] font-normal text-[#A1A1AA]">
-              {activeTab === 'claude' ? `${selectedCount}/${totalMcps}` : `${selectedPluginCount}/${totalPluginMcps}`}
+              {activeTab === 'claude' ? `${selectedCount}/${totalMcps}` : `${selectedPluginCount}/${totalUnimportedPluginMcps}`}
             </span>
             {/* Divider */}
             <div className="w-px h-4 bg-[#E5E5E5]" />
@@ -480,7 +482,7 @@ export function ImportMcpModal({
                     Detecting plugin MCPs...
                   </span>
                 </div>
-              ) : unimportedPluginMcps.length === 0 ? (
+              ) : allPluginMcps.length === 0 ? (
                 <div className="flex items-center justify-center h-full flex-col gap-2">
                   <Puzzle className="w-8 h-8 text-[#D4D4D8]" />
                   <span className="text-[13px] text-[#71717A]">
@@ -491,17 +493,26 @@ export function ImportMcpModal({
                   </span>
                 </div>
               ) : (
-                unimportedPluginMcps.map((mcp) => {
+                allPluginMcps.map((mcp) => {
                   const key = `${mcp.pluginId}|${mcp.mcpName}`;
                   const isSelected = selectedPluginMcps.has(key);
+                  const isAlreadyImported = mcp.isImported;
                   return (
                     <div
                       key={key}
-                      onClick={() => handleTogglePluginMcp(mcp)}
-                      className="flex items-center gap-3 p-3 rounded-[6px] hover:bg-[#FAFAFA] cursor-pointer transition-colors"
+                      onClick={() => !isAlreadyImported && handleTogglePluginMcp(mcp)}
+                      className={`flex items-center gap-3 p-3 rounded-[6px] transition-colors ${
+                        isAlreadyImported
+                          ? 'opacity-50 cursor-default'
+                          : 'hover:bg-[#FAFAFA] cursor-pointer'
+                      }`}
                     >
                       {/* Checkbox - 16x16 */}
-                      {isSelected ? (
+                      {isAlreadyImported ? (
+                        <div className="w-4 h-4 rounded-[4px] bg-[#D4D4D8] flex items-center justify-center flex-shrink-0">
+                          <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                        </div>
+                      ) : isSelected ? (
                         <div className="w-4 h-4 rounded-[4px] bg-[#18181B] flex items-center justify-center flex-shrink-0">
                           <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
                         </div>
@@ -512,9 +523,14 @@ export function ImportMcpModal({
                       <div className="flex-1 flex flex-col gap-1 min-w-0">
                         {/* Name row with Marketplace label - gap 8px */}
                         <div className="flex items-center gap-2">
-                          <span className="text-[13px] font-medium text-[#18181B] truncate">
+                          <span className={`text-[13px] font-medium truncate ${isAlreadyImported ? 'text-[#A1A1AA]' : 'text-[#18181B]'}`}>
                             {mcp.mcpName}
                           </span>
+                          {isAlreadyImported && (
+                            <span className="text-[10px] font-medium text-[#A1A1AA] bg-[#F4F4F5] rounded px-1.5 py-0.5 flex-shrink-0">
+                              Imported
+                            </span>
+                          )}
                           {/* Marketplace indicator */}
                           <div className="flex items-center gap-1 flex-shrink-0">
                             <Store className="w-[9px] h-[9px] text-[#A1A1AA]" />
