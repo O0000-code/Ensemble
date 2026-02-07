@@ -162,6 +162,8 @@ export const McpServersPage: React.FC = () => {
     classifySuccess,
     isFadingOut,
     showRestoreAnimation,
+    error,
+    clearError,
   } = useMcpsStore();
 
   const { categories, tags: appTags, addTag: addGlobalTag } = useAppStore();
@@ -776,6 +778,19 @@ export const McpServersPage: React.FC = () => {
           </div>
         }
       />
+
+      {/* Error notification */}
+      {error && (
+        <div className="mx-7 mt-4 flex items-center justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-700">{error}</p>
+          <button
+            onClick={clearError}
+            className="text-sm font-medium text-red-700 hover:text-red-800"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Main Content Area - with shrink animation */}
       <div

@@ -42,6 +42,7 @@ interface McpsState {
   updateMcpTags: (id: string, tags: string[]) => Promise<void>;
   updateMcpIcon: (id: string, icon: string) => Promise<void>;
   updateMcpScope: (id: string, scope: 'global' | 'project') => Promise<void>;
+  clearError: () => void;
   fetchMcpTools: (mcpId: string, showSuccessAnimation?: boolean) => Promise<FetchMcpToolsResult>;
   loadUsageStats: () => Promise<void>;
   autoClassify: () => Promise<void>;
@@ -73,6 +74,8 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
   showRestoreAnimation: false,
 
   setMcpServers: (servers) => set({ mcpServers: servers }),
+
+  clearError: () => set({ error: null }),
 
   selectMcp: (id) => set({ selectedMcpId: id }),
 

@@ -188,7 +188,7 @@ pub async fn auto_classify(
         "required": ["classifications"]
     });
 
-    // Execute Claude CLI
+    // Execute Claude CLI (PATH is fixed at app startup in main.rs)
     let output = Command::new("claude")
         .arg("-p")
         .arg(&prompt)
