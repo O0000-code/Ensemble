@@ -3,10 +3,33 @@ use crate::utils::{expand_path, get_data_file_path};
 use std::collections::HashMap;
 use std::fs;
 use std::process::Stdio;
+use std::sync::OnceLock;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command as TokioCommand;
 use tokio::time::{timeout, Duration};
 use walkdir::WalkDir;
+
+/// Get the user's login shell PATH (cached).
+///
+/// macOS GUI apps launched from Finder/Launchpad have a minimal PATH
+/// (/usr/bin:/bin:/usr/sbin:/sbin) that doesn't include paths from nvm,
+/// homebrew, etc. This function runs the user's login shell to get their
+/// full PATH, and caches the result for subsequent calls.
+fn get_user_shell_path() -> String {
+    static USER_PATH: OnceLock<String> = OnceLock::new();
+    USER_PATH.get_or_init(|| {
+        let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
+        std::process::Command::new(&shell)
+            .args(["-l", "-c", "echo $PATH"])
+            .output()
+            .ok()
+            .and_then(|out| {
+                let path = String::from_utf8_lossy(&out.stdout).trim().to_string();
+                if path.is_empty() { None } else { Some(path) }
+            })
+            .unwrap_or_else(|| std::env::var("PATH").unwrap_or_default())
+    }).clone()
+}
 
 /// Scan MCPs directory and return list of MCP servers
 #[tauri::command]
@@ -154,6 +177,8 @@ fn parse_mcp_file(
         last_used: metadata.and_then(|m| m.last_used.clone()),
         usage_count: metadata.map(|m| m.usage_count).unwrap_or(0),
         installed_at,
+        url: config.url,
+        mcp_type: config.mcp_type,
         install_source: config.install_source,
         plugin_id: config.plugin_id,
         plugin_name: config.plugin_name,
@@ -224,8 +249,10 @@ pub async fn fetch_mcp_tools(
         .stderr(Stdio::null())
         .kill_on_drop(true); // Ensure process is terminated when dropped
 
-    // Inherit current environment and add custom env vars
+    // Inherit current environment and set user's full PATH
+    // (macOS GUI apps have minimal PATH, missing nvm/homebrew paths)
     cmd.envs(std::env::vars());
+    cmd.env("PATH", get_user_shell_path());
     if let Some(env_vars) = &env {
         for (key, value) in env_vars {
             cmd.env(key, value);

@@ -44,6 +44,8 @@ export interface McpServer {
   usageCount: number;
   icon?: string;  // 自定义图标名称
   installedAt?: string;  // 安装时间 (文件创建时间)
+  url?: string;
+  mcpType?: string;
   // 插件相关字段 - 从 Rust 后端返回
   installSource?: 'local' | 'plugin';  // 安装来源
   pluginId?: string;  // 插件 ID，如 "nanobanana-skill@claude-code-settings"
@@ -172,6 +174,8 @@ export interface DetectedMcp {
   env?: Record<string, string>;
   scope?: 'user' | 'local';  // 来源范围: user=用户全局配置, local=项目本地配置
   projectPath?: string;       // Local scope 时的项目路径
+  url?: string;
+  mcpType?: string;
 }
 
 /**

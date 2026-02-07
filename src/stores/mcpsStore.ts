@@ -20,6 +20,7 @@ interface McpsState {
   error: string | null;
   fetchingToolsForMcp: string | null;  // Track which MCP is currently fetching tools
   fetchToolsSuccessMcp: string | null; // Track which MCP just succeeded fetching tools
+  mcpFetchErrors: Record<string, string>; // Per-MCP fetch error messages
 
   // Usage stats
   usageStats: Record<string, McpUsage>;
@@ -63,6 +64,7 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
   error: null,
   fetchingToolsForMcp: null,
   fetchToolsSuccessMcp: null,
+  mcpFetchErrors: {},
   usageStats: {},
   isLoadingUsage: false,
   isClassifying: false,
@@ -88,7 +90,7 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
       const mcpServers = await safeInvoke<McpServer[]>('scan_mcps', {
         sourceDir: mcpSourceDir,
       });
-      set({ mcpServers: mcpServers || [], isLoading: false });
+      set({ mcpServers: mcpServers || [], isLoading: false, mcpFetchErrors: {} });
     } catch (error) {
       set({ error: String(error), isLoading: false });
     }
@@ -259,6 +261,11 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
       return { success: false, tools: [], error: 'MCP not found' };
     }
 
+    // HTTP MCPs don't support stdio-based tool discovery
+    if (mcp.mcpType === 'http') {
+      return { success: false, tools: [], error: 'HTTP MCPs do not support tool fetching' };
+    }
+
     // Set loading state
     set({ fetchingToolsForMcp: mcpId });
 
@@ -272,22 +279,26 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
 
       if (result && result.success) {
         // Update MCP's providedTools with the fetched tools
-        set((state) => ({
-          mcpServers: state.mcpServers.map((m) =>
-            m.id === mcpId
-              ? {
-                  ...m,
-                  providedTools: result.tools.map((t) => ({
-                    name: t.name,
-                    description: t.description || '',
-                  })),
-                }
-              : m
-          ),
-          fetchingToolsForMcp: null,
-          // Only show success animation if explicitly requested (manual click)
-          fetchToolsSuccessMcp: showSuccessAnimation ? mcpId : null,
-        }));
+        set((state) => {
+          const { [mcpId]: _, ...remainingErrors } = state.mcpFetchErrors;
+          return {
+            mcpServers: state.mcpServers.map((m) =>
+              m.id === mcpId
+                ? {
+                    ...m,
+                    providedTools: result.tools.map((t) => ({
+                      name: t.name,
+                      description: t.description || '',
+                    })),
+                  }
+                : m
+            ),
+            fetchingToolsForMcp: null,
+            mcpFetchErrors: remainingErrors,
+            // Only show success animation if explicitly requested (manual click)
+            fetchToolsSuccessMcp: showSuccessAnimation ? mcpId : null,
+          };
+        });
         // Clear success state after 2 seconds (only if showing animation)
         if (showSuccessAnimation) {
           setTimeout(() => {
@@ -296,14 +307,21 @@ export const useMcpsStore = create<McpsState>((set, get) => ({
         }
         return result;
       } else {
-        // Clear loading state on failure
-        set({ fetchingToolsForMcp: null, error: result?.error || 'Failed to fetch tools' });
+        // Clear loading state on failure, record per-MCP error
+        const errorMsg = result?.error || 'Failed to fetch tools';
+        set((state) => ({
+          fetchingToolsForMcp: null,
+          mcpFetchErrors: { ...state.mcpFetchErrors, [mcpId]: errorMsg },
+        }));
         return result || { success: false, tools: [], error: 'No result returned' };
       }
     } catch (error) {
       const message = typeof error === 'string' ? error : String(error);
       console.error('Failed to fetch MCP tools:', error);
-      set({ fetchingToolsForMcp: null, error: message });
+      set((state) => ({
+        fetchingToolsForMcp: null,
+        mcpFetchErrors: { ...state.mcpFetchErrors, [mcpId]: message },
+      }));
       return { success: false, tools: [], error: message };
     }
   },

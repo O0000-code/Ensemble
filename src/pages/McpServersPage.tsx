@@ -19,6 +19,7 @@ import {
   RefreshCw,
   Check,
   Sparkles,
+  AlertCircle,
 } from 'lucide-react';
 import { PageHeader, SlidePanel } from '@/components/layout';
 import { EmptyState, IconPicker, ICON_MAP, Dropdown, ScopeSelector, Button } from '@/components/common';
@@ -153,6 +154,7 @@ export const McpServersPage: React.FC = () => {
     fetchMcpTools,
     fetchingToolsForMcp,
     fetchToolsSuccessMcp,
+    mcpFetchErrors,
     usageStats,
     loadUsageStats,
     autoClassify,
@@ -201,15 +203,18 @@ export const McpServersPage: React.FC = () => {
 
   // Auto-fetch tools when selecting an MCP that has no tools yet
   // Pass false for showSuccessAnimation since this is automatic, not user-initiated
+  // Skip HTTP MCPs and MCPs that already failed fetching
   useEffect(() => {
     if (
       selectedMcp &&
+      selectedMcp.mcpType !== 'http' &&
+      !mcpFetchErrors[selectedMcp.id] &&
       (!selectedMcp.providedTools || selectedMcp.providedTools.length === 0) &&
       fetchingToolsForMcp !== selectedMcp.id
     ) {
       fetchMcpTools(selectedMcp.id, false);
     }
-  }, [selectedMcpId, selectedMcp, fetchMcpTools, fetchingToolsForMcp]);
+  }, [selectedMcpId, selectedMcp, fetchMcpTools, fetchingToolsForMcp, mcpFetchErrors]);
 
   // Category dropdown options - only use categories from appStore
   const categoryOptions = useMemo(() => {
@@ -530,24 +535,30 @@ export const McpServersPage: React.FC = () => {
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-[#18181B]">Provided Tools</h3>
-          <button
-            onClick={() => fetchMcpTools(selectedMcp.id)}
-            disabled={fetchingToolsForMcp === selectedMcp.id}
-            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-all duration-200 disabled:opacity-50 ${
-              fetchToolsSuccessMcp === selectedMcp.id
-                ? 'text-[#22C55E] bg-[#F0FDF4]'
-                : 'text-[#71717A] hover:text-[#18181B] hover:bg-[#F4F4F5]'
-            }`}
-          >
-            {fetchingToolsForMcp === selectedMcp.id ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : fetchToolsSuccessMcp === selectedMcp.id ? (
-              <Check className="h-3.5 w-3.5 animate-[scale-in_0.2s_ease-out]" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5" />
-            )}
-            {fetchToolsSuccessMcp === selectedMcp.id ? 'Done' : 'Fetch'}
-          </button>
+          {selectedMcp.mcpType === 'http' ? (
+            <span className="text-[11px] font-normal text-[#A1A1AA]">
+              HTTP MCP
+            </span>
+          ) : (
+            <button
+              onClick={() => fetchMcpTools(selectedMcp.id)}
+              disabled={fetchingToolsForMcp === selectedMcp.id}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md transition-all duration-200 disabled:opacity-50 ${
+                fetchToolsSuccessMcp === selectedMcp.id
+                  ? 'text-[#22C55E] bg-[#F0FDF4]'
+                  : 'text-[#71717A] hover:text-[#18181B] hover:bg-[#F4F4F5]'
+              }`}
+            >
+              {fetchingToolsForMcp === selectedMcp.id ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : fetchToolsSuccessMcp === selectedMcp.id ? (
+                <Check className="h-3.5 w-3.5 animate-[scale-in_0.2s_ease-out]" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              {fetchToolsSuccessMcp === selectedMcp.id ? 'Done' : 'Fetch'}
+            </button>
+          )}
         </div>
         <div className="overflow-hidden rounded-lg border border-[#E5E5E5]">
           {selectedMcp?.providedTools && selectedMcp.providedTools.length > 0 ? (
@@ -558,6 +569,18 @@ export const McpServersPage: React.FC = () => {
                 isLast={index === selectedMcp.providedTools.length - 1}
               />
             ))
+          ) : mcpFetchErrors[selectedMcp.id] ? (
+            <div className="flex items-center gap-3 px-3.5 py-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#FEF2F2]">
+                <AlertCircle className="h-3.5 w-3.5 text-[#EF4444]" />
+              </div>
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-[13px] font-medium text-[#EF4444]">Failed</span>
+                <span className="text-[11px] text-[#A1A1AA] truncate">
+                  {mcpFetchErrors[selectedMcp.id]}
+                </span>
+              </div>
+            </div>
           ) : (
             <div className="flex items-center gap-3 px-3.5 py-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#F4F4F5]">

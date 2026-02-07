@@ -22,11 +22,21 @@ pub fn write_mcp_config(project_path: String, mcp_servers: Vec<McpServer>) -> Re
     // Build mcpServers object with proper format for Claude Code
     let mut mcp_config: HashMap<String, Value> = HashMap::new();
     for mcp in mcp_servers {
-        let mut server_config = json!({
-            "type": "stdio",
-            "command": mcp.command,
-            "args": mcp.args,
-        });
+        let is_http = mcp.mcp_type.as_deref() == Some("http");
+        let mut server_config = if is_http {
+            // HTTP MCP: use url instead of command
+            json!({
+                "type": "http",
+                "url": mcp.url.as_deref().unwrap_or(""),
+            })
+        } else {
+            // stdio MCP: use command and args
+            json!({
+                "type": mcp.mcp_type.as_deref().unwrap_or("stdio"),
+                "command": mcp.command,
+                "args": mcp.args,
+            })
+        };
 
         if let Some(env) = mcp.env {
             if !env.is_empty() {

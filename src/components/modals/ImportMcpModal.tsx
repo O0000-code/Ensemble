@@ -395,9 +395,12 @@ export function ImportMcpModal({
                   const isSelected = selectedMcpKeys.has(mcpKey);
                   // Determine scope display - User scope or Local with path
                   const isUserScope = mcp.scope === 'user' || !mcp.scope;
-                  const scopeLabel = isUserScope
-                    ? 'User scope'
-                    : `Local · ${mcp.projectPath || ''}`;
+                  const isHttpMcp = mcp.mcpType === 'http';
+                  const scopeLabel = isHttpMcp
+                    ? `HTTP · ${mcp.url || ''}`
+                    : isUserScope
+                      ? 'User scope'
+                      : `Local · ${mcp.projectPath || ''}`;
 
                   return (
                     <div

@@ -102,7 +102,7 @@ export function Tooltip({
     borderRadius: '6px',
     padding: '8px 12px',
     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-    zIndex: 50,
+    zIndex: 60,
     pointerEvents: 'none',
     whiteSpace: 'nowrap',
     opacity: isVisible ? 1 : 0,

@@ -52,6 +52,12 @@ pub struct McpServer {
     pub last_used: Option<String>,
     pub usage_count: u32,
     pub installed_at: Option<String>,
+    /// URL for HTTP-type MCP servers
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    /// MCP type: "stdio" or "http"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mcp_type: Option<String>,
     // Plugin source fields
     #[serde(skip_serializing_if = "Option::is_none")]
     pub install_source: Option<String>, // "local" | "plugin"
@@ -241,11 +247,18 @@ impl Default for AppSettings {
 pub struct McpConfigFile {
     pub name: String,
     pub description: Option<String>,
+    #[serde(default)]
     pub command: String,
     pub args: Option<Vec<String>>,
     pub env: Option<HashMap<String, String>>,
     #[serde(rename = "providedTools")]
     pub provided_tools: Option<Vec<Tool>>,
+    /// URL for HTTP-type MCP servers
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    /// MCP type: "stdio" or "http"
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub mcp_type: Option<String>,
     // Plugin source fields
     #[serde(skip_serializing_if = "Option::is_none")]
     pub install_source: Option<String>, // "local" | "plugin"
@@ -257,12 +270,22 @@ pub struct McpConfigFile {
     pub marketplace: Option<String>,
 }
 
-/// Claude settings.json MCP configuration format
+/// Claude settings.json / .claude.json MCP configuration format
+///
+/// Supports both stdio MCPs (command + args) and HTTP MCPs (url).
+/// `command` defaults to "" when missing (HTTP MCPs have no command).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClaudeMcpConfig {
+    #[serde(default)]
     pub command: String,
     pub args: Option<Vec<String>>,
     pub env: Option<HashMap<String, String>>,
+    /// URL for HTTP-type MCP servers
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    /// MCP type: "stdio" or "http"
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub mcp_type: Option<String>,
 }
 
 /// Claude settings.json root structure
@@ -315,6 +338,12 @@ pub struct DetectedMcp {
     pub env: Option<HashMap<String, String>>,
     pub scope: Option<String>,        // "user" or "local"
     pub project_path: Option<String>, // Project path when scope is "local"
+    /// URL for HTTP-type MCP servers
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    /// MCP type: "stdio" or "http"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mcp_type: Option<String>,
 }
 
 /// Import item

@@ -235,11 +235,13 @@ pub fn detect_existing_config(claude_config_dir: String) -> Result<ExistingConfi
                     for (name, config) in claude_json.mcp_servers {
                         detected_mcps.push(DetectedMcp {
                             name,
-                            command: config.command,
+                            command: config.command.clone(),
                             args: config.args.unwrap_or_default(),
                             env: config.env,
                             scope: Some("user".to_string()),
                             project_path: None,
+                            url: config.url.clone(),
+                            mcp_type: config.mcp_type.clone(),
                         });
                     }
 
@@ -248,11 +250,13 @@ pub fn detect_existing_config(claude_config_dir: String) -> Result<ExistingConfi
                         for (name, config) in project_config.mcp_servers {
                             detected_mcps.push(DetectedMcp {
                                 name,
-                                command: config.command,
+                                command: config.command.clone(),
                                 args: config.args.unwrap_or_default(),
                                 env: config.env,
                                 scope: Some("local".to_string()),
                                 project_path: Some(project_path.clone()),
+                                url: config.url.clone(),
+                                mcp_type: config.mcp_type.clone(),
                             });
                         }
                     }
@@ -267,15 +271,17 @@ pub fn detect_existing_config(claude_config_dir: String) -> Result<ExistingConfi
         if let Ok(content) = fs::read_to_string(&settings_path) {
             if let Ok(settings) = serde_json::from_str::<ClaudeSettings>(&content) {
                 for (name, config) in settings.mcp_servers {
-                    // Only add if not already detected (avoid duplicates)
-                    if !detected_mcps.iter().any(|m| m.name == name) {
+                    // Only add if not already detected with same name AND scope (avoid duplicates)
+                    if !detected_mcps.iter().any(|m| m.name == name && m.scope.as_deref() == Some("user")) {
                         detected_mcps.push(DetectedMcp {
                             name,
-                            command: config.command,
+                            command: config.command.clone(),
                             args: config.args.unwrap_or_default(),
                             env: config.env,
                             scope: Some("user".to_string()),
                             project_path: None,
+                            url: config.url.clone(),
+                            mcp_type: config.mcp_type.clone(),
                         });
                     }
                 }
@@ -619,57 +625,119 @@ fn copy_skill(item: &ImportItem, dest_dir: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// Extract MCP configuration from claude settings.json and save as standalone JSON file
+/// Extract MCP configuration and save as standalone JSON file
 ///
-/// This reads the MCP config from ~/.claude/settings.json and creates a standalone
-/// JSON file in ~/.ensemble/mcps/<name>.json
+/// This reads the MCP config from ~/.claude.json (primary) or ~/.claude/settings.json
+/// (fallback) and creates a standalone JSON file in ~/.ensemble/mcps/<name>.json
 fn extract_mcp_config(
     item: &ImportItem,
     claude_path: &Path,
     dest_dir: &Path,
 ) -> Result<(), String> {
-    // Read claude settings.json
-    let settings_path = claude_path.join("settings.json");
-    let content = fs::read_to_string(&settings_path)
-        .map_err(|e| format!("Failed to read settings.json: {}", e))?;
-    let settings: ClaudeSettings =
-        serde_json::from_str(&content).map_err(|e| format!("Failed to parse settings.json: {}", e))?;
-
-    // Find the corresponding MCP configuration
-    if let Some(mcp_config) = settings.mcp_servers.get(&item.name) {
-        // Check if destination already exists
-        let dest_path = dest_dir.join(format!("{}.json", item.name));
-        if dest_path.exists() {
-            return Err(format!(
-                "MCP config '{}' already exists in destination",
-                item.name
-            ));
-        }
-
-        // Create standalone MCP config file
-        let mcp_file = McpConfigFile {
-            name: item.name.clone(),
-            description: Some("Imported from Claude Code".to_string()),
-            command: mcp_config.command.clone(),
-            args: mcp_config.args.clone(),
-            env: mcp_config.env.clone(),
-            provided_tools: None, // MCP provided tools are discovered at runtime
-            // Not from plugin, so these are None
-            install_source: Some("local".to_string()),
-            plugin_id: None,
-            plugin_name: None,
-            marketplace: None,
-        };
-
-        let json = serde_json::to_string_pretty(&mcp_file)
-            .map_err(|e| format!("Failed to serialize MCP config: {}", e))?;
-        fs::write(&dest_path, json)
-            .map_err(|e| format!("Failed to write MCP config file: {}", e))?;
-
-        Ok(())
-    } else {
-        Err(format!("MCP '{}' not found in settings.json", item.name))
+    // Check if destination already exists
+    let dest_path = dest_dir.join(format!("{}.json", item.name));
+    if dest_path.exists() {
+        return Err(format!(
+            "MCP config '{}' already exists in destination",
+            item.name
+        ));
     }
+
+    // Try to read from ~/.claude.json first (primary source)
+    if let Ok(claude_json_path) = get_claude_json_path() {
+        if claude_json_path.exists() {
+            if let Ok(content) = fs::read_to_string(&claude_json_path) {
+                if let Ok(claude_json) = serde_json::from_str::<ClaudeJsonRoot>(&content) {
+                    // Search in user-scope mcpServers
+                    if let Some(mcp_config) = claude_json.mcp_servers.get(&item.name) {
+                        let mcp_file = McpConfigFile {
+                            name: item.name.clone(),
+                            description: Some("Imported from Claude Code".to_string()),
+                            command: mcp_config.command.clone(),
+                            args: mcp_config.args.clone(),
+                            env: mcp_config.env.clone(),
+                            provided_tools: None,
+                            url: mcp_config.url.clone(),
+                            mcp_type: mcp_config.mcp_type.clone(),
+                            install_source: Some("local".to_string()),
+                            plugin_id: None,
+                            plugin_name: None,
+                            marketplace: None,
+                        };
+
+                        let json = serde_json::to_string_pretty(&mcp_file)
+                            .map_err(|e| format!("Failed to serialize MCP config: {}", e))?;
+                        fs::write(&dest_path, json)
+                            .map_err(|e| format!("Failed to write MCP config file: {}", e))?;
+                        return Ok(());
+                    }
+
+                    // Search in project-scope mcpServers
+                    for (_project_path, project_config) in &claude_json.projects {
+                        if let Some(mcp_config) = project_config.mcp_servers.get(&item.name) {
+                            let mcp_file = McpConfigFile {
+                                name: item.name.clone(),
+                                description: Some("Imported from Claude Code".to_string()),
+                                command: mcp_config.command.clone(),
+                                args: mcp_config.args.clone(),
+                                env: mcp_config.env.clone(),
+                                provided_tools: None,
+                                url: mcp_config.url.clone(),
+                                mcp_type: mcp_config.mcp_type.clone(),
+                                install_source: Some("local".to_string()),
+                                plugin_id: None,
+                                plugin_name: None,
+                                marketplace: None,
+                            };
+
+                            let json = serde_json::to_string_pretty(&mcp_file)
+                                .map_err(|e| format!("Failed to serialize MCP config: {}", e))?;
+                            fs::write(&dest_path, json)
+                                .map_err(|e| format!("Failed to write MCP config file: {}", e))?;
+                            return Ok(());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Fallback: try reading from ~/.claude/settings.json (backward compatibility)
+    let settings_path = claude_path.join("settings.json");
+    if settings_path.exists() {
+        let content = fs::read_to_string(&settings_path)
+            .map_err(|e| format!("Failed to read settings.json: {}", e))?;
+        let settings: ClaudeSettings =
+            serde_json::from_str(&content).map_err(|e| format!("Failed to parse settings.json: {}", e))?;
+
+        if let Some(mcp_config) = settings.mcp_servers.get(&item.name) {
+            let mcp_file = McpConfigFile {
+                name: item.name.clone(),
+                description: Some("Imported from Claude Code".to_string()),
+                command: mcp_config.command.clone(),
+                args: mcp_config.args.clone(),
+                env: mcp_config.env.clone(),
+                provided_tools: None,
+                url: mcp_config.url.clone(),
+                mcp_type: mcp_config.mcp_type.clone(),
+                install_source: Some("local".to_string()),
+                plugin_id: None,
+                plugin_name: None,
+                marketplace: None,
+            };
+
+            let json = serde_json::to_string_pretty(&mcp_file)
+                .map_err(|e| format!("Failed to serialize MCP config: {}", e))?;
+            fs::write(&dest_path, json)
+                .map_err(|e| format!("Failed to write MCP config file: {}", e))?;
+            return Ok(());
+        }
+    }
+
+    Err(format!(
+        "MCP '{}' not found in ~/.claude.json or settings.json",
+        item.name
+    ))
 }
 
 /// Update Skill scope and sync to corresponding location
@@ -822,6 +890,8 @@ pub fn update_mcp_scope(
                 command: mcp_config.command.clone(),
                 args: mcp_config.args.clone(),
                 env: mcp_config.env.clone(),
+                url: mcp_config.url.clone(),
+                mcp_type: mcp_config.mcp_type.clone(),
             };
             claude_json
                 .mcp_servers

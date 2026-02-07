@@ -816,6 +816,8 @@ pub fn import_plugin_mcps(items: Vec<PluginImportItem>, dest_dir: String) -> Res
             args: Some(mcp_config.args.clone()),
             env: mcp_config.env.clone(),
             provided_tools: None,
+            url: None,
+            mcp_type: None,
             install_source: Some("plugin".to_string()),
             plugin_id: Some(item.plugin_id.clone()),
             plugin_name: Some(item.plugin_name.clone()),
