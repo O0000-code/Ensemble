@@ -21,9 +21,9 @@ Core workflow:
 ![Ensemble - Skills Management with Detail Panel](docs/screenshots/skill-detail.png)
 
 <p align="center">
-  <a href="docs/screenshots/claude-md-list.png"><img src="docs/screenshots/claude-md-list.png" width="33%" alt="CLAUDE.md Management" /></a>
-  <a href="docs/screenshots/mcp-detail.png"><img src="docs/screenshots/mcp-detail.png" width="33%" alt="MCP Server Detail" /></a>
-  <a href="docs/screenshots/category-filter.png"><img src="docs/screenshots/category-filter.png" width="33%" alt="Category Filter" /></a>
+  <a href="docs/screenshots/claude-md-list.png"><img src="docs/screenshots/claude-md-list.png" width="32%" alt="CLAUDE.md Management" /></a>
+  <a href="docs/screenshots/mcp-detail.png"><img src="docs/screenshots/mcp-detail.png" width="32%" alt="MCP Server Detail" /></a>
+  <a href="docs/screenshots/category-filter.png"><img src="docs/screenshots/category-filter.png" width="32%" alt="Category Filter" /></a>
 </p>
 
 ## Features
