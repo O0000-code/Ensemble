@@ -541,7 +541,9 @@ export function ImportMcpModal({
                         </div>
                         {/* Description - 12px #71717A */}
                         <span className="text-[12px] font-normal text-[#71717A] truncate">
-                          {mcp.command} {mcp.args?.join(' ')}
+                          {mcp.mcpType === 'http' && mcp.url
+                            ? `HTTP · ${mcp.url}`
+                            : `${mcp.command} ${mcp.args?.join(' ')}`}
                         </span>
                       </div>
                     </div>

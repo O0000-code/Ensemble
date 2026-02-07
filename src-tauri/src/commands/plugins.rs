@@ -80,11 +80,16 @@ struct McpJsonFile {
 
 #[derive(Debug, Deserialize)]
 struct McpServerConfig {
+    #[serde(default)]
     command: String,
     #[serde(default)]
     args: Vec<String>,
     #[serde(default)]
     env: Option<HashMap<String, String>>,
+    #[serde(rename = "type", default)]
+    mcp_type: Option<String>,
+    #[serde(default)]
+    url: Option<String>,
 }
 
 // ============================================================================
@@ -665,6 +670,8 @@ pub fn detect_plugin_mcps(imported_plugin_mcps: Vec<String>) -> Result<Vec<Detec
                     command: mcp_config.command,
                     args: mcp_config.args,
                     env: mcp_config.env,
+                    url: mcp_config.url,
+                    mcp_type: mcp_config.mcp_type,
                     path: mcp_json_path.to_string_lossy().to_string(),
                     version: version.clone(),
                     is_imported,
@@ -832,8 +839,8 @@ pub fn import_plugin_mcps(items: Vec<PluginImportItem>, dest_dir: String) -> Res
             args: Some(mcp_config.args.clone()),
             env: mcp_config.env.clone(),
             provided_tools: None,
-            url: None,
-            mcp_type: None,
+            url: mcp_config.url.clone(),
+            mcp_type: mcp_config.mcp_type.clone(),
             install_source: Some("plugin".to_string()),
             plugin_id: Some(item.plugin_id.clone()),
             plugin_name: Some(item.plugin_name.clone()),

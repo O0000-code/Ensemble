@@ -25,6 +25,8 @@ export interface DetectedPluginMcp {
   command: string;            // 执行命令
   args: string[];             // 命令参数
   env?: Record<string, string>; // 环境变量
+  url?: string;               // HTTP MCP URL
+  mcpType?: string;           // MCP type: "stdio" or "http"
   path: string;               // .mcp.json 路径
   version: string;            // 插件版本
   isImported: boolean;        // 是否已导入

@@ -512,11 +512,18 @@ pub struct DetectedPluginMcp {
     /// MCP name (from .mcp.json)
     pub mcp_name: String,
     /// Execution command
+    #[serde(default)]
     pub command: String,
     /// Command arguments
     pub args: Vec<String>,
     /// Environment variables
     pub env: Option<HashMap<String, String>>,
+    /// URL for HTTP-type MCP servers
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    /// MCP type: "stdio" or "http"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mcp_type: Option<String>,
     /// Path to .mcp.json file
     pub path: String,
     /// Plugin version
