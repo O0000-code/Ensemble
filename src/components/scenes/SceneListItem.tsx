@@ -184,7 +184,7 @@ export const SceneListItem: React.FC<SceneListItemProps> = ({
 
             {/* Stats - absolute positioned, overlays description */}
             <span
-              className="absolute top-0 left-0 whitespace-nowrap text-xs font-normal text-[#71717A]"
+              className="absolute top-0 left-0 w-full truncate text-xs font-normal text-[#71717A]"
               style={{
                 opacity: compact ? 1 : 0,
                 transition: `opacity ${TRANSITION_BASE}`,
