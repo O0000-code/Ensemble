@@ -1,3 +1,6 @@
+// NOTE: This component is NOT actively used. The actual Scenes detail UI
+// is rendered via SlidePanel inside ScenesPage.tsx. Do not modify this file
+// expecting to see changes in the app.
 import React, { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -288,20 +291,20 @@ export const SceneDetailPage: React.FC = () => {
         detailHeader={
           selectedScene && (
             <>
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F4F4F5]">
+              <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-[#F4F4F5]">
                   <SceneIconComponent className="h-[18px] w-[18px] text-[#18181B]" />
                 </div>
-                <div className="flex flex-col gap-0.5">
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <h2 className="text-base font-semibold text-[#18181B]">
                     {selectedScene.name}
                   </h2>
-                  <p className="text-xs font-normal text-[#71717A]">
+                  <p className="w-full truncate text-xs font-normal text-[#71717A]" title={selectedScene.description}>
                     {selectedScene.description}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 <Button variant="secondary" size="small" icon={<Pencil />}>
                   Edit
                 </Button>

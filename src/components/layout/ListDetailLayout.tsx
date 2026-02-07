@@ -93,7 +93,7 @@ export function ListDetailLayout({
                 onMouseDown={startDrag}
               >
                 {/* Content with pointer-events control */}
-                <div className="pointer-events-none flex w-full items-center justify-between [&_button]:pointer-events-auto [&_input]:pointer-events-auto [&_a]:pointer-events-auto [&_[role='button']]:pointer-events-auto [&_[role='switch']]:pointer-events-auto">
+                <div className="pointer-events-none flex w-full min-w-0 items-center justify-between overflow-hidden [&_button]:pointer-events-auto [&_input]:pointer-events-auto [&_a]:pointer-events-auto [&_[role='button']]:pointer-events-auto [&_[role='switch']]:pointer-events-auto">
                   {detailHeader}
                 </div>
               </div>
