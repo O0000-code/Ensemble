@@ -86,6 +86,23 @@ fn write_claude_json(config: &ClaudeJson) -> Result<(), String> {
 pub fn detect_existing_config(claude_config_dir: String) -> Result<ExistingConfig, String> {
     let claude_dir = expand_tilde(&claude_config_dir);
 
+    // Build a set of skill names already imported to ~/.ensemble/skills/
+    // so we don't show them again in the import list
+    let ensemble_skills_dir = crate::utils::get_ensemble_dir().join("skills");
+    let already_imported_skills: std::collections::HashSet<String> = if ensemble_skills_dir.exists() {
+        fs::read_dir(&ensemble_skills_dir)
+            .ok()
+            .map(|entries| {
+                entries
+                    .filter_map(|e| e.ok())
+                    .map(|e| e.file_name().to_string_lossy().to_string())
+                    .collect()
+            })
+            .unwrap_or_default()
+    } else {
+        std::collections::HashSet::new()
+    };
+
     // ========================================================================
     // 1. Detect Skills in ~/.claude/skills/ directory (supports symlinks)
     // ========================================================================
@@ -107,6 +124,11 @@ pub fn detect_existing_config(claude_config_dir: String) -> Result<ExistingConfi
 
                 // Skip hidden directories
                 if skill_name.starts_with('.') {
+                    continue;
+                }
+
+                // Skip skills already imported to ~/.ensemble/skills/
+                if already_imported_skills.contains(&skill_name) {
                     continue;
                 }
 
@@ -187,8 +209,11 @@ pub fn detect_existing_config(claude_config_dir: String) -> Result<ExistingConfi
                         .map(|n| n.to_string_lossy().to_string())
                         .unwrap_or_default();
 
-                    // Skip hidden directories and already-detected skills
-                    if skill_name.starts_with('.') || existing_names.contains(&skill_name) {
+                    // Skip hidden directories, already-detected skills, and already-imported skills
+                    if skill_name.starts_with('.')
+                        || existing_names.contains(&skill_name)
+                        || already_imported_skills.contains(&skill_name)
+                    {
                         continue;
                     }
 

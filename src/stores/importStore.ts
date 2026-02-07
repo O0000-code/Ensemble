@@ -308,7 +308,7 @@ export const useImportStore = create<ImportState>((set, get) => ({
   },
 
   closeSkillsModal: () => {
-    set({ isSkillsModalOpen: false, detectedSkills: [], error: null });
+    set({ isSkillsModalOpen: false, detectedSkills: [], selectedItems: [], error: null });
   },
 
   openMcpsModal: async () => {
@@ -317,7 +317,7 @@ export const useImportStore = create<ImportState>((set, get) => ({
   },
 
   closeMcpsModal: () => {
-    set({ isMcpsModalOpen: false, detectedMcps: [], error: null });
+    set({ isMcpsModalOpen: false, detectedMcps: [], selectedItems: [], error: null });
   },
 
   // ============================================================================
