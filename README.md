@@ -81,8 +81,6 @@ Core workflow:
 ### Download
 Download the latest `.dmg` from the [Releases](https://github.com/O0000-code/Ensemble/releases) page.
 
-> **Note:** The app is signed but not yet notarized (pending Apple review). On first launch, macOS may show "Ensemble can't be opened because Apple cannot check it for malicious software." To open it: go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**. This is only needed once.
-
 ### Build from Source
 
 Requirements:

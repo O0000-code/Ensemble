@@ -14,16 +14,6 @@
 3. Open the DMG and drag **Ensemble** to your Applications folder
 4. Launch Ensemble from Applications
 
-### Handling the macOS Security Warning
-
-Ensemble is not notarized by Apple. On first launch, macOS will block the app. To open it:
-
-1. Right-click (or Control-click) the Ensemble app in your Applications folder
-2. Select **"Open"** from the context menu
-3. Click **"Open"** in the confirmation dialog
-
-This only needs to be done once. Subsequent launches will work normally.
-
 ## Option 2: Build from Source
 
 ### Prerequisites
