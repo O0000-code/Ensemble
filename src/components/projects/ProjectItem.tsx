@@ -142,7 +142,7 @@ export function NewProjectItem({
       onClick={onClick}
       className="
         flex w-full items-center gap-3.5
-        rounded-lg border-2 border-[#18181B] bg-[#FAFAFA]
+        rounded-lg border border-[#E5E5E5] bg-[#FAFAFA]
         px-5 py-4
         text-left
         transition-colors duration-150

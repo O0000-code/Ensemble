@@ -298,7 +298,7 @@ export function ProjectsPage() {
                   key={project.id}
                   project={project}
                   scene={scene}
-                  compact={!!selectedProjectId && !isCreating}
+                  compact={isDetailOpen}
                   selected={selectedProjectId === project.id && !isCreating}
                   onClick={() => selectProject(project.id)}
                   onDelete={() => handleDeleteProject(project.id)}
