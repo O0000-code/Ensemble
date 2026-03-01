@@ -1,0 +1,183 @@
+# DEFERRED: Requires OPENAI_API_KEY GitHub Secret. Workflow will fail without it.
+# =============================================================================
+# Ensemble Tauri 桌面应用 -- Codex Action 配置
+# 技术栈: React 18 + TypeScript + Tailwind CSS 4 + Tauri 2 + Rust + Vite 6
+# 路径: .github/workflows/codex.yml
+# =============================================================================
+
+name: Codex - Ensemble
+
+on:
+  # PR 代码审查
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+  # @codex 互动模式
+  issue_comment:
+    types: [created]
+
+  # Issue 自动化
+  issues:
+    types: [labeled, assigned]
+
+  # CI 失败自动修复
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+  # 每日健康检查（UTC 02:00 = 北京时间 10:00，仅工作日，与 Sleep_Debt 错开 1 小时）
+  schedule:
+    - cron: "0 2 * * 1-5"
+
+  # 手动触发
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "Task for Codex"
+        default: "Run all tests and report results"
+        required: false
+
+jobs:
+  codex:
+    if: |
+      (github.event_name == 'pull_request') ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@codex')) ||
+      (github.event_name == 'issues' && (
+        (github.event.action == 'labeled' && github.event.label.name == 'codex') ||
+        github.event.action == 'assigned'
+      )) ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure') ||
+      (github.event_name == 'schedule') ||
+      (github.event_name == 'workflow_dispatch')
+
+    # Tauri 前端测试和 Rust 测试可在 Linux 上运行
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: read
+
+    timeout-minutes: 30
+
+    concurrency:
+      group: codex-ensemble-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}
+      cancel-in-progress: true
+
+    outputs:
+      final_message: ${{ steps.run_codex.outputs.final-message }}
+
+    steps:
+      # 1. 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # 2. PR 场景: 获取 base 和 head ref
+      - name: Pre-fetch PR refs
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --no-tags origin \
+            ${{ github.event.pull_request.base.ref }} \
+            +refs/pull/${{ github.event.pull_request.number }}/head
+
+      # 3. 安装 Tauri 系统依赖（Codex sandbox 禁用网络，需提前安装）
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      # 4. 配置 Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # 5. 配置 Rust
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      # 6. 缓存 Cargo
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # 7. 安装前端依赖
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # 8. 准备 Prompt
+      - name: Prepare Codex prompt
+        id: prepare_prompt
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "prompt_file=.github/codex/prompts/review-tauri.md" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" == "schedule" ]; then
+            echo "prompt_file=.github/codex/prompts/daily-check-tauri.md" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" == "workflow_run" ]; then
+            echo "prompt_file=.github/codex/prompts/autofix-tauri.md" >> "$GITHUB_OUTPUT"
+          else
+            echo "prompt_file=" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 9. 运行 Codex Action
+      - name: Run Codex
+        id: run_codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: ${{ steps.prepare_prompt.outputs.prompt_file }}
+          prompt: |
+            ${{ github.event_name == 'issue_comment' && github.event.comment.body || '' }}
+            ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.prompt || '' }}
+            ${{ github.event_name == 'issues' && format('Implement the following issue: {0}\n{1}', github.event.issue.title, github.event.issue.body) || '' }}
+
+          safety-strategy: drop-sudo
+          sandbox: workspace-write
+          output-file: codex-output.md
+          codex-args: '--full-auto --model gpt-5.3-codex'
+
+  # 发布反馈
+  post_feedback:
+    runs-on: ubuntu-latest
+    needs: codex
+    if: |
+      needs.codex.outputs.final_message != '' &&
+      (github.event_name == 'pull_request' || github.event_name == 'issue_comment')
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Post Codex feedback
+        uses: actions/github-script@v7
+        env:
+          CODEX_FINAL_MESSAGE: ${{ needs.codex.outputs.final_message }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const issueNumber = context.payload.pull_request?.number
+              || context.payload.issue?.number;
+            if (issueNumber) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: process.env.CODEX_FINAL_MESSAGE,
+              });
+            }
