@@ -1,0 +1,33 @@
+# ============================================================
+# Ensemble Tauri 项目 — Codex 安全配置
+# 适用权限级别: Level 2 (PR Creator)
+# ============================================================
+
+# 模型配置
+model = "gpt-5.3-codex"
+model_reasoning_effort = "high"
+
+# 权限配置 — Ensemble 不需要 danger-full-access
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+# 网络访问（默认关闭，npm install 时按需开启）
+[sandbox_workspace_write]
+network_access = false
+
+# Shell 环境策略
+[shell_environment_policy]
+inherit = "core"
+set = { NODE_ENV = "development" }
+
+# MCP 服务器配置
+[mcp_servers.linear]
+url = "https://mcp.linear.app/mcp"
+
+# 项目信任级别
+[projects."/Users/bo/Documents/Development/Ensemble/Ensemble2"]
+trust_level = "trusted"
+
+# 会话历史
+[history]
+persistence = "save-all"

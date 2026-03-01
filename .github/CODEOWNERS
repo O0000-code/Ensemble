@@ -1,0 +1,7 @@
+# Ensemble CODEOWNERS
+# Protect agent configuration files from unauthorized modifications.
+# All changes to these paths require review and approval by @O0000-code.
+
+AGENTS.md @O0000-code
+.codex/ @O0000-code
+.github/ @O0000-code

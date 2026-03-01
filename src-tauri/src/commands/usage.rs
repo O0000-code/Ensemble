@@ -336,4 +336,85 @@ mod tests {
         assert_eq!(stats.mcps.len(), 1);
         assert!(stats.mcps.contains_key("roam-research"));
     }
+
+    #[test]
+    fn test_process_mcp_tool_multiple_calls_increment() {
+        let mut stats = UsageStats::default();
+        process_mcp_tool("mcp__pencil__batch_design", Some("2026-01-01T10:00:00Z".to_string()), &mut stats);
+        process_mcp_tool("mcp__pencil__get_screenshot", Some("2026-01-01T11:00:00Z".to_string()), &mut stats);
+        process_mcp_tool("mcp__pencil__batch_design", Some("2026-01-01T12:00:00Z".to_string()), &mut stats);
+
+        assert_eq!(stats.mcps.len(), 1);
+        let pencil = stats.mcps.get("pencil").unwrap();
+        assert_eq!(pencil.total_calls, 3);
+        assert_eq!(pencil.last_used, Some("2026-01-01T12:00:00Z".to_string()));
+    }
+
+    #[test]
+    fn test_process_skill_tool() {
+        let mut stats = UsageStats::default();
+        let input = Some(ToolInput {
+            skill: Some("commit".to_string()),
+        });
+        process_skill_tool(&input, Some("2026-01-15T08:00:00Z".to_string()), &mut stats);
+
+        assert_eq!(stats.skills.len(), 1);
+        let skill = stats.skills.get("commit").unwrap();
+        assert_eq!(skill.call_count, 1);
+        assert_eq!(skill.last_used, Some("2026-01-15T08:00:00Z".to_string()));
+    }
+
+    #[test]
+    fn test_process_skill_tool_no_input() {
+        let mut stats = UsageStats::default();
+        process_skill_tool(&None, Some("2026-01-15T08:00:00Z".to_string()), &mut stats);
+        assert_eq!(stats.skills.len(), 0);
+    }
+
+    #[test]
+    fn test_process_tool_call_mcp() {
+        let mut stats = UsageStats::default();
+        let result = process_tool_call("mcp__firecrawl__scrape", &None, Some("2026-01-01T00:00:00Z".to_string()), &mut stats);
+        assert!(result);
+        assert_eq!(stats.mcps.len(), 1);
+    }
+
+    #[test]
+    fn test_process_tool_call_skill() {
+        let mut stats = UsageStats::default();
+        let input = Some(ToolInput { skill: Some("review-pr".to_string()) });
+        let result = process_tool_call("Skill", &input, Some("2026-01-01T00:00:00Z".to_string()), &mut stats);
+        assert!(result);
+        assert_eq!(stats.skills.len(), 1);
+    }
+
+    #[test]
+    fn test_process_tool_call_other_tool() {
+        let mut stats = UsageStats::default();
+        let result = process_tool_call("Read", &None, Some("2026-01-01T00:00:00Z".to_string()), &mut stats);
+        assert!(!result);
+        assert_eq!(stats.mcps.len(), 0);
+        assert_eq!(stats.skills.len(), 0);
+    }
+
+    #[test]
+    fn test_update_last_used_none_to_some() {
+        let mut current: Option<String> = None;
+        update_last_used(&mut current, "2026-01-01T10:00:00Z".to_string());
+        assert_eq!(current, Some("2026-01-01T10:00:00Z".to_string()));
+    }
+
+    #[test]
+    fn test_update_last_used_keeps_newer() {
+        let mut current = Some("2026-01-02T10:00:00Z".to_string());
+        update_last_used(&mut current, "2026-01-01T10:00:00Z".to_string());
+        assert_eq!(current, Some("2026-01-02T10:00:00Z".to_string()));
+    }
+
+    #[test]
+    fn test_update_last_used_replaces_older() {
+        let mut current = Some("2026-01-01T10:00:00Z".to_string());
+        update_last_used(&mut current, "2026-01-02T10:00:00Z".to_string());
+        assert_eq!(current, Some("2026-01-02T10:00:00Z".to_string()));
+    }
 }

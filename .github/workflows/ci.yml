@@ -1,0 +1,148 @@
+# =============================================================================
+# Ensemble Tauri Desktop App -- CI Workflow
+# Trigger: PR push / main branch push / manual trigger
+# Runner: Ubuntu (frontend tests and Rust tests both run on Linux)
+# =============================================================================
+
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE'
+
+  workflow_dispatch:
+
+concurrency:
+  group: ci-ensemble-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # =========================================================================
+  # Job 1: Frontend -- TypeScript + React
+  # =========================================================================
+  frontend:
+    name: Frontend (TypeScript + React)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Type Check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint . --max-warnings 0
+
+      - name: Test
+        run: npm run test -- --coverage --reporter=junit --outputFile=test-results.xml
+        env:
+          CI: true
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-frontend
+          path: |
+            test-results.xml
+            coverage/
+          retention-days: 14
+
+      - name: Coverage Summary
+        if: success()
+        run: |
+          if [ -f coverage/coverage-summary.json ]; then
+            COVERAGE=$(python3 -c "
+          import json
+          with open('coverage/coverage-summary.json') as f:
+              data = json.load(f)
+              total = data.get('total', {}).get('lines', {}).get('pct', 0)
+              print(f'{total:.1f}%')
+          " 2>/dev/null || echo "N/A")
+            echo "### Frontend Coverage: $COVERAGE" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # =========================================================================
+  # Job 2: Backend -- Rust + Tauri
+  # =========================================================================
+  backend:
+    name: Backend (Rust + Tauri)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Format Check
+        working-directory: src-tauri
+        run: cargo fmt -- --check
+
+      - name: Clippy
+        working-directory: src-tauri
+        run: cargo clippy -- -D warnings
+
+      - name: Test
+        working-directory: src-tauri
+        run: cargo test --verbose 2>&1 | tee test-output.txt
+
+      - name: Build Check
+        working-directory: src-tauri
+        run: cargo build
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-backend
+          path: src-tauri/test-output.txt
+          retention-days: 14

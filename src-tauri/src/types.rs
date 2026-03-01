@@ -867,3 +867,135 @@ pub struct TrashedItems {
     pub mcps: Vec<TrashedMcp>,
     pub claude_md_files: Vec<TrashedClaudeMd>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_claude_md_type_as_str() {
+        assert_eq!(ClaudeMdType::Global.as_str(), "global");
+        assert_eq!(ClaudeMdType::Project.as_str(), "project");
+        assert_eq!(ClaudeMdType::Local.as_str(), "local");
+    }
+
+    #[test]
+    fn test_claude_md_distribution_path_as_str() {
+        assert_eq!(ClaudeMdDistributionPath::ClaudeDir.as_str(), ".claude/CLAUDE.md");
+        assert_eq!(ClaudeMdDistributionPath::Root.as_str(), "CLAUDE.md");
+        assert_eq!(ClaudeMdDistributionPath::Local.as_str(), "CLAUDE.local.md");
+    }
+
+    #[test]
+    fn test_claude_md_distribution_path_default() {
+        let default = ClaudeMdDistributionPath::default();
+        assert_eq!(default, ClaudeMdDistributionPath::ClaudeDir);
+    }
+
+    #[test]
+    fn test_claude_md_conflict_resolution_default() {
+        let default = ClaudeMdConflictResolution::default();
+        assert_eq!(default, ClaudeMdConflictResolution::Backup);
+    }
+
+    #[test]
+    fn test_app_settings_default() {
+        let settings = AppSettings::default();
+        assert_eq!(settings.skill_source_dir, "~/.ensemble/skills");
+        assert_eq!(settings.mcp_source_dir, "~/.ensemble/mcps");
+        assert_eq!(settings.claude_config_dir, "~/.claude");
+        assert_eq!(settings.terminal_app, "Terminal");
+        assert_eq!(settings.claude_command, "claude");
+        assert_eq!(settings.warp_open_mode, "window");
+        assert!(!settings.auto_classify_new_items);
+        assert!(!settings.has_completed_import);
+        assert!(settings.anthropic_api_key.is_none());
+        assert_eq!(settings.claude_md_distribution_path, ClaudeMdDistributionPath::ClaudeDir);
+    }
+
+    #[test]
+    fn test_app_data_default() {
+        let data = AppData::default();
+        assert!(data.categories.is_empty());
+        assert!(data.tags.is_empty());
+        assert!(data.scenes.is_empty());
+        assert!(data.projects.is_empty());
+        assert!(data.skill_metadata.is_empty());
+        assert!(data.mcp_metadata.is_empty());
+        assert!(data.trashed_scenes.is_empty());
+        assert!(data.trashed_projects.is_empty());
+        assert!(data.imported_plugin_skills.is_empty());
+        assert!(data.imported_plugin_mcps.is_empty());
+        assert!(data.claude_md_files.is_empty());
+        assert!(data.global_claude_md_id.is_none());
+    }
+
+    #[test]
+    fn test_tool_serde_roundtrip() {
+        let tool = Tool {
+            name: "test-tool".to_string(),
+            description: "A test tool".to_string(),
+        };
+        let json = serde_json::to_string(&tool).unwrap();
+        let deserialized: Tool = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.name, "test-tool");
+        assert_eq!(deserialized.description, "A test tool");
+    }
+
+    #[test]
+    fn test_category_serde_roundtrip() {
+        let category = Category {
+            id: "cat-1".to_string(),
+            name: "Development".to_string(),
+            color: "#3B82F6".to_string(),
+            count: 5,
+        };
+        let json = serde_json::to_string(&category).unwrap();
+        let deserialized: Category = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.id, "cat-1");
+        assert_eq!(deserialized.name, "Development");
+        assert_eq!(deserialized.color, "#3B82F6");
+        assert_eq!(deserialized.count, 5);
+    }
+
+    #[test]
+    fn test_claude_md_type_serde_roundtrip() {
+        // ClaudeMdType serializes to lowercase
+        let json = serde_json::to_string(&ClaudeMdType::Global).unwrap();
+        assert_eq!(json, "\"global\"");
+
+        let deserialized: ClaudeMdType = serde_json::from_str("\"project\"").unwrap();
+        assert_eq!(deserialized, ClaudeMdType::Project);
+    }
+
+    #[test]
+    fn test_claude_md_distribution_path_serde() {
+        let json = serde_json::to_string(&ClaudeMdDistributionPath::Root).unwrap();
+        assert_eq!(json, "\"CLAUDE.md\"");
+
+        let json_dir = serde_json::to_string(&ClaudeMdDistributionPath::ClaudeDir).unwrap();
+        assert_eq!(json_dir, "\".claude/CLAUDE.md\"");
+
+        let deserialized: ClaudeMdDistributionPath = serde_json::from_str("\"CLAUDE.local.md\"").unwrap();
+        assert_eq!(deserialized, ClaudeMdDistributionPath::Local);
+    }
+
+    #[test]
+    fn test_claude_mcp_config_http_type() {
+        let json = r#"{"url":"https://example.com/mcp","type":"http"}"#;
+        let config: ClaudeMcpConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(config.command, ""); // default empty string when missing
+        assert_eq!(config.url, Some("https://example.com/mcp".to_string()));
+        assert_eq!(config.mcp_type, Some("http".to_string()));
+    }
+
+    #[test]
+    fn test_claude_mcp_config_stdio_type() {
+        let json = r#"{"command":"node","args":["server.js"]}"#;
+        let config: ClaudeMcpConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(config.command, "node");
+        assert_eq!(config.args, Some(vec!["server.js".to_string()]));
+        assert!(config.url.is_none());
+        assert!(config.mcp_type.is_none());
+    }
+}

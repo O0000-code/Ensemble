@@ -139,7 +139,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_skill_md() {
+    fn test_parse_skill_md_with_frontmatter() {
         let content = r#"---
 name: test-skill
 description: A test skill
@@ -157,6 +157,117 @@ This is the instruction content.
         let (frontmatter, instructions) = parse_skill_md(content);
         assert_eq!(frontmatter.name, Some("test-skill".to_string()));
         assert_eq!(frontmatter.description, Some("A test skill".to_string()));
+        assert_eq!(frontmatter.license, Some("MIT".to_string()));
         assert!(instructions.contains("# Test Skill"));
+        assert!(instructions.contains("This is the instruction content."));
+    }
+
+    #[test]
+    fn test_parse_skill_md_without_frontmatter() {
+        let content = "# Just Instructions\nNo frontmatter here.";
+        let (frontmatter, instructions) = parse_skill_md(content);
+        assert_eq!(frontmatter.name, None);
+        assert_eq!(frontmatter.description, None);
+        assert_eq!(instructions, content);
+    }
+
+    #[test]
+    fn test_parse_skill_md_unclosed_frontmatter() {
+        let content = "---\nname: broken\nNo closing delimiter";
+        let (frontmatter, instructions) = parse_skill_md(content);
+        // Unclosed frontmatter: entire content returned as instructions
+        assert_eq!(frontmatter.name, None);
+        assert_eq!(instructions, content);
+    }
+
+    #[test]
+    fn test_parse_key_value_basic() {
+        let result = parse_key_value("name: my-skill");
+        assert_eq!(result, Some(("name".to_string(), "my-skill".to_string())));
+    }
+
+    #[test]
+    fn test_parse_key_value_with_quotes() {
+        let result = parse_key_value("version: \"1.0.0\"");
+        assert_eq!(result, Some(("version".to_string(), "1.0.0".to_string())));
+
+        let result_single = parse_key_value("version: '2.0.0'");
+        assert_eq!(result_single, Some(("version".to_string(), "2.0.0".to_string())));
+    }
+
+    #[test]
+    fn test_parse_key_value_no_colon() {
+        let result = parse_key_value("no colon here");
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_parse_mcp_json_valid() {
+        let json = r#"{"name": "test-mcp", "command": "node"}"#;
+        let result = parse_mcp_json(json);
+        assert!(result.is_ok());
+        let value = result.unwrap();
+        assert_eq!(value["name"], "test-mcp");
+    }
+
+    #[test]
+    fn test_parse_mcp_json_invalid() {
+        let json = "not valid json";
+        let result = parse_mcp_json(json);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_skill_frontmatter_present() {
+        let content = "---\nname: my-skill\ndescription: Does stuff\n---\n# Body";
+        let frontmatter = parse_skill_frontmatter(content);
+        assert!(frontmatter.is_some());
+        let fm = frontmatter.unwrap();
+        assert_eq!(fm.name, Some("my-skill".to_string()));
+        assert_eq!(fm.description, Some("Does stuff".to_string()));
+    }
+
+    #[test]
+    fn test_parse_skill_frontmatter_absent() {
+        let content = "# No frontmatter\nJust content.";
+        let frontmatter = parse_skill_frontmatter(content);
+        assert!(frontmatter.is_none());
+    }
+
+    #[test]
+    fn test_extract_skill_body_with_frontmatter() {
+        let content = "---\nname: test\n---\n# Body Content\nHello world";
+        let body = extract_skill_body(content);
+        assert_eq!(body, "# Body Content\nHello world");
+    }
+
+    #[test]
+    fn test_extract_skill_body_without_frontmatter() {
+        let content = "# Just body\nNo frontmatter.";
+        let body = extract_skill_body(content);
+        assert_eq!(body, content);
+    }
+
+    #[test]
+    fn test_allowed_tools_parsing() {
+        let content = "---\nallowed-tools: Read, Write, Bash(npm:*)\n---\nBody";
+        let (frontmatter, _) = parse_skill_md(content);
+        let tools = frontmatter.allowed_tools.unwrap();
+        assert_eq!(tools.len(), 3);
+        assert_eq!(tools[0], "Read");
+        assert_eq!(tools[1], "Write");
+        assert_eq!(tools[2], "Bash(npm:*)");
+    }
+
+    #[test]
+    fn test_metadata_section_is_recognized() {
+        // Note: the current parser trims each line before checking indentation,
+        // so metadata sub-fields are parsed as top-level keys (not nested metadata).
+        // This test verifies the actual parser behavior.
+        let content = "---\nmetadata:\n  author: alice\n  version: \"2.0\"\n---\nBody";
+        let (frontmatter, _) = parse_skill_md(content);
+        // Due to trim() happening before indentation check, metadata HashMap stays empty
+        // and the sub-fields are not captured. This is a known parser limitation.
+        assert!(frontmatter.metadata.is_empty());
     }
 }

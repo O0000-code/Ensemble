@@ -890,3 +890,84 @@ pub fn check_plugins_enabled(plugin_ids: Vec<String>) -> Result<HashMap<String, 
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_plugin_id_standard() {
+        let (name, marketplace) = parse_plugin_id("my-plugin@npm");
+        assert_eq!(name, "my-plugin");
+        assert_eq!(marketplace, "npm");
+    }
+
+    #[test]
+    fn test_parse_plugin_id_with_at_in_name() {
+        // rfind('@') should split on the last '@'
+        let (name, marketplace) = parse_plugin_id("@scope/plugin@github");
+        assert_eq!(name, "@scope/plugin");
+        assert_eq!(marketplace, "github");
+    }
+
+    #[test]
+    fn test_parse_plugin_id_no_at() {
+        let (name, marketplace) = parse_plugin_id("standalone-plugin");
+        assert_eq!(name, "standalone-plugin");
+        assert_eq!(marketplace, "unknown");
+    }
+
+    #[test]
+    fn test_truncate_to_first_sentence_short() {
+        let result = truncate_to_first_sentence("A short sentence.", 200);
+        assert_eq!(result, "A short sentence.");
+    }
+
+    #[test]
+    fn test_truncate_to_first_sentence_multiple() {
+        let result = truncate_to_first_sentence("First sentence. Second sentence. Third.", 200);
+        assert_eq!(result, "First sentence.");
+    }
+
+    #[test]
+    fn test_truncate_to_first_sentence_no_period() {
+        let result = truncate_to_first_sentence("No period here", 200);
+        assert_eq!(result, "No period here");
+    }
+
+    #[test]
+    fn test_truncate_to_first_sentence_max_length() {
+        let long_text = "A".repeat(300);
+        let result = truncate_to_first_sentence(&long_text, 50);
+        // Should be truncated to 50 chars + "..."
+        assert!(result.len() <= 53 + 3); // 50 chars + "..."
+        assert!(result.ends_with("..."));
+    }
+
+    #[test]
+    fn test_truncate_to_first_sentence_chinese_period() {
+        let result = truncate_to_first_sentence("Chinese period here\u{3002} And more.", 200);
+        assert_eq!(result, "Chinese period here\u{3002}");
+    }
+
+    #[test]
+    fn test_parse_skill_description_with_frontmatter() {
+        let content = "---\nname: test\ndescription: This is a test skill.\n---\n# Body";
+        let desc = parse_skill_description(content);
+        assert_eq!(desc, Some("This is a test skill.".to_string()));
+    }
+
+    #[test]
+    fn test_parse_skill_description_no_frontmatter() {
+        let content = "# Heading\nFirst meaningful line.";
+        let desc = parse_skill_description(content);
+        assert_eq!(desc, Some("First meaningful line.".to_string()));
+    }
+
+    #[test]
+    fn test_parse_skill_description_quoted() {
+        let content = "---\ndescription: \"Quoted description.\"\n---\n# Body";
+        let desc = parse_skill_description(content);
+        assert_eq!(desc, Some("Quoted description.".to_string()));
+    }
+}

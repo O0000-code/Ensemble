@@ -1,0 +1,177 @@
+# =============================================================================
+# PR Quality Gate -- Lightweight pre-merge checks
+# All checks must pass before merging to main
+#
+# Required Status Checks (configure in repo Settings > Branches > main):
+#   - "Commit Message Lint"
+#   - "PR Description Check"
+#   - "File Change Audit"
+#   - "Type Check"
+#   - "Lint"
+#   - "Test"
+# =============================================================================
+
+name: PR Quality Gate
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, ready_for_review, reopened]
+
+concurrency:
+  group: pr-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # =========================================================================
+  # Check 1: Commit message conventions
+  # =========================================================================
+  commit-lint:
+    name: Commit Message Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check Commit Messages
+        run: |
+          COMMITS=$(git log --format='%s' origin/${{ github.base_ref }}..HEAD)
+          echo "Checking commit messages..."
+          echo "$COMMITS"
+          while IFS= read -r msg; do
+            if [ ${#msg} -lt 3 ]; then
+              echo "::error::Commit message too short: '$msg'"
+              exit 1
+            fi
+            if [ ${#msg} -gt 200 ]; then
+              echo "::warning::Commit message very long (${#msg} chars): '$msg'"
+            fi
+          done <<< "$COMMITS"
+          echo "All commit messages look good."
+
+  # =========================================================================
+  # Check 2: PR description quality
+  # =========================================================================
+  pr-description:
+    name: PR Description Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Check PR Body
+        run: |
+          BODY="${{ github.event.pull_request.body }}"
+          if [ -z "$BODY" ] || [ ${#BODY} -lt 20 ]; then
+            echo "::error::PR description is missing or too short. Please describe what this PR does."
+            exit 1
+          fi
+          echo "PR description looks good."
+
+  # =========================================================================
+  # Check 3: Lightweight code quality (typecheck + lint + test)
+  # =========================================================================
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Type Check
+        run: npx tsc --noEmit
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npx eslint . --max-warnings 0
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm run test
+        env:
+          CI: true
+
+  # =========================================================================
+  # Check 4: File change audit
+  # =========================================================================
+  file-audit:
+    name: File Change Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: github.event.pull_request.draft == false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Audit Changed Files
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          # Sensitive file detection (AGENTS.md protected by CODEOWNERS)
+          SENSITIVE_PATTERNS=(".env|secrets|credentials|\.pem|\.key|private"
+                             "AGENTS\.md|AGENTS\.override\.md|\.codex/")
+
+          for pattern in "${SENSITIVE_PATTERNS[@]}"; do
+            MATCHES=$(echo "$CHANGED_FILES" | grep -iE "$pattern" || true)
+            if [ -n "$MATCHES" ]; then
+              echo "::warning::Sensitive file(s) modified: $MATCHES"
+              echo "Please ensure these changes are intentional and reviewed carefully."
+            fi
+          done
+
+          # Stats summary
+          ADDITIONS=$(git diff --stat origin/${{ github.base_ref }}...HEAD | tail -1 | grep -oE '\d+ insertion' | grep -oE '\d+' || echo "0")
+          DELETIONS=$(git diff --stat origin/${{ github.base_ref }}...HEAD | tail -1 | grep -oE '\d+ deletion' | grep -oE '\d+' || echo "0")
+          echo "### PR Stats: +$ADDITIONS / -$DELETIONS" >> $GITHUB_STEP_SUMMARY

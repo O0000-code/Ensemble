@@ -447,3 +447,47 @@ pub fn restore_claude_md(trash_path: String) -> Result<(), String> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_timestamp_from_name_with_timestamp() {
+        let (name, deleted_at) = parse_timestamp_from_name("my-skill_20260115_143022", false);
+        assert_eq!(name, "my-skill");
+        assert!(deleted_at.is_some());
+        let ts = deleted_at.unwrap();
+        assert!(ts.contains("2026-01-15"));
+    }
+
+    #[test]
+    fn test_parse_timestamp_from_name_json_with_timestamp() {
+        let (name, deleted_at) = parse_timestamp_from_name("my-mcp_20260115_143022.json", true);
+        assert_eq!(name, "my-mcp.json");
+        assert!(deleted_at.is_some());
+    }
+
+    #[test]
+    fn test_parse_timestamp_from_name_no_timestamp() {
+        let (name, deleted_at) = parse_timestamp_from_name("my-skill", false);
+        assert_eq!(name, "my-skill");
+        assert!(deleted_at.is_none());
+    }
+
+    #[test]
+    fn test_parse_timestamp_from_name_json_no_timestamp() {
+        let (name, deleted_at) = parse_timestamp_from_name("my-mcp.json", true);
+        assert_eq!(name, "my-mcp.json");
+        assert!(deleted_at.is_none());
+    }
+
+    #[test]
+    fn test_parse_timestamp_from_name_invalid_timestamp_format() {
+        // Partial timestamp that does not match YYYYMMDD_HHMMSS
+        let (name, deleted_at) = parse_timestamp_from_name("skill_20261301_999999", false);
+        // The regex matches, but NaiveDateTime parsing fails, so no timestamp
+        assert_eq!(name, "skill_20261301_999999");
+        assert!(deleted_at.is_none());
+    }
+}
