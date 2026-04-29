@@ -1261,6 +1261,37 @@ fn applescript_quote(value: &str) -> String {
     format!("\"{escaped}\"")
 }
 
+fn warp_new_tab_uri(folder_path: &str) -> String {
+    format!(
+        "warp://action/new_tab?path={}",
+        urlencoding::encode(folder_path)
+    )
+}
+
+fn build_warp_run_command_applescript(claude_command: &str) -> String {
+    let quoted_command = applescript_quote(claude_command);
+    format!(
+        r#"tell application "Warp"
+    activate
+end tell
+delay 0.8
+set previousClipboard to missing value
+try
+    set previousClipboard to the clipboard
+end try
+set the clipboard to {quoted_command}
+delay 0.1
+tell application "System Events"
+    keystroke "v" using command down
+    key code 36
+end tell
+delay 0.1
+if previousClipboard is not missing value then
+    set the clipboard to previousClipboard
+end if"#
+    )
+}
+
 fn shell_command_that_keeps_ghostty_open(claude_command: &str) -> String {
     format!("shell:{claude_command}; exec /bin/zsh")
 }
@@ -1481,51 +1512,30 @@ end tell"#,
         }
         "Warp" => {
             if warp_open_mode == "tab" {
-                // New Tab mode: Use temporary script approach
-                // This opens a new tab in existing Warp window and executes the command
-                // No Accessibility permissions required
-                use std::time::{SystemTime, UNIX_EPOCH};
-                let timestamp = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .map(|d| d.as_millis())
-                    .unwrap_or(0);
-
-                let script_path = format!("/tmp/ensemble_warp_{}.sh", timestamp);
-                let script_content = format!(
-                    r#"#!/bin/zsh
-cd "{}"
-{}
-# Keep shell interactive after command
-exec zsh
-"#,
-                    folder_path_str.replace('"', "\\\""),
-                    claude_command
-                );
-
-                fs::write(&script_path, &script_content)
-                    .map_err(|e| format!("Failed to create temp script: {}", e))?;
-
-                // Make script executable
-                std::process::Command::new("chmod")
-                    .arg("+x")
-                    .arg(&script_path)
-                    .output()
-                    .map_err(|e| format!("Failed to make script executable: {}", e))?;
-
-                // Open script with Warp - this opens a new tab and executes the script
+                // Warp's URI scheme supports opening a tab at a path, but not running
+                // a command in that tab. Paste the configured command after the tab opens.
                 std::process::Command::new("open")
-                    .arg("-a")
-                    .arg("Warp")
-                    .arg(&script_path)
+                    .arg(warp_new_tab_uri(&folder_path_str))
                     .spawn()
                     .map_err(|e| format!("Failed to launch Warp: {}", e))?;
 
-                // Clean up script after a delay
-                let script_path_clone = script_path.clone();
-                std::thread::spawn(move || {
-                    std::thread::sleep(std::time::Duration::from_secs(5));
-                    let _ = fs::remove_file(script_path_clone);
-                });
+                let applescript = build_warp_run_command_applescript(&claude_command);
+                let output = std::process::Command::new("osascript")
+                    .arg("-e")
+                    .arg(&applescript)
+                    .output()
+                    .map_err(|e| format!("Failed to run Warp automation: {}", e))?;
+
+                if !output.status.success() {
+                    let stderr = String::from_utf8_lossy(&output.stderr);
+                    if stderr.contains("not allowed assistive access")
+                        || stderr.contains("assistive devices")
+                        || stderr.contains("System Events got an error")
+                    {
+                        return Err("ACCESSIBILITY_PERMISSION_REQUIRED".to_string());
+                    }
+                    return Err(format!("Failed to run command in Warp tab: {stderr}"));
+                }
             } else {
                 // New Window mode: Use Launch Configuration (original working code)
                 use std::time::{SystemTime, UNIX_EPOCH};
@@ -1754,6 +1764,31 @@ mod tests {
             applescript_quote(r#"/Users/bo/Project "Alpha"\beta"#),
             r#""/Users/bo/Project \"Alpha\"\\beta""#
         );
+    }
+
+    #[test]
+    fn warp_new_tab_uri_encodes_folder_path() {
+        assert_eq!(
+            warp_new_tab_uri("/Users/bo/Documents/LaboratoryProject/AI Teacher/2026.4.29"),
+            "warp://action/new_tab?path=%2FUsers%2Fbo%2FDocuments%2FLaboratoryProject%2FAI%20Teacher%2F2026.4.29"
+        );
+    }
+
+    #[test]
+    fn warp_run_command_applescript_pastes_and_runs_command() {
+        let script = build_warp_run_command_applescript("claude --dangerously-skip-permissions");
+
+        assert!(script.contains("tell application \"Warp\""));
+        assert!(script.contains("set the clipboard to \"claude --dangerously-skip-permissions\""));
+        assert!(script.contains("keystroke \"v\" using command down"));
+        assert!(script.contains("key code 36"));
+    }
+
+    #[test]
+    fn warp_run_command_applescript_escapes_quotes_and_backslashes() {
+        let script = build_warp_run_command_applescript("claude \"quoted\" \\ path");
+
+        assert!(script.contains("set the clipboard to \"claude \\\"quoted\\\" \\\\ path\""));
     }
 
     #[test]
