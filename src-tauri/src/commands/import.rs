@@ -1344,6 +1344,59 @@ fn run_ghostty_applescript(applescript: &str, open_mode: &str) -> Result<(), Str
     Err(format!("Failed to launch Ghostty with AppleScript: {stderr}"))
 }
 
+fn installed_ghostty_version() -> Option<String> {
+    let output = std::process::Command::new("/usr/libexec/PlistBuddy")
+        .arg("-c")
+        .arg("Print :CFBundleShortVersionString")
+        .arg("/Applications/Ghostty.app/Contents/Info.plist")
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    (!version.is_empty()).then_some(version)
+}
+
+fn ghostty_version_tuple(version: &str) -> Option<(u64, u64, u64)> {
+    let mut parts = version.split('.').map(|part| {
+        part.chars()
+            .take_while(|c| c.is_ascii_digit())
+            .collect::<String>()
+    });
+
+    let major = parts.next()?.parse().ok()?;
+    let minor = parts
+        .next()
+        .filter(|part| !part.is_empty())
+        .map(|part| part.parse().ok())
+        .unwrap_or(Some(0))?;
+    let patch = parts
+        .next()
+        .filter(|part| !part.is_empty())
+        .map(|part| part.parse().ok())
+        .unwrap_or(Some(0))?;
+
+    Some((major, minor, patch))
+}
+
+fn ghostty_supports_native_applescript(version: &str) -> bool {
+    ghostty_version_tuple(version)
+        .map(|version| version >= (1, 3, 0))
+        .unwrap_or(false)
+}
+
+fn ghostty_update_required_error(installed_version: Option<&str>) -> String {
+    match installed_version {
+        Some(version) => format!(
+            "Ghostty New Tab requires Ghostty 1.3.0 or newer. Installed version: {version}. Please update Ghostty or switch Ghostty Open Mode to New Window."
+        ),
+        None => "Ghostty New Tab requires Ghostty 1.3.0 or newer. Please update Ghostty or switch Ghostty Open Mode to New Window.".to_string(),
+    }
+}
+
 /// Launch Claude Code for a folder
 ///
 /// Uses native CLI methods for each terminal to avoid keystroke simulation
@@ -1505,6 +1558,21 @@ windows:
             // tabs, and per-surface launch configuration. Window mode falls back to
             // macOS `open --args` for older Ghostty builds that do not expose the
             // AppleScript dictionary yet.
+            let ghostty_version = installed_ghostty_version();
+            let supports_native_applescript = ghostty_version
+                .as_deref()
+                .map(ghostty_supports_native_applescript)
+                .unwrap_or(true);
+
+            if !supports_native_applescript {
+                if warp_open_mode == "tab" {
+                    return Err(ghostty_update_required_error(ghostty_version.as_deref()));
+                }
+
+                launch_ghostty_with_open_command(&folder_path_str, &claude_command)?;
+                return Ok(());
+            }
+
             let applescript =
                 build_ghostty_launch_applescript(&folder_path_str, &claude_command, &warp_open_mode);
 
@@ -1672,5 +1740,22 @@ mod tests {
             shell_command_that_keeps_ghostty_open("claude"),
             "shell:claude; exec /bin/zsh"
         );
+    }
+
+    #[test]
+    fn ghostty_applescript_support_starts_at_1_3_0() {
+        assert!(!ghostty_supports_native_applescript("1.2.3"));
+        assert!(ghostty_supports_native_applescript("1.3.0"));
+        assert!(ghostty_supports_native_applescript("1.3.1"));
+        assert!(ghostty_supports_native_applescript("2.0.0"));
+    }
+
+    #[test]
+    fn ghostty_update_message_includes_installed_version() {
+        let message = ghostty_update_required_error(Some("1.2.3"));
+
+        assert!(message.contains("Ghostty 1.3.0 or newer"));
+        assert!(message.contains("Installed version: 1.2.3"));
+        assert!(message.contains("New Window"));
     }
 }
