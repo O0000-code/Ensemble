@@ -1256,6 +1256,94 @@ pub fn get_launch_args() -> Vec<String> {
     std::env::args().collect()
 }
 
+fn applescript_quote(value: &str) -> String {
+    let escaped = value.replace('\\', "\\\\").replace('"', "\\\"");
+    format!("\"{escaped}\"")
+}
+
+fn shell_command_that_keeps_ghostty_open(claude_command: &str) -> String {
+    format!("shell:{claude_command}; exec /bin/zsh")
+}
+
+fn build_ghostty_launch_applescript(
+    folder_path: &str,
+    claude_command: &str,
+    open_mode: &str,
+) -> String {
+    let quoted_path = applescript_quote(folder_path);
+    let quoted_command = applescript_quote(&shell_command_that_keeps_ghostty_open(claude_command));
+
+    if open_mode == "tab" {
+        format!(
+            r#"tell application "Ghostty"
+    activate
+    set cfg to new surface configuration
+    set initial working directory of cfg to {quoted_path}
+    set command of cfg to {quoted_command}
+    if (count of windows) is 0 then
+        set win to new window with configuration cfg
+        set term to focused terminal of selected tab of win
+    else
+        set win to front window
+        set newTab to new tab in win with configuration cfg
+        set term to focused terminal of newTab
+    end if
+    focus term
+end tell"#
+        )
+    } else {
+        format!(
+            r#"tell application "Ghostty"
+    activate
+    set cfg to new surface configuration
+    set initial working directory of cfg to {quoted_path}
+    set command of cfg to {quoted_command}
+    set win to new window with configuration cfg
+    set term to focused terminal of selected tab of win
+    focus term
+end tell"#
+        )
+    }
+}
+
+fn launch_ghostty_with_open_command(folder_path: &str, claude_command: &str) -> Result<(), String> {
+    std::process::Command::new("open")
+        .arg("-n")
+        .arg("-a")
+        .arg("Ghostty")
+        .arg("--args")
+        .arg(format!("--working-directory={folder_path}"))
+        .arg(format!(
+            "--command={}",
+            shell_command_that_keeps_ghostty_open(claude_command)
+        ))
+        .spawn()
+        .map_err(|e| format!("Failed to launch Ghostty: {e}"))?;
+
+    Ok(())
+}
+
+fn run_ghostty_applescript(applescript: &str, open_mode: &str) -> Result<(), String> {
+    let output = std::process::Command::new("osascript")
+        .arg("-e")
+        .arg(applescript)
+        .output()
+        .map_err(|e| format!("Failed to launch Ghostty: {e}"))?;
+
+    if output.status.success() {
+        return Ok(());
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+    if open_mode == "tab" {
+        return Err(format!(
+            "Failed to launch Ghostty in New Tab mode. Ghostty New Tab requires Ghostty 1.3.0 or newer with macOS Automation permission for Ensemble. {stderr}"
+        ));
+    }
+
+    Err(format!("Failed to launch Ghostty with AppleScript: {stderr}"))
+}
+
 /// Launch Claude Code for a folder
 ///
 /// Uses native CLI methods for each terminal to avoid keystroke simulation
@@ -1412,6 +1500,22 @@ windows:
                 .spawn()
                 .map_err(|e| format!("Failed to launch Alacritty: {}", e))?;
         }
+        "Ghostty" => {
+            // Ghostty 1.3+ exposes native AppleScript support for creating windows,
+            // tabs, and per-surface launch configuration. Window mode falls back to
+            // macOS `open --args` for older Ghostty builds that do not expose the
+            // AppleScript dictionary yet.
+            let applescript =
+                build_ghostty_launch_applescript(&folder_path_str, &claude_command, &warp_open_mode);
+
+            if let Err(error) = run_ghostty_applescript(&applescript, &warp_open_mode) {
+                if warp_open_mode == "tab" {
+                    return Err(error);
+                }
+
+                launch_ghostty_with_open_command(&folder_path_str, &claude_command)?;
+            }
+        }
         _ => {
             // Default to Terminal.app using native 'do script' command (no keystroke)
             let escaped_path = folder_path_str.replace('\\', "\\\\").replace('"', "\\\"");
@@ -1524,4 +1628,49 @@ pub fn remove_imported_mcps(mcp_names: Vec<String>) -> Result<u32, String> {
         .map_err(|e| format!("Failed to write ~/.claude.json: {}", e))?;
 
     Ok(removed_count)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn applescript_quote_escapes_quotes_and_backslashes() {
+        assert_eq!(
+            applescript_quote(r#"/Users/bo/Project "Alpha"\beta"#),
+            r#""/Users/bo/Project \"Alpha\"\\beta""#
+        );
+    }
+
+    #[test]
+    fn ghostty_window_applescript_uses_surface_configuration() {
+        let script =
+            build_ghostty_launch_applescript(r#"/Users/bo/My "Project""#, "claude --resume", "window");
+
+        assert!(script.contains(r#"tell application "Ghostty""#));
+        assert!(script.contains("set cfg to new surface configuration"));
+        assert!(script.contains(r#"set initial working directory of cfg to "/Users/bo/My \"Project\"""#));
+        assert!(script.contains(r#"set command of cfg to "shell:claude --resume; exec /bin/zsh""#));
+        assert!(script.contains("set win to new window with configuration cfg"));
+        assert!(!script.contains("new tab in win"));
+    }
+
+    #[test]
+    fn ghostty_tab_applescript_opens_tab_when_window_exists() {
+        let script = build_ghostty_launch_applescript("/tmp/project", "claude", "tab");
+
+        assert!(script.contains("if (count of windows) is 0 then"));
+        assert!(script.contains("set win to new window with configuration cfg"));
+        assert!(script.contains("set newTab to new tab in win with configuration cfg"));
+        assert!(script.contains("set term to focused terminal of newTab"));
+        assert!(script.contains("focus term"));
+    }
+
+    #[test]
+    fn ghostty_command_keeps_shell_open_after_launch_command_exits() {
+        assert_eq!(
+            shell_command_that_keeps_ghostty_open("claude"),
+            "shell:claude; exec /bin/zsh"
+        );
+    }
 }

@@ -213,6 +213,8 @@ export function SettingsPage() {
   const { loadSkills } = useSkillsStore();
   const { loadMcps } = useMcpsStore();
   const { loadFiles: loadClaudeMdFiles } = useClaudeMdStore();
+  const supportsOpenMode = terminalApp === 'Warp' || terminalApp === 'Ghostty';
+  const terminalOpenModeLabel = terminalApp === 'Ghostty' ? 'Ghostty Open Mode' : 'Warp Open Mode';
 
   // Callback to refresh all data after trash recovery
   const handleRestoreComplete = useCallback(async () => {
@@ -342,20 +344,21 @@ export function SettingsPage() {
                     { value: 'Terminal', label: 'Terminal.app' },
                     { value: 'iTerm', label: 'iTerm2' },
                     { value: 'Warp', label: 'Warp' },
+                    { value: 'Ghostty', label: 'Ghostty' },
                     { value: 'Alacritty', label: 'Alacritty' },
                   ]}
                 />
               </Row>
 
-              {/* Warp Open Mode - Only shown when Warp is selected */}
-              {terminalApp === 'Warp' && (
+              {/* Open Mode - Only shown for terminal apps that support window/tab selection */}
+              {supportsOpenMode && (
                 <Row>
                   <div className="flex flex-col gap-0.5">
                     <span className="text-[13px] font-medium text-[#18181B]">
-                      Warp Open Mode
+                      {terminalOpenModeLabel}
                     </span>
                     <span className="text-xs text-[#71717A]">
-                      How to open new sessions in Warp
+                      How to open new sessions in {terminalApp}
                     </span>
                   </div>
                   <CustomSelect
