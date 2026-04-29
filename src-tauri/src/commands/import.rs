@@ -1265,6 +1265,14 @@ fn shell_command_that_keeps_ghostty_open(claude_command: &str) -> String {
     format!("shell:{claude_command}; exec /bin/zsh")
 }
 
+fn shell_quote(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "'\\''"))
+}
+
+fn folder_launch_command(folder_path: &str, claude_command: &str) -> String {
+    format!("cd {} && {}", shell_quote(folder_path), claude_command)
+}
+
 fn build_ghostty_launch_applescript(
     folder_path: &str,
     claude_command: &str,
@@ -1306,21 +1314,43 @@ end tell"#
     }
 }
 
-fn launch_ghostty_with_open_command(folder_path: &str, claude_command: &str) -> Result<(), String> {
-    std::process::Command::new("open")
-        .arg("-n")
-        .arg("-a")
-        .arg("Ghostty")
-        .arg("--args")
-        .arg(format!("--working-directory={folder_path}"))
-        .arg(format!(
-            "--command={}",
-            shell_command_that_keeps_ghostty_open(claude_command)
-        ))
-        .spawn()
-        .map_err(|e| format!("Failed to launch Ghostty: {e}"))?;
+fn build_ghostty_keyboard_automation_applescript(
+    folder_path: &str,
+    claude_command: &str,
+    open_mode: &str,
+) -> String {
+    let quoted_command = applescript_quote(&folder_launch_command(folder_path, claude_command));
+    let shortcut_key = if open_mode == "tab" { "t" } else { "n" };
 
-    Ok(())
+    format!(
+        r#"tell application "System Events"
+    set ghosttyWasRunning to exists application process "Ghostty"
+end tell
+tell application "Ghostty"
+    activate
+end tell
+delay 0.5
+if ghosttyWasRunning then
+    tell application "System Events"
+        keystroke "{shortcut_key}" using command down
+    end tell
+    delay 0.5
+end if
+set previousClipboard to missing value
+try
+    set previousClipboard to the clipboard
+end try
+set the clipboard to {quoted_command}
+delay 0.1
+tell application "System Events"
+    keystroke "v" using command down
+    key code 36
+end tell
+delay 0.1
+if previousClipboard is not missing value then
+    set the clipboard to previousClipboard
+end if"#
+    )
 }
 
 fn run_ghostty_applescript(applescript: &str, open_mode: &str) -> Result<(), String> {
@@ -1342,6 +1372,28 @@ fn run_ghostty_applescript(applescript: &str, open_mode: &str) -> Result<(), Str
     }
 
     Err(format!("Failed to launch Ghostty with AppleScript: {stderr}"))
+}
+
+fn run_ghostty_keyboard_automation(applescript: &str) -> Result<(), String> {
+    let output = std::process::Command::new("osascript")
+        .arg("-e")
+        .arg(applescript)
+        .output()
+        .map_err(|e| format!("Failed to launch Ghostty: {e}"))?;
+
+    if output.status.success() {
+        return Ok(());
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    if stderr.contains("not allowed assistive access")
+        || stderr.contains("assistive devices")
+        || stderr.contains("System Events got an error")
+    {
+        return Err("ACCESSIBILITY_PERMISSION_REQUIRED".to_string());
+    }
+
+    Err(format!("Failed to launch Ghostty: {stderr}"))
 }
 
 fn installed_ghostty_version() -> Option<String> {
@@ -1386,15 +1438,6 @@ fn ghostty_supports_native_applescript(version: &str) -> bool {
     ghostty_version_tuple(version)
         .map(|version| version >= (1, 3, 0))
         .unwrap_or(false)
-}
-
-fn ghostty_update_required_error(installed_version: Option<&str>) -> String {
-    match installed_version {
-        Some(version) => format!(
-            "Ghostty New Tab requires Ghostty 1.3.0 or newer. Installed version: {version}. Please update Ghostty or switch Ghostty Open Mode to New Window."
-        ),
-        None => "Ghostty New Tab requires Ghostty 1.3.0 or newer. Please update Ghostty or switch Ghostty Open Mode to New Window.".to_string(),
-    }
 }
 
 /// Launch Claude Code for a folder
@@ -1555,9 +1598,9 @@ windows:
         }
         "Ghostty" => {
             // Ghostty 1.3+ exposes native AppleScript support for creating windows,
-            // tabs, and per-surface launch configuration. Window mode falls back to
-            // macOS `open --args` for older Ghostty builds that do not expose the
-            // AppleScript dictionary yet.
+            // tabs, and per-surface launch configuration. Older builds do not expose
+            // that dictionary on macOS, so use the already-running app and its normal
+            // keyboard shortcuts to preserve the user's Ghostty profile and Dock icon.
             let ghostty_version = installed_ghostty_version();
             let supports_native_applescript = ghostty_version
                 .as_deref()
@@ -1565,23 +1608,26 @@ windows:
                 .unwrap_or(true);
 
             if !supports_native_applescript {
-                if warp_open_mode == "tab" {
-                    return Err(ghostty_update_required_error(ghostty_version.as_deref()));
-                }
-
-                launch_ghostty_with_open_command(&folder_path_str, &claude_command)?;
+                let applescript = build_ghostty_keyboard_automation_applescript(
+                    &folder_path_str,
+                    &claude_command,
+                    &warp_open_mode,
+                );
+                run_ghostty_keyboard_automation(&applescript)?;
                 return Ok(());
             }
 
             let applescript =
                 build_ghostty_launch_applescript(&folder_path_str, &claude_command, &warp_open_mode);
 
-            if let Err(error) = run_ghostty_applescript(&applescript, &warp_open_mode) {
-                if warp_open_mode == "tab" {
-                    return Err(error);
-                }
-
-                launch_ghostty_with_open_command(&folder_path_str, &claude_command)?;
+            if let Err(native_error) = run_ghostty_applescript(&applescript, &warp_open_mode) {
+                let fallback_applescript = build_ghostty_keyboard_automation_applescript(
+                    &folder_path_str,
+                    &claude_command,
+                    &warp_open_mode,
+                );
+                run_ghostty_keyboard_automation(&fallback_applescript)
+                    .map_err(|fallback_error| format!("{native_error}. Fallback failed: {fallback_error}"))?;
             }
         }
         _ => {
@@ -1751,11 +1797,13 @@ mod tests {
     }
 
     #[test]
-    fn ghostty_update_message_includes_installed_version() {
-        let message = ghostty_update_required_error(Some("1.2.3"));
+    fn ghostty_keyboard_automation_uses_existing_app_shortcuts() {
+        let script =
+            build_ghostty_keyboard_automation_applescript("/Users/bo/My Project", "claude", "window");
 
-        assert!(message.contains("Ghostty 1.3.0 or newer"));
-        assert!(message.contains("Installed version: 1.2.3"));
-        assert!(message.contains("New Window"));
+        assert!(script.contains("set ghosttyWasRunning to exists application process \"Ghostty\""));
+        assert!(script.contains("keystroke \"n\" using command down"));
+        assert!(script.contains("set the clipboard to \"cd '/Users/bo/My Project' && claude\""));
+        assert!(script.contains("key code 36"));
     }
 }

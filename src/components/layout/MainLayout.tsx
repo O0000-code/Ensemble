@@ -141,13 +141,13 @@ export default function MainLayout() {
           await focusWindow();
           // Show permission alert and open System Settings
           const shouldOpen = window.confirm(
-            'To auto-type commands in Warp\'s New Tab mode, please grant Accessibility permission to Ensemble.\n\n' +
+            'To open terminal sessions with automation, please grant Accessibility permission to Ensemble.\n\n' +
             'Steps:\n' +
             '1. Click OK to open System Settings → Accessibility\n' +
             '2. Click the "+" button\n' +
             '3. Navigate to /Applications and select Ensemble.app\n' +
             '4. Enable the checkbox for Ensemble\n\n' +
-            'Alternatively, you can use "New Window" mode which doesn\'t require this permission.'
+            'This is needed when Ensemble asks a terminal app to open a tab/window and run the launch command.'
           );
           if (shouldOpen) {
             await safeInvoke('open_accessibility_settings', {});
