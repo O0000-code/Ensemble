@@ -2,6 +2,55 @@ import { create } from 'zustand';
 import { Category, Tag } from '@/types';
 import { isTauri, safeInvoke } from '@/utils/tauri';
 
+// ====================================================================
+// Reorder serial queue
+// ====================================================================
+//
+// All reorder IPC calls must be serialized to preserve user intent: when
+// the user issues two rapid reorders (e.g. drag A→B then immediately
+// B→A), they must be persisted in that order. Without serialization the
+// later IPC could complete first and the canonical backend state would
+// not reflect the user's final intent.
+//
+// `then(task, task)` ensures the next task runs even if the previous
+// one rejected; `result.catch(() => {})` keeps the queue alive forever
+// while still letting outer callers `.catch()` their own task.
+// ====================================================================
+let reorderQueue: Promise<unknown> = Promise.resolve();
+
+const enqueueReorder = <T>(task: () => Promise<T>): Promise<T> => {
+  const result = reorderQueue.then(task, task);
+  reorderQueue = result.catch(() => {});
+  return result;
+};
+
+// Pure helper: rebuild a Vec to match orderedIds, appending unmentioned
+// items in their original order. Mirrors Rust `apply_reorder`.
+const applyReorder = <T extends { id: string }>(items: T[], orderedIds: string[]): T[] => {
+  const byId = new Map<string, T>(items.map((i) => [i.id, i]));
+  const seen = new Set<string>();
+  const result: T[] = [];
+
+  for (const id of orderedIds) {
+    if (seen.has(id)) continue;
+    const item = byId.get(id);
+    if (item) {
+      seen.add(id);
+      result.push(item);
+      byId.delete(id);
+    }
+  }
+
+  // Append remainder in original order (NOT byId iteration order)
+  for (const item of items) {
+    if (byId.has(item.id)) {
+      result.push(item);
+    }
+  }
+
+  return result;
+};
+
 interface AppState {
   // Navigation state (frontend-only)
   activeCategory: string | null;
@@ -10,6 +59,13 @@ interface AppState {
   // Data
   categories: Category[];
   tags: Tag[];
+
+  // Version counters — bumped on every mutation to categories/tags.
+  // Used by loadCategories/loadTags to detect concurrent reorder during
+  // an in-flight IPC, so we don't overwrite optimistic state with stale
+  // canonical state. See loadCategories/loadTags below.
+  categoriesVersion: number;
+  tagsVersion: number;
 
   // Counts
   counts: {
@@ -50,6 +106,8 @@ interface AppState {
   addTag: (name: string) => Promise<Tag>;
   updateTag: (id: string, name: string) => Promise<void>;
   deleteTag: (id: string) => Promise<void>;
+  reorderCategories: (orderedIds: string[]) => Promise<void>;
+  reorderTags: (orderedIds: string[]) => Promise<void>;
   initApp: () => Promise<void>;
 
   // Editing state Actions
@@ -70,6 +128,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   activeTags: [],
   categories: [],
   tags: [],
+  categoriesVersion: 0,
+  tagsVersion: 0,
   counts: {
     skills: 0,
     mcpServers: 0,
@@ -88,17 +148,26 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Frontend-only Actions
   setActiveCategory: (categoryId) => set({ activeCategory: categoryId }),
 
-  toggleActiveTag: (tagId) => set((state) => ({
-    activeTags: state.activeTags.includes(tagId)
-      ? state.activeTags.filter((id) => id !== tagId)
-      : [...state.activeTags, tagId],
-  })),
+  toggleActiveTag: (tagId) =>
+    set((state) => ({
+      activeTags: state.activeTags.includes(tagId)
+        ? state.activeTags.filter((id) => id !== tagId)
+        : [...state.activeTags, tagId],
+    })),
 
   clearActiveTags: () => set({ activeTags: [] }),
 
-  // Data setters
-  setCategories: (categories) => set({ categories }),
-  setTags: (tags) => set({ tags }),
+  // Data setters — bump version since downstream data has changed
+  setCategories: (categories) =>
+    set((state) => ({
+      categories,
+      categoriesVersion: state.categoriesVersion + 1,
+    })),
+  setTags: (tags) =>
+    set((state) => ({
+      tags,
+      tagsVersion: state.tagsVersion + 1,
+    })),
   setCounts: (counts) => set((state) => ({ counts: { ...state.counts, ...counts } })),
 
   // Tauri-integrated Actions
@@ -109,11 +178,25 @@ export const useAppStore = create<AppState>((set, get) => ({
       return;
     }
 
+    // Snapshot version BEFORE async IPC. If a reorder/add/update/delete
+    // bumps the version while we wait for the backend, our response is
+    // stale and would overwrite the user's optimistic state.
+    const versionBefore = get().categoriesVersion;
+
     try {
       const categories = await safeInvoke<Category[]>('get_categories');
-      if (categories) {
-        set({ categories });
+      if (!categories) return;
+
+      const versionAfter = get().categoriesVersion;
+      if (versionAfter !== versionBefore) {
+        console.warn('[appStore] loadCategories skipped (version changed during IPC)');
+        return;
       }
+
+      set((state) => ({
+        categories,
+        categoriesVersion: state.categoriesVersion + 1,
+      }));
     } catch (error) {
       console.error('Failed to load categories:', error);
       const message = typeof error === 'string' ? error : String(error);
@@ -128,11 +211,22 @@ export const useAppStore = create<AppState>((set, get) => ({
       return;
     }
 
+    const versionBefore = get().tagsVersion;
+
     try {
       const tags = await safeInvoke<Tag[]>('get_tags');
-      if (tags) {
-        set({ tags });
+      if (!tags) return;
+
+      const versionAfter = get().tagsVersion;
+      if (versionAfter !== versionBefore) {
+        console.warn('[appStore] loadTags skipped (version changed during IPC)');
+        return;
       }
+
+      set((state) => ({
+        tags,
+        tagsVersion: state.tagsVersion + 1,
+      }));
     } catch (error) {
       console.error('Failed to load tags:', error);
       const message = typeof error === 'string' ? error : String(error);
@@ -150,7 +244,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const category = await safeInvoke<Category>('add_category', { name, color });
       if (category) {
-        set((state) => ({ categories: [...state.categories, category] }));
+        set((state) => ({
+          categories: [...state.categories, category],
+          categoriesVersion: state.categoriesVersion + 1,
+        }));
         return category;
       }
       throw new Error('Failed to create category');
@@ -175,8 +272,9 @@ export const useAppStore = create<AppState>((set, get) => ({
         categories: state.categories.map((c) =>
           c.id === id
             ? { ...c, ...(name !== undefined && { name }), ...(color !== undefined && { color }) }
-            : c
+            : c,
         ),
+        categoriesVersion: state.categoriesVersion + 1,
       }));
     } catch (error) {
       console.error('Failed to update category:', error);
@@ -197,6 +295,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       await safeInvoke('delete_category', { id });
       set((state) => ({
         categories: state.categories.filter((c) => c.id !== id),
+        categoriesVersion: state.categoriesVersion + 1,
         activeCategory: state.activeCategory === id ? null : state.activeCategory,
       }));
     } catch (error) {
@@ -217,7 +316,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const tag = await safeInvoke<Tag>('add_tag', { name });
       if (tag) {
-        set((state) => ({ tags: [...state.tags, tag] }));
+        set((state) => ({
+          tags: [...state.tags, tag],
+          tagsVersion: state.tagsVersion + 1,
+        }));
         return tag;
       }
       throw new Error('Failed to create tag');
@@ -240,6 +342,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       await safeInvoke('delete_tag', { id });
       set((state) => ({
         tags: state.tags.filter((t) => t.id !== id),
+        tagsVersion: state.tagsVersion + 1,
         activeTags: state.activeTags.filter((t) => t !== id),
       }));
     } catch (error) {
@@ -260,9 +363,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       await safeInvoke('update_tag', { id, name });
       set((state) => ({
-        tags: state.tags.map((t) =>
-          t.id === id ? { ...t, name } : t
-        ),
+        tags: state.tags.map((t) => (t.id === id ? { ...t, name } : t)),
+        tagsVersion: state.tagsVersion + 1,
       }));
     } catch (error) {
       console.error('Failed to update tag:', error);
@@ -270,6 +372,134 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ error: message });
       throw error;
     }
+  },
+
+  // ============================================================
+  // Reorder — two-phase commit
+  // ============================================================
+  // Stage 1 (synchronous): apply the new order locally + bump
+  //         version, so the UI updates immediately.
+  // Stage 2 (queued, async): persist via IPC. Backend holds the
+  //         DATA_MUTEX, so concurrent add/delete/reorder are
+  //         serialized server-side. We trust the canonical Vec
+  //         it returns and re-set state.
+  // Failure: try `get_categories` to pull canonical state; if that
+  //          also fails, fall back to the snapshot taken at call
+  //          time (best-effort consistency).
+  // ============================================================
+  reorderCategories: (orderedIds: string[]) => {
+    if (!isTauri()) return Promise.resolve();
+
+    // Stage 1: optimistic, synchronous
+    const snapshotForFallback = get().categories;
+    const reordered = applyReorder(snapshotForFallback, orderedIds);
+
+    set((state) => ({
+      categories: reordered,
+      categoriesVersion: state.categoriesVersion + 1,
+    }));
+
+    // Stage 2: queued IPC
+    return enqueueReorder(async () => {
+      try {
+        const updated = await safeInvoke<Category[]>('reorder_categories', { orderedIds });
+        if (updated) {
+          // V3 P1-2: only set when backend differs from current local state.
+          // Stage 1 already produced an optimistic equal Vec; the canonical
+          // backend usually matches. Skipping the no-op set avoids extra
+          // re-renders and avoids forcing concurrent loadCategories to skip.
+          const current = get().categories;
+          const sameOrder =
+            current.length === updated.length && current.every((c, i) => c.id === updated[i].id);
+          if (!sameOrder) {
+            set((state) => ({
+              categories: updated,
+              categoriesVersion: state.categoriesVersion + 1,
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to reorder categories:', error);
+        const message = typeof error === 'string' ? error : String(error);
+
+        // Attempt to recover canonical state from backend
+        try {
+          const real = await safeInvoke<Category[]>('get_categories');
+          if (real) {
+            set((state) => ({
+              categories: real,
+              categoriesVersion: state.categoriesVersion + 1,
+              error: message,
+            }));
+            return;
+          }
+        } catch (recoverError) {
+          console.error('Failed to recover canonical categories:', recoverError);
+        }
+
+        // Last resort: revert to snapshot taken at call time
+        set((state) => ({
+          categories: snapshotForFallback,
+          categoriesVersion: state.categoriesVersion + 1,
+          error: message,
+        }));
+      }
+    });
+  },
+
+  reorderTags: (orderedIds: string[]) => {
+    if (!isTauri()) return Promise.resolve();
+
+    // Stage 1: optimistic, synchronous
+    const snapshotForFallback = get().tags;
+    const reordered = applyReorder(snapshotForFallback, orderedIds);
+
+    set((state) => ({
+      tags: reordered,
+      tagsVersion: state.tagsVersion + 1,
+    }));
+
+    // Stage 2: queued IPC
+    return enqueueReorder(async () => {
+      try {
+        const updated = await safeInvoke<Tag[]>('reorder_tags', { orderedIds });
+        if (updated) {
+          // V3 P1-2: only set when backend differs from current local state.
+          const current = get().tags;
+          const sameOrder =
+            current.length === updated.length && current.every((t, i) => t.id === updated[i].id);
+          if (!sameOrder) {
+            set((state) => ({
+              tags: updated,
+              tagsVersion: state.tagsVersion + 1,
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to reorder tags:', error);
+        const message = typeof error === 'string' ? error : String(error);
+
+        try {
+          const real = await safeInvoke<Tag[]>('get_tags');
+          if (real) {
+            set((state) => ({
+              tags: real,
+              tagsVersion: state.tagsVersion + 1,
+              error: message,
+            }));
+            return;
+          }
+        } catch (recoverError) {
+          console.error('Failed to recover canonical tags:', recoverError);
+        }
+
+        set((state) => ({
+          tags: snapshotForFallback,
+          tagsVersion: state.tagsVersion + 1,
+          error: message,
+        }));
+      }
+    });
   },
 
   initApp: async () => {
@@ -283,10 +513,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await safeInvoke('init_app_data');
-      await Promise.all([
-        get().loadCategories(),
-        get().loadTags(),
-      ]);
+      await Promise.all([get().loadCategories(), get().loadTags()]);
       set({ isLoading: false });
     } catch (error) {
       console.error('Failed to initialize app:', error);
@@ -296,12 +523,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   // Editing state Actions - Clear all (for mutual exclusion)
-  clearAllEditingStates: () => set({
-    editingCategoryId: null,
-    isAddingCategory: false,
-    editingTagId: null,
-    isAddingTag: false,
-  }),
+  clearAllEditingStates: () =>
+    set({
+      editingCategoryId: null,
+      isAddingCategory: false,
+      editingTagId: null,
+      isAddingTag: false,
+    }),
 
   // Category editing state Actions
   startEditingCategory: (id: string) => {

@@ -34,3 +34,6 @@ tauri-plugin-single-instance = "2"
 urlencoding = "2.1"
 tokio = { version = "1", features = ["process", "io-util", "time"] }
 regex = "1"
+
+[dev-dependencies]
+tempfile = "3"

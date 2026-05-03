@@ -1,4 +1,4 @@
-use crate::commands::data::{read_app_data, write_app_data};
+use crate::commands::data::{read_app_data, write_app_data, DATA_MUTEX};
 use crate::types::{ClaudeMdFile, McpConfigFile, TrashedClaudeMd, TrashedItems, TrashedMcp, TrashedSkill};
 use crate::utils::{expand_path, get_app_data_dir, parse_skill_md};
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -338,6 +338,7 @@ pub fn restore_mcp(trash_path: String, ensemble_dir: String) -> Result<(), Strin
 /// and restores the record in data.json.
 #[tauri::command]
 pub fn restore_claude_md(trash_path: String) -> Result<(), String> {
+    let _guard = DATA_MUTEX.lock().map_err(|e| e.to_string())?;
     let trash_path = expand_path(&trash_path);
 
     // Verify trash path exists

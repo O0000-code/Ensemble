@@ -31,7 +31,7 @@ export default function MainLayout() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-
+  const [isDragging, setIsDragging] = useState(false);
 
   const {
     activeCategory,
@@ -62,6 +62,9 @@ export default function MainLayout() {
     addTag,
     updateTag,
     deleteTag,
+    // Reorder actions
+    reorderCategories,
+    reorderTags,
   } = useAppStore();
 
   const { loadSettings, hasCompletedImport } = useSettingsStore();
@@ -71,34 +74,43 @@ export default function MainLayout() {
   const { scenes, loadScenes } = useScenesStore();
   const { projects, loadProjects } = useProjectsStore();
   const { detectExistingConfig } = useImportStore();
-  const { isOpen: isLauncherOpen, folderPath: launcherFolderPath, closeLauncher } = useLauncherStore();
+  const {
+    isOpen: isLauncherOpen,
+    folderPath: launcherFolderPath,
+    closeLauncher,
+  } = useLauncherStore();
 
   // Dynamically calculate navigation counts
-  const navCounts = useMemo(() => ({
-    skills: skills.length,
-    mcpServers: mcpServers.length,
-    claudeMd: claudeMdFiles.length,
-    scenes: scenes.length,
-    projects: projects.length,
-  }), [skills.length, mcpServers.length, claudeMdFiles.length, scenes.length, projects.length]);
+  const navCounts = useMemo(
+    () => ({
+      skills: skills.length,
+      mcpServers: mcpServers.length,
+      claudeMd: claudeMdFiles.length,
+      scenes: scenes.length,
+      projects: projects.length,
+    }),
+    [skills.length, mcpServers.length, claudeMdFiles.length, scenes.length, projects.length],
+  );
 
   // Dynamically calculate category counts from skills, mcps, and claudeMd files
   const categoriesWithCounts = useMemo(() => {
-    return categories.map(cat => ({
+    return categories.map((cat) => ({
       ...cat,
-      count: skills.filter(s => s.category === cat.name).length +
-             mcpServers.filter(m => m.category === cat.name).length +
-             claudeMdFiles.filter(f => f.categoryId === cat.id).length
+      count:
+        skills.filter((s) => s.category === cat.name).length +
+        mcpServers.filter((m) => m.category === cat.name).length +
+        claudeMdFiles.filter((f) => f.categoryId === cat.id).length,
     }));
   }, [categories, skills, mcpServers, claudeMdFiles]);
 
   // Dynamically calculate tag counts from skills, mcps, and claudeMd files
   const tagsWithCounts = useMemo(() => {
-    return tags.map(tag => ({
+    return tags.map((tag) => ({
       ...tag,
-      count: skills.filter(s => s.tags?.includes(tag.name)).length +
-             mcpServers.filter(m => m.tags?.includes(tag.name)).length +
-             claudeMdFiles.filter(f => f.tagIds?.includes(tag.id)).length
+      count:
+        skills.filter((s) => s.tags?.includes(tag.name)).length +
+        mcpServers.filter((m) => m.tags?.includes(tag.name)).length +
+        claudeMdFiles.filter((f) => f.tagIds?.includes(tag.id)).length,
     }));
   }, [tags, skills, mcpServers, claudeMdFiles]);
 
@@ -110,11 +122,12 @@ export default function MainLayout() {
     // Get current projects from store
     const currentProjects = useProjectsStore.getState().projects;
     const existingProject = currentProjects.find(
-      (p) => p.path.replace(/\/$/, '') === normalizedPath
+      (p) => p.path.replace(/\/$/, '') === normalizedPath,
     );
 
     // Check if project exists AND has a non-empty sceneId
-    const hasScene = existingProject && existingProject.sceneId && existingProject.sceneId.trim() !== '';
+    const hasScene =
+      existingProject && existingProject.sceneId && existingProject.sceneId.trim() !== '';
 
     if (hasScene) {
       // Project exists and has scene - sync config and launch terminal directly (no UI needed)
@@ -142,12 +155,12 @@ export default function MainLayout() {
           // Show permission alert and open System Settings
           const shouldOpen = window.confirm(
             'To open terminal sessions with automation, please grant Accessibility permission to Ensemble.\n\n' +
-            'Steps:\n' +
-            '1. Click OK to open System Settings → Accessibility\n' +
-            '2. Click the "+" button\n' +
-            '3. Navigate to /Applications and select Ensemble.app\n' +
-            '4. Enable the checkbox for Ensemble\n\n' +
-            'This is needed when Ensemble asks a terminal app to open a tab/window and run the launch command.'
+              'Steps:\n' +
+              '1. Click OK to open System Settings → Accessibility\n' +
+              '2. Click the "+" button\n' +
+              '3. Navigate to /Applications and select Ensemble.app\n' +
+              '4. Enable the checkbox for Ensemble\n\n' +
+              'This is needed when Ensemble asks a terminal app to open a tab/window and run the launch command.',
           );
           if (shouldOpen) {
             await safeInvoke('open_accessibility_settings', {});
@@ -186,7 +199,9 @@ export default function MainLayout() {
 
         // In browser mode, skip data loading but allow UI preview
         if (!isTauri()) {
-          console.warn('Running in browser mode - Tauri API not available. Using empty data for UI preview.');
+          console.warn(
+            'Running in browser mode - Tauri API not available. Using empty data for UI preview.',
+          );
           setIsInitializing(false);
           return;
         }
@@ -313,7 +328,14 @@ export default function MainLayout() {
 
   // Determine active nav from current route
   // Category/Tag pages don't highlight any main nav item (return null equivalent by using 'skills' but Sidebar won't highlight it)
-  const getActiveNav = (): 'skills' | 'mcp-servers' | 'claude-md' | 'scenes' | 'projects' | 'settings' | null => {
+  const getActiveNav = ():
+    | 'skills'
+    | 'mcp-servers'
+    | 'claude-md'
+    | 'scenes'
+    | 'projects'
+    | 'settings'
+    | null => {
     const path = location.pathname;
     // Category/Tag pages - don't highlight main nav
     if (path.startsWith('/category/') || path.startsWith('/tag/')) return null;
@@ -449,19 +471,52 @@ export default function MainLayout() {
 
     setIsRefreshing(true);
     try {
-      await Promise.all([
-        initApp(),
-        loadSkills(),
-        loadMcps(),
-        loadScenes(),
-        loadProjects(),
-      ]);
+      await Promise.all([initApp(), loadSkills(), loadMcps(), loadScenes(), loadProjects()]);
     } catch (error) {
       console.error('Failed to refresh data:', error);
     } finally {
       setIsRefreshing(false);
     }
   }, [isRefreshing, initApp, loadSkills, loadMcps, loadScenes, loadProjects]);
+
+  // Reorder handlers - delegate to store actions (which perform optimistic update + IPC + fallback)
+  const handleReorderCategories = useCallback(
+    async (orderedIds: string[]) => {
+      try {
+        await reorderCategories(orderedIds);
+      } catch (e) {
+        console.error('Failed to reorder categories:', e);
+      }
+    },
+    [reorderCategories],
+  );
+
+  const handleReorderTags = useCallback(
+    async (orderedIds: string[]) => {
+      try {
+        await reorderTags(orderedIds);
+      } catch (e) {
+        console.error('Failed to reorder tags:', e);
+      }
+    },
+    [reorderTags],
+  );
+
+  // V3 R-P0-2: when editing/adding, return early without clearing input state.
+  // Read editing flags via getState() so callback identity stays stable across renders.
+  const handleDragStart = useCallback(() => {
+    const s = useAppStore.getState();
+    if (s.editingCategoryId || s.isAddingCategory || s.editingTagId || s.isAddingTag) {
+      return;
+    }
+    setContextMenu(null);
+    setTagContextMenu(null);
+    setIsDragging(true);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false);
+  }, []);
 
   // Show loading state during initialization
   if (isInitializing) {
@@ -502,7 +557,9 @@ export default function MainLayout() {
       {!isTauri() && (
         <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-center flex-shrink-0">
           <p className="text-xs text-amber-700">
-            Browser Preview Mode — Run <code className="bg-amber-100 px-1 rounded">npm run tauri dev</code> for full functionality
+            Browser Preview Mode — Run{' '}
+            <code className="bg-amber-100 px-1 rounded">npm run tauri dev</code> for full
+            functionality
           </p>
         </div>
       )}
@@ -537,6 +594,12 @@ export default function MainLayout() {
           // Refresh
           onRefresh={handleRefresh}
           isRefreshing={isRefreshing}
+          // Drag-and-drop reorder
+          onReorderCategories={handleReorderCategories}
+          onReorderTags={handleReorderTags}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          isDragging={isDragging}
         />
 
         {/* Main Content */}
@@ -588,7 +651,6 @@ export default function MainLayout() {
           onClose={() => setTagContextMenu(null)}
         />
       )}
-
 
       {/* Launcher Modal for Finder Quick Action */}
       <LauncherModal

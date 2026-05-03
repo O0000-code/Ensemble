@@ -1,9 +1,8 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Plug, FileText, Layers, Folder, Plus, Settings, Repeat, ChevronDown, ChevronUp } from 'lucide-react';
+import { Sparkles, Plug, FileText, Layers, Folder, Plus, Settings, Repeat } from 'lucide-react';
 import { Category, Tag } from '@/types';
-import { CategoryInlineInput, TagInlineInput } from '@/components/sidebar';
-import { ColorPicker } from '@/components/common';
+import { SortableCategoriesList, SortableTagsList } from '@/components/sidebar';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 // Helper to start window dragging
@@ -11,6 +10,12 @@ const startDrag = async (e: React.MouseEvent) => {
   if (e.button !== 0) return;
 
   const target = e.target as HTMLElement;
+
+  // V3 — exclude sortable list regions so dnd-kit owns drag gestures inside
+  // the Categories / Tags lists. Without this, mousedown on a sortable row
+  // would race the window-drag handler against the 4px sensor activation.
+  if (target.closest('[data-sortable-list]')) return;
+
   const tagName = target.tagName.toLowerCase();
 
   // Don't drag if clicking on interactive elements
@@ -73,6 +78,16 @@ export interface SidebarProps {
   // Refresh 相关 props
   onRefresh?: () => void;
   isRefreshing?: boolean;
+
+  // Drag-and-drop reorder props (V3 — wired up by MainLayout, fed into the
+  // Sortable* lists). All five must come together: reorder callbacks persist
+  // the new order, drag start/end gate UI globally (Refresh disable), and
+  // isDragging mirrors the active drag state for visual feedback.
+  onReorderCategories: (orderedIds: string[]) => void;
+  onReorderTags: (orderedIds: string[]) => void;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  isDragging: boolean;
 }
 
 // Navigation items configuration
@@ -120,6 +135,12 @@ export function Sidebar({
   // Refresh 相关 props
   onRefresh,
   isRefreshing = false,
+  // Drag-and-drop reorder props
+  onReorderCategories,
+  onReorderTags,
+  onDragStart,
+  onDragEnd,
+  isDragging,
 }: SidebarProps) {
   const navigate = useNavigate();
   const [isClickAnimating, setIsClickAnimating] = useState(false);
@@ -160,24 +181,37 @@ export function Sidebar({
     navigate('/settings');
   };
 
-  // Handle category context menu
-  const handleCategoryContextMenu = (
-    e: React.MouseEvent,
-    category: Category
-  ) => {
-    e.preventDefault();
-    if (onCategoryContextMenu) {
-      onCategoryContextMenu(category, { x: e.clientX, y: e.clientY });
+  // Click handlers used by the Sortable lists. Routing logic kept verbatim
+  // from the original inline JSX (formerly Sidebar.tsx:302-308 / :437-442) so
+  // single-click navigation behaviour is unchanged.
+  const handleCategoryRowClick = (categoryId: string) => {
+    if (activeCategory === categoryId) {
+      navigate('/skills'); // 取消选择时回到 Skills 页面
+    } else {
+      navigate(`/category/${categoryId}`);
     }
   };
 
-  // Calculate visible tags and remaining count
-  // Calculate visible categories and remaining count
-  const visibleCategories = showAllCategories ? categories : categories.slice(0, MAX_VISIBLE_CATEGORIES);
-  const remainingCategoriesCount = categories.length - MAX_VISIBLE_CATEGORIES;
+  const handleTagPillClick = (tagId: string) => {
+    if (activeTags.includes(tagId)) {
+      navigate('/skills'); // 取消选择时回到 Skills 页面
+    } else {
+      navigate(`/tag/${tagId}`);
+    }
+  };
 
-  const visibleTags = showAllTags ? tags : tags.slice(0, MAX_VISIBLE_TAGS);
-  const remainingTagsCount = tags.length - MAX_VISIBLE_TAGS;
+  // Adapt Sidebar's existing onCategoryContextMenu / onTagContextMenu prop
+  // shapes (which take a `{x, y}` position object) to what the Sortable lists
+  // emit (a raw MouseEvent). Behaviour matches the original inline handlers.
+  const handleCategoryContextMenu = (category: Category, e: React.MouseEvent) => {
+    e.preventDefault();
+    onCategoryContextMenu?.(category, { x: e.clientX, y: e.clientY });
+  };
+
+  const handleTagContextMenu = (tag: Tag, e: React.MouseEvent) => {
+    e.preventDefault();
+    onTagContextMenu?.(tag, { x: e.clientX, y: e.clientY });
+  };
 
   return (
     <aside className="w-[260px] h-screen bg-white border-r border-[#E5E5E5] flex flex-col flex-shrink-0">
@@ -189,10 +223,17 @@ export function Sidebar({
         {/* Traffic Lights 占位区 - 为系统原生红绿灯预留空间，不绘制任何内容 */}
         <div className="w-[52px]" aria-hidden="true" />
 
-        {/* Refresh Button */}
+        {/* Refresh Button — disabled + visually dimmed during a drag (V3 §2.11
+            data feedback rule: no external mutations while a reorder is in
+            flight). pointer-events-none keeps the cursor from becoming a
+            hover affordance during the drag. */}
         <button
           onClick={handleRefreshClick}
-          className="w-6 h-6 flex items-center justify-center rounded-[6px] hover:bg-[#F4F4F5] transition-colors active:scale-95"
+          disabled={isRefreshing || isClickAnimating || isDragging}
+          aria-disabled={isRefreshing || isClickAnimating || isDragging}
+          className={`w-6 h-6 flex items-center justify-center rounded-[6px] hover:bg-[#F4F4F5] transition-colors active:scale-95 ${
+            isDragging ? 'opacity-40 pointer-events-none' : ''
+          }`}
           aria-label="Refresh data"
         >
           <Repeat
@@ -208,46 +249,39 @@ export function Sidebar({
       <div className="flex-1 flex flex-col p-4 pb-2 overflow-hidden">
         {/* Navigation Section - 固定，不滚动 */}
         <nav className="flex flex-col gap-0.5 flex-shrink-0">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeNav === item.id;
-              const count = counts[item.countKey];
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeNav === item.id;
+            const count = counts[item.countKey];
 
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavClick(item.id)}
-                  className={`
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNavClick(item.id)}
+                className={`
                     h-9 px-2.5 flex items-center gap-2.5 rounded-[6px] cursor-pointer
                     transition-colors duration-150 border
-                    ${isActive
-                      ? 'bg-white border-[#E5E5E5]'
-                      : 'border-transparent hover:bg-[#F4F4F5]'
+                    ${
+                      isActive
+                        ? 'bg-white border-[#E5E5E5]'
+                        : 'border-transparent hover:bg-[#F4F4F5]'
                     }
                   `}
-                >
-                  <Icon
-                    size={16}
-                    className={isActive ? 'text-[#18181B]' : 'text-[#71717A]'}
-                  />
-                  <span
-                    className={`
+              >
+                <Icon size={16} className={isActive ? 'text-[#18181B]' : 'text-[#71717A]'} />
+                <span
+                  className={`
                       text-[13px] flex-1 text-left
-                      ${isActive
-                        ? 'font-medium text-[#18181B]'
-                        : 'font-normal text-[#71717A]'
-                      }
+                      ${isActive ? 'font-medium text-[#18181B]' : 'font-normal text-[#71717A]'}
                     `}
-                  >
-                    {item.label}
-                  </span>
-                  <span className="text-[11px] font-medium text-[#A1A1AA]">
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </nav>
+                >
+                  {item.label}
+                </span>
+                <span className="text-[11px] font-medium text-[#A1A1AA]">{count}</span>
+              </button>
+            );
+          })}
+        </nav>
 
         {/* Divider - 固定，不参与滚动 */}
         <div className="h-px bg-[#E4E4E7] my-4 flex-shrink-0" />
@@ -270,126 +304,28 @@ export function Sidebar({
 
         {/* Scrollable Area - Categories列表 + Tags 自适应高度，整体滚动 */}
         <div className="flex-1 overflow-y-auto sidebar-scroll min-h-0">
-          {/* Categories List */}
-            {categories.length > 0 ? (
-              <div className="flex flex-col gap-0.5">
-                {visibleCategories.map((category) => {
-                  const isActive = activeCategory === category.id;
-                  const isEditing = editingCategoryId === category.id;
-
-                  // 编辑模式
-                  if (isEditing) {
-                    return (
-                      <CategoryInlineInput
-                        key={category.id}
-                        mode="edit"
-                        category={category}
-                        onSave={(name) => onCategorySave?.(category.id, name)}
-                        onCancel={() => onCategoryEditCancel?.()}
-                      />
-                    );
-                  }
-
-                  // 普通模式
-                  return (
-                    <div
-                      key={category.id}
-                      className={`
-                        h-8 px-2.5 flex items-center gap-2.5 rounded-[6px] cursor-pointer
-                        transition-colors duration-150
-                        ${isActive ? 'bg-[#F4F4F5]' : 'hover:bg-[#F4F4F5]'}
-                      `}
-                      onClick={() => {
-                        if (isActive) {
-                          navigate('/skills'); // 取消选择时回到 Skills 页面
-                        } else {
-                          navigate(`/category/${category.id}`);
-                        }
-                      }}
-                      onDoubleClick={() => onCategoryDoubleClick?.(category.id)}
-                      onContextMenu={(e) => handleCategoryContextMenu(e, category)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          if (isActive) {
-                            navigate('/skills');
-                          } else {
-                            navigate(`/category/${category.id}`);
-                          }
-                        }
-                      }}
-                    >
-                      {/* Category Dot - ColorPicker 触发器 */}
-                      <ColorPicker
-                        value={category.color}
-                        onChange={(color) => {
-                          onCategoryColorChange?.(category.id, color);
-                        }}
-                      />
-                      {/* Category Name */}
-                      <span
-                        className={`
-                          text-[13px] flex-1 text-left truncate
-                          ${isActive
-                            ? 'font-medium text-[#18181B]'
-                            : 'font-normal text-[#52525B]'
-                          }
-                        `}
-                      >
-                        {category.name}
-                      </span>
-                      {/* Category Count */}
-                      <span className="text-[11px] font-medium text-[#A1A1AA]">
-                        {category.count}
-                      </span>
-                    </div>
-                  );
-                })}
-
-                {/* 新增模式 - 在列表末尾 */}
-                {isAddingCategory && (
-                  <CategoryInlineInput
-                    mode="add"
-                    onSave={(name) => onCategorySave?.(null, name)}
-                    onCancel={() => onCategoryEditCancel?.()}
-                  />
-                )}
-
-                {/* Show more / Show less 按钮 */}
-                {remainingCategoriesCount > 0 && (
-                  <button
-                    onClick={() => setShowAllCategories(!showAllCategories)}
-                    className="w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-[6px] text-[12px] font-medium text-[#A1A1AA] hover:bg-[#F4F4F5] transition-colors"
-                  >
-                    {showAllCategories ? (
-                      <>
-                        <ChevronUp size={12} />
-                        <span>Show less</span>
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown size={12} />
-                        <span>Show {remainingCategoriesCount} more</span>
-                      </>
-                    )}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-0.5">
-                {isAddingCategory ? (
-                  <CategoryInlineInput
-                    mode="add"
-                    onSave={(name) => onCategorySave?.(null, name)}
-                    onCancel={() => onCategoryEditCancel?.()}
-                  />
-                ) : (
-                  <p className="text-xs text-[#A1A1AA] px-2.5">No categories</p>
-                )}
-              </div>
-            )}
+          {/* Categories List — V3: dnd-kit Sortable container.
+              Pass the FULL `categories` array (not pre-sliced) so the list
+              owns its visible/overflow split internally; otherwise drag
+              targets in the overflow region would be invisible to dnd-kit. */}
+          <SortableCategoriesList
+            categories={categories}
+            activeCategoryId={activeCategory ?? null}
+            editingCategoryId={editingCategoryId ?? null}
+            isAddingCategory={isAddingCategory ?? false}
+            showAll={showAllCategories}
+            setShowAll={setShowAllCategories}
+            maxVisible={MAX_VISIBLE_CATEGORIES}
+            onReorder={onReorderCategories}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+            onCategoryClick={handleCategoryRowClick}
+            onCategoryDoubleClick={(id) => onCategoryDoubleClick?.(id)}
+            onCategoryContextMenu={handleCategoryContextMenu}
+            onCategoryColorChange={(id, color) => onCategoryColorChange?.(id, color)}
+            onCategorySave={(id, name) => onCategorySave?.(id, name)}
+            onCategoryEditCancel={() => onCategoryEditCancel?.()}
+          />
 
           {/* Tags Section */}
           <section className="flex flex-col gap-3 pt-4 border-t border-[#E4E4E7] mt-4">
@@ -409,89 +345,25 @@ export function Sidebar({
               )}
             </div>
 
-            {/* Tags Grid */}
-            {tags.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {visibleTags.map((tag) => {
-                  const isActive = activeTags.includes(tag.id);
-                  const isEditing = editingTagId === tag.id;
-
-                  // 编辑模式
-                  if (isEditing) {
-                    return (
-                      <TagInlineInput
-                        key={tag.id}
-                        mode="edit"
-                        tag={tag}
-                        onSave={(name) => onTagSave?.(tag.id, name)}
-                        onCancel={() => onTagEditCancel?.()}
-                      />
-                    );
-                  }
-
-                  // 普通模式
-                  return (
-                    <button
-                      key={tag.id}
-                      onClick={() => {
-                        if (isActive) {
-                          navigate('/skills'); // 取消选择时回到 Skills 页面
-                        } else {
-                          navigate(`/tag/${tag.id}`);
-                        }
-                      }}
-                      onDoubleClick={() => onTagDoubleClick?.(tag.id)}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        onTagContextMenu?.(tag, { x: e.clientX, y: e.clientY });
-                      }}
-                      className={`
-                        px-2.5 py-[5px] rounded text-[11px] font-medium
-                        transition-colors duration-150
-                        ${isActive
-                          ? 'bg-[#18181B] text-white border-transparent'
-                          : 'bg-transparent text-[#52525B] border border-[#E5E5E5] hover:bg-[#F4F4F5]'
-                        }
-                      `}
-                    >
-                      {tag.name}
-                    </button>
-                  );
-                })}
-
-                {/* Show "+N" button if there are more tags, or "Collapse" when expanded */}
-                {remainingTagsCount > 0 && (
-                  <button
-                    onClick={() => setShowAllTags(!showAllTags)}
-                    className="px-2.5 py-[5px] rounded text-[11px] font-medium text-[#A1A1AA] border border-[#E5E5E5] hover:bg-[#F4F4F5] transition-colors"
-                    aria-label={showAllTags ? 'Show less tags' : `Show ${remainingTagsCount} more tags`}
-                  >
-                    {showAllTags ? 'Less' : `+${remainingTagsCount}`}
-                  </button>
-                )}
-
-                {/* 新增模式 - 在标签末尾 */}
-                {isAddingTag && (
-                  <TagInlineInput
-                    mode="add"
-                    onSave={(name) => onTagSave?.(null, name)}
-                    onCancel={() => onTagEditCancel?.()}
-                  />
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {isAddingTag ? (
-                  <TagInlineInput
-                    mode="add"
-                    onSave={(name) => onTagSave?.(null, name)}
-                    onCancel={() => onTagEditCancel?.()}
-                  />
-                ) : (
-                  <p className="text-xs text-[#A1A1AA] px-2.5">No tags</p>
-                )}
-              </div>
-            )}
+            {/* Tags Grid — V3 dnd-kit container; same full-array contract as
+                the Categories list above. */}
+            <SortableTagsList
+              tags={tags}
+              activeTagIds={activeTags ?? []}
+              editingTagId={editingTagId ?? null}
+              isAddingTag={isAddingTag ?? false}
+              showAll={showAllTags}
+              setShowAll={setShowAllTags}
+              maxVisible={MAX_VISIBLE_TAGS}
+              onReorder={onReorderTags}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+              onTagClick={handleTagPillClick}
+              onTagDoubleClick={(id) => onTagDoubleClick?.(id)}
+              onTagContextMenu={handleTagContextMenu}
+              onTagSave={(id, name) => onTagSave?.(id, name)}
+              onTagEditCancel={() => onTagEditCancel?.()}
+            />
           </section>
         </div>
 
@@ -502,10 +374,7 @@ export function Sidebar({
             className={`
               w-8 h-8 flex items-center justify-center rounded-[6px]
               transition-colors duration-150
-              ${activeNav === 'settings'
-                ? 'bg-[#F4F4F5]'
-                : 'hover:bg-[#F4F4F5]'
-              }
+              ${activeNav === 'settings' ? 'bg-[#F4F4F5]' : 'hover:bg-[#F4F4F5]'}
             `}
             aria-label="Settings"
           >

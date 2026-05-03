@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* 全局滚动条样式 - 精致极简风格 */
 @layer base {
@@ -28,20 +28,20 @@
 }
 
 :root {
-  --color-primary: #18181B;
-  --color-secondary: #71717A;
-  --color-tertiary: #A1A1AA;
-  --color-bg-primary: #FFFFFF;
-  --color-bg-secondary: #FAFAFA;
-  --color-bg-tertiary: #F4F4F5;
-  --color-border: #E5E5E5;
-  --color-divider: #E4E4E7;
-  --color-success: #16A34A;
-  --color-success-bg: #DCFCE7;
-  --color-warning: #D97706;
-  --color-warning-bg: #FEF3C7;
-  --color-error: #DC2626;
-  --color-error-bg: #FEE2E2;
+  --color-primary: #18181b;
+  --color-secondary: #71717a;
+  --color-tertiary: #a1a1aa;
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #fafafa;
+  --color-bg-tertiary: #f4f4f5;
+  --color-border: #e5e5e5;
+  --color-divider: #e4e4e7;
+  --color-success: #16a34a;
+  --color-success-bg: #dcfce7;
+  --color-warning: #d97706;
+  --color-warning-bg: #fef3c7;
+  --color-error: #dc2626;
+  --color-error-bg: #fee2e2;
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --radius-sm: 3px;
   --radius-base: 4px;
@@ -219,16 +219,17 @@ body {
   background:
     linear-gradient(#fff, #fff) padding-box,
     conic-gradient(
-      from 0deg,
-      #ef4444 0%,
-      #f97316 14%,
-      #eab308 28%,
-      #22c55e 42%,
-      #06b6d4 56%,
-      #3b82f6 70%,
-      #8b5cf6 84%,
-      #ef4444 100%
-    ) border-box !important;
+        from 0deg,
+        #ef4444 0%,
+        #f97316 14%,
+        #eab308 28%,
+        #22c55e 42%,
+        #06b6d4 56%,
+        #3b82f6 70%,
+        #8b5cf6 84%,
+        #ef4444 100%
+      )
+      border-box !important;
   border: 2px solid transparent !important;
   animation:
     classify-success-bloom 1000ms cubic-bezier(0.16, 1, 0.3, 1) forwards,
@@ -377,19 +378,45 @@ body {
 
 /* Sparkle effect - ultra-smooth synchronized with bloom */
 @keyframes classify-success-sparkle {
-  0% { filter: brightness(1) saturate(1); }
-  5% { filter: brightness(1.05) saturate(1.03); }
-  10% { filter: brightness(1.1) saturate(1.06); }
-  18% { filter: brightness(1.18) saturate(1.12); }
-  25% { filter: brightness(1.23) saturate(1.17); }
-  32% { filter: brightness(1.25) saturate(1.2); }
-  40% { filter: brightness(1.22) saturate(1.17); }
-  50% { filter: brightness(1.18) saturate(1.14); }
-  60% { filter: brightness(1.13) saturate(1.1); }
-  70% { filter: brightness(1.08) saturate(1.06); }
-  80% { filter: brightness(1.05) saturate(1.04); }
-  90% { filter: brightness(1.02) saturate(1.02); }
-  100% { filter: brightness(1) saturate(1); }
+  0% {
+    filter: brightness(1) saturate(1);
+  }
+  5% {
+    filter: brightness(1.05) saturate(1.03);
+  }
+  10% {
+    filter: brightness(1.1) saturate(1.06);
+  }
+  18% {
+    filter: brightness(1.18) saturate(1.12);
+  }
+  25% {
+    filter: brightness(1.23) saturate(1.17);
+  }
+  32% {
+    filter: brightness(1.25) saturate(1.2);
+  }
+  40% {
+    filter: brightness(1.22) saturate(1.17);
+  }
+  50% {
+    filter: brightness(1.18) saturate(1.14);
+  }
+  60% {
+    filter: brightness(1.13) saturate(1.1);
+  }
+  70% {
+    filter: brightness(1.08) saturate(1.06);
+  }
+  80% {
+    filter: brightness(1.05) saturate(1.04);
+  }
+  90% {
+    filter: brightness(1.02) saturate(1.02);
+  }
+  100% {
+    filter: brightness(1) saturate(1);
+  }
 }
 
 /* Rainbow gradient check icon - animated rainbow color */
@@ -406,28 +433,35 @@ body {
 
 /* Animate through rainbow colors */
 @keyframes classify-icon-rainbow {
-  0% { color: #ef4444; }      /* Red */
-  15% { color: #f97316; }     /* Orange */
-  30% { color: #eab308; }     /* Yellow */
-  45% { color: #22c55e; }     /* Green */
-  60% { color: #06b6d4; }     /* Cyan */
-  75% { color: #3b82f6; }     /* Blue */
-  90% { color: #8b5cf6; }     /* Purple */
-  100% { color: #a855f7; }    /* End Purple */
+  0% {
+    color: #ef4444;
+  } /* Red */
+  15% {
+    color: #f97316;
+  } /* Orange */
+  30% {
+    color: #eab308;
+  } /* Yellow */
+  45% {
+    color: #22c55e;
+  } /* Green */
+  60% {
+    color: #06b6d4;
+  } /* Cyan */
+  75% {
+    color: #3b82f6;
+  } /* Blue */
+  90% {
+    color: #8b5cf6;
+  } /* Purple */
+  100% {
+    color: #a855f7;
+  } /* End Purple */
 }
 
 /* Success text styling - rainbow gradient */
 .classify-success-text {
-  background: linear-gradient(
-    90deg,
-    #ef4444,
-    #f97316,
-    #eab308,
-    #22c55e,
-    #06b6d4,
-    #3b82f6,
-    #8b5cf6
-  );
+  background: linear-gradient(90deg, #ef4444, #f97316, #eab308, #22c55e, #06b6d4, #3b82f6, #8b5cf6);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -436,7 +470,7 @@ body {
 
 /* AI Classifying Animation - Rainbow Rotating Gradient Border */
 @property --ai-gradient-angle {
-  syntax: "<angle>";
+  syntax: '<angle>';
   initial-value: 0deg;
   inherits: false;
 }
@@ -479,7 +513,8 @@ body {
 }
 
 @keyframes ai-pulse-glow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 8px rgba(139, 92, 246, 0.3);
   }
   50% {
@@ -492,16 +527,17 @@ body {
   background:
     linear-gradient(#fff, #fff) padding-box,
     conic-gradient(
-      from var(--ai-gradient-angle),
-      #ef4444 0%,      /* Red */
-      #f97316 14%,     /* Orange */
-      #eab308 28%,     /* Yellow */
-      #22c55e 42%,     /* Green */
-      #06b6d4 56%,     /* Cyan */
-      #3b82f6 70%,     /* Blue */
-      #8b5cf6 84%,     /* Purple */
-      #ef4444 100%     /* Red (loop) */
-    ) border-box !important;
+        from var(--ai-gradient-angle),
+        #ef4444 0%,
+        /* Red */ #f97316 14%,
+        /* Orange */ #eab308 28%,
+        /* Yellow */ #22c55e 42%,
+        /* Green */ #06b6d4 56%,
+        /* Cyan */ #3b82f6 70%,
+        /* Blue */ #8b5cf6 84%,
+        /* Purple */ #ef4444 100% /* Red (loop) */
+      )
+      border-box !important;
   border: 2px solid transparent !important;
   animation:
     ai-gradient-rotate 4s linear infinite,
@@ -510,18 +546,19 @@ body {
 
 .ai-classifying:hover {
   background:
-    linear-gradient(#FAFAFA, #FAFAFA) padding-box,
+    linear-gradient(#fafafa, #fafafa) padding-box,
     conic-gradient(
-      from var(--ai-gradient-angle),
-      #ef4444 0%,
-      #f97316 14%,
-      #eab308 28%,
-      #22c55e 42%,
-      #06b6d4 56%,
-      #3b82f6 70%,
-      #8b5cf6 84%,
-      #ef4444 100%
-    ) border-box !important;
+        from var(--ai-gradient-angle),
+        #ef4444 0%,
+        #f97316 14%,
+        #eab308 28%,
+        #22c55e 42%,
+        #06b6d4 56%,
+        #3b82f6 70%,
+        #8b5cf6 84%,
+        #ef4444 100%
+      )
+      border-box !important;
 }
 
 .ai-classifying-text {
@@ -554,5 +591,90 @@ body {
 
 .ai-icon-spin {
   animation: ai-icon-spin 1.2s linear infinite;
-  color: #6366F1;
+  color: #6366f1;
+}
+
+/* === Sidebar Reorder (V3) === */
+
+:root {
+  --color-accent: #0063e1;
+  --color-accent-soft: rgba(0, 99, 225, 0.5);
+  --ease-drag: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-drag-lift: cubic-bezier(0.34, 1.32, 0.64, 1);
+  --ease-drag-cancel: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-drag-lift-grip: 80ms;
+  --duration-drag-lift-pull: 120ms;
+  --duration-drag-reorder: 220ms;
+  --duration-drag-settle: 220ms;
+  --duration-drag-cancel: 280ms;
+  --duration-drag-snap: 80ms;
+  --duration-drag-indicator-fade: 100ms;
+  --duration-drag-indicator-move: 150ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-accent: #0a84ff;
+    --color-accent-soft: rgba(10, 132, 255, 0.5);
+  }
+}
+
+/* Suppress dnd-kit default cursor: grab on hover (macOS gestalt) */
+[data-sortable-list] [aria-roledescription='sortable'] {
+  cursor: default;
+}
+[data-sortable-list] [aria-roledescription='sortable']:active {
+  cursor: grabbing;
+}
+
+/* DragOverlay - multi-layer hsl shadow per V3 spec */
+.drag-overlay-row {
+  box-shadow:
+    0 1px 2px hsl(0 0% 0% / 0.06),
+    0 4px 8px hsl(0 0% 0% / 0.08),
+    0 12px 24px hsl(0 0% 0% / 0.1);
+  border-radius: 6px;
+  background: white;
+  cursor: grabbing;
+}
+
+.drag-overlay-pill {
+  box-shadow:
+    0 1px 2px hsl(0 0% 0% / 0.05),
+    0 3px 6px hsl(0 0% 0% / 0.07),
+    0 8px 16px hsl(0 0% 0% / 0.08);
+  border-radius: 4px;
+  cursor: grabbing;
+}
+
+/* Drop indicators (token color) */
+.drop-indicator-h {
+  height: 2px;
+  background: var(--color-accent);
+  border-radius: 1px;
+  margin: 0 2px;
+  transition:
+    opacity var(--duration-drag-indicator-fade) ease-out,
+    transform var(--duration-drag-indicator-move) var(--ease-drag);
+}
+
+.drop-indicator-v {
+  width: 2px;
+  height: 20px;
+  background: var(--color-accent);
+  border-radius: 1px;
+  transition:
+    opacity var(--duration-drag-indicator-fade) ease-out,
+    transform var(--duration-drag-indicator-move) var(--ease-drag);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-sortable-list] *,
+  .drag-overlay-row,
+  .drag-overlay-pill,
+  .drop-indicator-h,
+  .drop-indicator-v {
+    transition: none !important;
+    animation: none !important;
+  }
 }

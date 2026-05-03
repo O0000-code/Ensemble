@@ -98,11 +98,13 @@ pub fn run() {
             data::add_category,
             data::update_category,
             data::delete_category,
+            data::reorder_categories,
             // Tags
             data::get_tags,
             data::add_tag,
             data::update_tag,
             data::delete_tag,
+            data::reorder_tags,
             // Scenes
             data::get_scenes,
             data::add_scene,

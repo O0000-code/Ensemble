@@ -1,2 +1,10 @@
 export { CategoryInlineInput } from './CategoryInlineInput';
 export { TagInlineInput } from './TagInlineInput';
+export { CategoryRowContent } from './CategoryRowContent';
+export { SortableCategoryRow } from './SortableCategoryRow';
+export { DragOverlayCategoryRow } from './DragOverlayCategoryRow';
+export { TagPillContent } from './TagPillContent';
+export { SortableTagPill } from './SortableTagPill';
+export { DragOverlayTagPill } from './DragOverlayTagPill';
+export { SortableCategoriesList } from './SortableCategoriesList';
+export { SortableTagsList } from './SortableTagsList';

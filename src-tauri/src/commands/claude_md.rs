@@ -1,4 +1,4 @@
-use crate::commands::data::{read_app_data, write_app_data};
+use crate::commands::data::{read_app_data, write_app_data, DATA_MUTEX};
 use crate::types::{
     ClaudeMdConflictResolution, ClaudeMdDistributionOptions, ClaudeMdDistributionPath,
     ClaudeMdDistributionResult, ClaudeMdFile, ClaudeMdImportOptions, ClaudeMdImportResult,
@@ -379,6 +379,7 @@ pub fn import_claude_md(options: ClaudeMdImportOptions) -> Result<ClaudeMdImport
 
     // Save metadata to AppData
     println!("[import_claude_md] Reading app_data...");
+    let _guard = DATA_MUTEX.lock().map_err(|e| e.to_string())?;
     let mut app_data = read_app_data()?;
     println!("[import_claude_md] Current claude_md_files count: {}", app_data.claude_md_files.len());
     app_data.claude_md_files.push(file.clone());
@@ -506,6 +507,7 @@ pub fn update_claude_md(
     tag_ids: Option<Vec<String>>,
     icon: Option<String>,
 ) -> Result<ClaudeMdFile, String> {
+    let _guard = DATA_MUTEX.lock().map_err(|e| e.to_string())?;
     let mut app_data = read_app_data()?;
 
     let file = app_data
@@ -571,6 +573,7 @@ pub fn update_claude_md(
 /// but keep ~/.claude/CLAUDE.md intact.
 #[tauri::command]
 pub fn delete_claude_md(id: String) -> Result<(), String> {
+    let _guard = DATA_MUTEX.lock().map_err(|e| e.to_string())?;
     let mut app_data = read_app_data()?;
 
     // Find the file metadata before deletion (for saving to info.json)
@@ -648,6 +651,7 @@ pub fn delete_claude_md(id: String) -> Result<(), String> {
 /// * `id` - ClaudeMdFile ID to set as global
 #[tauri::command]
 pub fn set_global_claude_md(id: String) -> Result<SetGlobalResult, String> {
+    let _guard = DATA_MUTEX.lock().map_err(|e| e.to_string())?;
     let mut app_data = read_app_data()?;
 
     // Find target file
@@ -770,6 +774,7 @@ pub fn set_global_claude_md(id: String) -> Result<SetGlobalResult, String> {
 /// 2. Unset file's isGlobal flag
 #[tauri::command]
 pub fn unset_global_claude_md() -> Result<(), String> {
+    let _guard = DATA_MUTEX.lock().map_err(|e| e.to_string())?;
     let mut app_data = read_app_data()?;
 
     // Unset all global flags
@@ -928,6 +933,7 @@ pub fn distribute_scene_claude_md(
 /// This function checks for old data where content is stored in data.json
 /// and migrates it to independent files in ~/.ensemble/claude-md/{id}/CLAUDE.md
 pub fn migrate_claude_md_storage() -> Result<(), String> {
+    let _guard = DATA_MUTEX.lock().map_err(|e| e.to_string())?;
     let mut app_data = read_app_data()?;
     let mut migrated = false;
 

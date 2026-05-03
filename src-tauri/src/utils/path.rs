@@ -2,6 +2,16 @@
 
 use std::path::{Path, PathBuf};
 
+/// Shared mutex used by all tests that mutate the `ENSEMBLE_DATA_DIR`
+/// environment variable. Cargo runs tests in parallel by default; without a
+/// **single shared** lock spanning every test module that touches this env
+/// var, two tests can interleave `set_var`/`remove_var` calls and observe
+/// inconsistent state. Tests in `utils::path::tests` and
+/// `commands::data::reorder_integration_tests` both acquire this guard
+/// before reading or writing `ENSEMBLE_DATA_DIR`.
+#[cfg(test)]
+pub(crate) static ENV_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 /// Expand ~ to home directory
 pub fn expand_path(path: &str) -> PathBuf {
     if path.starts_with('~') {
@@ -13,7 +23,13 @@ pub fn expand_path(path: &str) -> PathBuf {
 }
 
 /// Get the application data directory
+///
+/// Honours the `ENSEMBLE_DATA_DIR` environment variable when set (used for
+/// test isolation so integration tests do not touch `~/.ensemble/`).
 pub fn get_app_data_dir() -> PathBuf {
+    if let Ok(dir) = std::env::var("ENSEMBLE_DATA_DIR") {
+        return PathBuf::from(dir);
+    }
     dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
         .join(".ensemble")
@@ -92,6 +108,10 @@ pub fn get_ensemble_dir() -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+    // Reuse the crate-wide ENV_TEST_LOCK declared above so this module's tests
+    // serialise with `commands::data::reorder_integration_tests` (which also
+    // mutates ENSEMBLE_DATA_DIR). A per-module lock would NOT prevent races
+    // across modules.
 
     #[test]
     fn test_expand_path_with_tilde() {
@@ -127,23 +147,57 @@ mod tests {
 
     #[test]
     fn test_get_app_data_dir() {
+        // Clear ENSEMBLE_DATA_DIR for this test; integration tests may set it.
+        // ENV_TEST_LOCK serialises env-mutating tests within this module so they
+        // do not race with each other or with `test_get_app_data_dir_honours_env_override`.
+        let _guard = ENV_TEST_LOCK.lock().unwrap();
+        let prior = std::env::var("ENSEMBLE_DATA_DIR").ok();
+        std::env::remove_var("ENSEMBLE_DATA_DIR");
         let result = get_app_data_dir();
         let home = dirs::home_dir().unwrap();
         assert_eq!(result, home.join(".ensemble"));
+        if let Some(v) = prior {
+            std::env::set_var("ENSEMBLE_DATA_DIR", v);
+        }
     }
 
     #[test]
     fn test_get_data_file_path() {
+        let _guard = ENV_TEST_LOCK.lock().unwrap();
+        let prior = std::env::var("ENSEMBLE_DATA_DIR").ok();
+        std::env::remove_var("ENSEMBLE_DATA_DIR");
         let result = get_data_file_path();
         assert!(result.ends_with("data.json"));
         assert!(result.to_string_lossy().contains(".ensemble"));
+        if let Some(v) = prior {
+            std::env::set_var("ENSEMBLE_DATA_DIR", v);
+        }
     }
 
     #[test]
     fn test_get_settings_file_path() {
+        let _guard = ENV_TEST_LOCK.lock().unwrap();
+        let prior = std::env::var("ENSEMBLE_DATA_DIR").ok();
+        std::env::remove_var("ENSEMBLE_DATA_DIR");
         let result = get_settings_file_path();
         assert!(result.ends_with("settings.json"));
         assert!(result.to_string_lossy().contains(".ensemble"));
+        if let Some(v) = prior {
+            std::env::set_var("ENSEMBLE_DATA_DIR", v);
+        }
+    }
+
+    #[test]
+    fn test_get_app_data_dir_honours_env_override() {
+        let _guard = ENV_TEST_LOCK.lock().unwrap();
+        let prior = std::env::var("ENSEMBLE_DATA_DIR").ok();
+        std::env::set_var("ENSEMBLE_DATA_DIR", "/tmp/ensemble-override-test");
+        let result = get_app_data_dir();
+        assert_eq!(result, PathBuf::from("/tmp/ensemble-override-test"));
+        match prior {
+            Some(v) => std::env::set_var("ENSEMBLE_DATA_DIR", v),
+            None => std::env::remove_var("ENSEMBLE_DATA_DIR"),
+        }
     }
 
     #[test]
