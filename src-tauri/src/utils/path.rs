@@ -26,13 +26,38 @@ pub fn expand_path(path: &str) -> PathBuf {
 ///
 /// Honours the `ENSEMBLE_DATA_DIR` environment variable when set (used for
 /// test isolation so integration tests do not touch `~/.ensemble/`).
+///
+/// **Test safety guarantee**: when compiled under `cfg(test)`, this function
+/// **refuses to fall back to `~/.ensemble/`**. If `ENSEMBLE_DATA_DIR` is not
+/// set, it panics — loudly, instead of silently corrupting the developer's
+/// real data. Every test that touches disk MUST set the env var first
+/// (typically via `ScopedDataDir`).
+///
+/// Rationale: prior incident (2026-05-04) — a transient unset of the env var
+/// during a parallel test run wrote test fixtures into the user's real
+/// `~/.ensemble/data.json`, replacing real categories/tags. The silent fallback
+/// is a footgun for *anyone* running `cargo test` on a machine that also runs
+/// the app.
 pub fn get_app_data_dir() -> PathBuf {
     if let Ok(dir) = std::env::var("ENSEMBLE_DATA_DIR") {
         return PathBuf::from(dir);
     }
-    dirs::home_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join(".ensemble")
+
+    #[cfg(test)]
+    {
+        panic!(
+            "get_app_data_dir() called without ENSEMBLE_DATA_DIR set during cargo test. \
+             Tests must use ScopedDataDir (or set ENSEMBLE_DATA_DIR explicitly) to avoid \
+             writing to the real ~/.ensemble/. See src-tauri/src/utils/path.rs comments."
+        );
+    }
+
+    #[cfg(not(test))]
+    {
+        dirs::home_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join(".ensemble")
+    }
 }
 
 /// Get the data.json path
@@ -145,59 +170,84 @@ mod tests {
         assert_eq!(expand_tilde(path), expand_path(path));
     }
 
-    #[test]
-    fn test_get_app_data_dir() {
-        // Clear ENSEMBLE_DATA_DIR for this test; integration tests may set it.
-        // ENV_TEST_LOCK serialises env-mutating tests within this module so they
-        // do not race with each other or with `test_get_app_data_dir_honours_env_override`.
-        let _guard = ENV_TEST_LOCK.lock().unwrap();
-        let prior = std::env::var("ENSEMBLE_DATA_DIR").ok();
-        std::env::remove_var("ENSEMBLE_DATA_DIR");
-        let result = get_app_data_dir();
-        let home = dirs::home_dir().unwrap();
-        assert_eq!(result, home.join(".ensemble"));
-        if let Some(v) = prior {
-            std::env::set_var("ENSEMBLE_DATA_DIR", v);
+    /// Helper: scope an `ENSEMBLE_DATA_DIR` value for one test, restoring
+    /// the prior value (or unsetting) on drop. Holds [`ENV_TEST_LOCK`] so
+    /// concurrent env-mutating tests serialise.
+    struct ScopedEnv {
+        prior: Option<String>,
+        _guard: std::sync::MutexGuard<'static, ()>,
+    }
+    impl ScopedEnv {
+        fn set(value: &str) -> Self {
+            let guard = ENV_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+            let prior = std::env::var("ENSEMBLE_DATA_DIR").ok();
+            std::env::set_var("ENSEMBLE_DATA_DIR", value);
+            Self { prior, _guard: guard }
         }
     }
-
-    #[test]
-    fn test_get_data_file_path() {
-        let _guard = ENV_TEST_LOCK.lock().unwrap();
-        let prior = std::env::var("ENSEMBLE_DATA_DIR").ok();
-        std::env::remove_var("ENSEMBLE_DATA_DIR");
-        let result = get_data_file_path();
-        assert!(result.ends_with("data.json"));
-        assert!(result.to_string_lossy().contains(".ensemble"));
-        if let Some(v) = prior {
-            std::env::set_var("ENSEMBLE_DATA_DIR", v);
-        }
-    }
-
-    #[test]
-    fn test_get_settings_file_path() {
-        let _guard = ENV_TEST_LOCK.lock().unwrap();
-        let prior = std::env::var("ENSEMBLE_DATA_DIR").ok();
-        std::env::remove_var("ENSEMBLE_DATA_DIR");
-        let result = get_settings_file_path();
-        assert!(result.ends_with("settings.json"));
-        assert!(result.to_string_lossy().contains(".ensemble"));
-        if let Some(v) = prior {
-            std::env::set_var("ENSEMBLE_DATA_DIR", v);
+    impl Drop for ScopedEnv {
+        fn drop(&mut self) {
+            match &self.prior {
+                Some(v) => std::env::set_var("ENSEMBLE_DATA_DIR", v),
+                None => std::env::remove_var("ENSEMBLE_DATA_DIR"),
+            }
         }
     }
 
     #[test]
     fn test_get_app_data_dir_honours_env_override() {
-        let _guard = ENV_TEST_LOCK.lock().unwrap();
-        let prior = std::env::var("ENSEMBLE_DATA_DIR").ok();
-        std::env::set_var("ENSEMBLE_DATA_DIR", "/tmp/ensemble-override-test");
+        let _scope = ScopedEnv::set("/tmp/ensemble-override-test");
         let result = get_app_data_dir();
         assert_eq!(result, PathBuf::from("/tmp/ensemble-override-test"));
-        match prior {
-            Some(v) => std::env::set_var("ENSEMBLE_DATA_DIR", v),
-            None => std::env::remove_var("ENSEMBLE_DATA_DIR"),
+    }
+
+    #[test]
+    fn test_get_data_file_path_uses_env_override() {
+        let _scope = ScopedEnv::set("/tmp/ensemble-override-test");
+        let result = get_data_file_path();
+        assert!(result.ends_with("data.json"));
+        assert_eq!(result, PathBuf::from("/tmp/ensemble-override-test/data.json"));
+    }
+
+    #[test]
+    fn test_get_settings_file_path_uses_env_override() {
+        let _scope = ScopedEnv::set("/tmp/ensemble-override-test");
+        let result = get_settings_file_path();
+        assert!(result.ends_with("settings.json"));
+        assert_eq!(
+            result,
+            PathBuf::from("/tmp/ensemble-override-test/settings.json")
+        );
+    }
+
+    /// Safety regression test: under `cfg(test)`, calling `get_app_data_dir`
+    /// without `ENSEMBLE_DATA_DIR` set MUST panic. This prevents the silent
+    /// fallback to `~/.ensemble/` that previously corrupted user data when an
+    /// integration test forgot to scope the env var.
+    #[test]
+    #[should_panic(expected = "ENSEMBLE_DATA_DIR")]
+    fn test_get_app_data_dir_panics_without_env_in_tests() {
+        let _guard = ENV_TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let prior = std::env::var("ENSEMBLE_DATA_DIR").ok();
+        std::env::remove_var("ENSEMBLE_DATA_DIR");
+
+        // Capture the panic so we can restore env in non-panic paths too.
+        // `should_panic` will catch the unwind for us; the Drop on `prior`
+        // restoration below would not run on panic, so we restore now.
+        // Strategy: use AssertUnwindSafe + catch_unwind to control restoration.
+        let result = std::panic::catch_unwind(|| {
+            let _ = get_app_data_dir();
+        });
+
+        // Restore env before re-raising the panic for `should_panic` to catch.
+        if let Some(v) = prior {
+            std::env::set_var("ENSEMBLE_DATA_DIR", v);
         }
+        if let Err(payload) = result {
+            std::panic::resume_unwind(payload);
+        }
+        // If we got here, the function did not panic — fail the test.
+        panic!("ENSEMBLE_DATA_DIR not set but get_app_data_dir did not panic");
     }
 
     #[test]
@@ -245,6 +295,8 @@ mod tests {
 
     #[test]
     fn test_aliases_match_originals() {
+        // Under cfg(test), get_app_data_dir requires ENSEMBLE_DATA_DIR.
+        let _scope = ScopedEnv::set("/tmp/ensemble-aliases-test");
         assert_eq!(get_data_path(), get_data_file_path());
         assert_eq!(get_config_path(), get_settings_file_path());
         assert_eq!(get_ensemble_dir(), get_app_data_dir());
