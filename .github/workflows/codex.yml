@@ -127,11 +127,11 @@ jobs:
         id: prepare_prompt
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
-            echo "prompt_file=.github/codex/prompts/review-tauri.md" >> "$GITHUB_OUTPUT"
+            echo "prompt_file=.github/codex/prompts/review.md" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.event_name }}" == "schedule" ]; then
-            echo "prompt_file=.github/codex/prompts/daily-check-tauri.md" >> "$GITHUB_OUTPUT"
+            echo "prompt_file=.github/codex/prompts/daily-check.md" >> "$GITHUB_OUTPUT"
           elif [ "${{ github.event_name }}" == "workflow_run" ]; then
-            echo "prompt_file=.github/codex/prompts/autofix-tauri.md" >> "$GITHUB_OUTPUT"
+            echo "prompt_file=.github/codex/prompts/autofix.md" >> "$GITHUB_OUTPUT"
           else
             echo "prompt_file=" >> "$GITHUB_OUTPUT"
           fi

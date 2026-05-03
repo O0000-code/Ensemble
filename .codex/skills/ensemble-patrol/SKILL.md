@@ -91,6 +91,14 @@ Perform a comprehensive quality audit on the Ensemble Tauri 2 desktop applicatio
 
 ### 9) Report & Linear Integration
 
+**CRITICAL RULES:**
+- You MUST actually call the MCP tools. Do NOT fabricate or hallucinate tool call results.
+- If an MCP tool call fails, report the failure honestly. Do NOT pretend it succeeded.
+- Use `list_teams` to find your team ID. Use `list_projects` to find the "Ensemble" project.
+- **If the "Ensemble" project does not exist, create it** using `save_project` with name "Ensemble" and description "Ensemble Tauri desktop app - AI-assisted autonomous development workflow".
+- **ALWAYS include `projectId`** when creating issues to ensure they are assigned to the correct project.
+- After calling `save_issue`, check the returned result for the issue ID and URL to confirm success.
+
 #### If issues are found:
 
 For each issue discovered, create a Linear Issue using the Linear MCP:
@@ -98,7 +106,8 @@ For each issue discovered, create a Linear Issue using the Linear MCP:
 ```
 Tool: mcp__linear-server__save_issue
 Parameters:
-  teamId: (use list_teams to find "Personal" team ID)
+  teamId: (use list_teams to find the team ID)
+  projectId: (use list_projects to find "Ensemble" project ID; if not found, create it first with save_project)
   title: "[AI-Patrol] {concise description of issue}"
   description: |
     ## Source
@@ -113,7 +122,7 @@ Parameters:
 
     ## Suggested Fix
     {brief suggestion if applicable}
-  labelIds: (use list_issue_labels to find IDs for: "Bug" or "Improvement", "ai-discovered", "needs-triage")
+  labelIds: (use list_issue_labels to find IDs for: "Ensemble" (create if not exists), "Bug" or "Improvement", "ai-discovered", "needs-triage")
   priority: {1=Urgent for test failures, 2=High for build/security issues, 3=Medium for lint errors, 4=Low for TODOs}
 ```
 

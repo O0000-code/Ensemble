@@ -3,17 +3,14 @@
 # 适用权限级别: Level 2 (PR Creator)
 # ============================================================
 
-# 模型配置
-model = "gpt-5.3-codex"
-model_reasoning_effort = "high"
-
-# 权限配置 — Ensemble 不需要 danger-full-access
-approval_policy = "on-request"
+# 权限配置 — 设为 never 以允许 Automations 自主运行 MCP 工具
+# 交互式使用时 Codex 仍受 sandbox_mode 限制
+approval_policy = "never"
 sandbox_mode = "workspace-write"
 
-# 网络访问（默认关闭，npm install 时按需开启）
+# 网络访问（开启：Linear MCP + Git push + npm 需要网络）
 [sandbox_workspace_write]
-network_access = false
+network_access = true
 
 # Shell 环境策略
 [shell_environment_policy]

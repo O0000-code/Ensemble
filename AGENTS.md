@@ -123,7 +123,7 @@ npx tsc --noEmit && cd src-tauri && cargo test
 
 ### Workflow
 
-1. All changes on **independent branches**; use Linear Issue's `gitBranchName` when available
+1. For team or PR-based work, prefer **independent branches**; use Linear Issue's `gitBranchName` when available
 2. Run post-change verification (see Testing section) before committing
 3. Create Linear Issue for new discoveries (label: `needs-triage`)
 
@@ -131,6 +131,13 @@ npx tsc --noEmit && cd src-tauri && cargo test
 
 - Format: `Fixes PER-{N}: {short description}`
 - Reference the Linear Issue ID in the PR body
+
+### Linear Project Binding
+
+- Use Linear MCP to dynamically discover team and project information
+- All issues MUST be assigned to the "Ensemble" project (create it if it doesn't exist)
+- All issues MUST include an "Ensemble" label for proper routing (create it if it doesn't exist)
+- Do NOT hardcode any Linear IDs — always resolve them dynamically via MCP tools
 
 ### Dual-Language Awareness (TypeScript + Rust)
 
