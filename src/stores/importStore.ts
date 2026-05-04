@@ -1,5 +1,12 @@
 import { create } from 'zustand';
-import type { ExistingConfig, ImportItem, ImportResult, BackupInfo, DetectedSkill, DetectedMcp } from '../types';
+import type {
+  ExistingConfig,
+  ImportItem,
+  ImportResult,
+  BackupInfo,
+  DetectedSkill,
+  DetectedMcp,
+} from '../types';
 import { useSettingsStore } from './settingsStore';
 import { useSkillsStore } from './skillsStore';
 import { useMcpsStore } from './mcpsStore';
@@ -100,22 +107,11 @@ export const useImportStore = create<ImportState>((set, get) => ({
       });
 
       if (config && config.hasConfig) {
-        // 自动选择所有检测到的项目
-        const items: ImportItem[] = [
-          ...config.skills.map((s) => ({
-            type: 'skill' as const,
-            name: s.name,
-            sourcePath: s.path,
-          })),
-          ...config.mcps.map((m) => ({
-            type: 'mcp' as const,
-            name: m.name,
-            sourcePath: '', // MCP 从 settings.json 提取
-          })),
-        ];
+        // 默认不全选 — 让用户显式选择要导入的项目，避免误把 ~/.claude/skills/ 里
+        // 的内容整体搬进 ~/.ensemble/skills/（import 流程会同时从源目录删除原文件）
         set({
           detectedConfig: config,
-          selectedItems: items,
+          selectedItems: [],
           isDetecting: false,
           showImportDialog: true,
         });
@@ -207,13 +203,14 @@ export const useImportStore = create<ImportState>((set, get) => ({
     // Use type, name, AND sourcePath to uniquely identify items
     // This is important for MCPs with same name but different scopes (user vs local)
     const exists = selectedItems.find(
-      (i) => i.type === item.type && i.name === item.name && i.sourcePath === item.sourcePath
+      (i) => i.type === item.type && i.name === item.name && i.sourcePath === item.sourcePath,
     );
 
     if (exists) {
       set({
         selectedItems: selectedItems.filter(
-          (i) => !(i.type === item.type && i.name === item.name && i.sourcePath === item.sourcePath)
+          (i) =>
+            !(i.type === item.type && i.name === item.name && i.sourcePath === item.sourcePath),
         ),
       });
     } else {

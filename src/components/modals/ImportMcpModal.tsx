@@ -35,11 +35,7 @@ interface ImportMcpModalProps {
  * - User scope: text-[11px] font-medium text-[#8B5CF6] (purple)
  * - Local path: text-[11px] font-normal text-[#71717A] (gray)
  */
-export function ImportMcpModal({
-  isOpen,
-  onClose,
-  onImportComplete,
-}: ImportMcpModalProps) {
+export function ImportMcpModal({ isOpen, onClose, onImportComplete }: ImportMcpModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<TabType>('claude');
 
@@ -75,7 +71,8 @@ export function ImportMcpModal({
   const totalPluginMcps = allPluginMcps.length;
   const totalUnimportedPluginMcps = unimportedPluginMcps.length;
   const selectedPluginCount = selectedPluginMcps.size;
-  const allPluginSelected = totalUnimportedPluginMcps > 0 && selectedPluginCount === totalUnimportedPluginMcps;
+  const allPluginSelected =
+    totalUnimportedPluginMcps > 0 && selectedPluginCount === totalUnimportedPluginMcps;
 
   // Create unique key for MCP (name + scope + projectPath)
   const getMcpKey = (mcp: DetectedMcp) =>
@@ -83,9 +80,7 @@ export function ImportMcpModal({
 
   // Track selected MCP keys for this modal (using unique identifier)
   const selectedMcpKeys = new Set(
-    selectedItems
-      .filter((item) => item.type === 'mcp')
-      .map((item) => item.sourcePath) // sourcePath now stores the unique key
+    selectedItems.filter((item) => item.type === 'mcp').map((item) => item.sourcePath), // sourcePath now stores the unique key
   );
   const selectedCount = selectedMcpKeys.size;
 
@@ -147,7 +142,7 @@ export function ImportMcpModal({
         sourcePath: getMcpKey(mcp), // Use unique key as sourcePath
       });
     },
-    [toggleItemSelection]
+    [toggleItemSelection],
   );
 
   // Handle import (Claude Code tab)
@@ -177,7 +172,7 @@ export function ImportMcpModal({
     selectedPluginMcps.forEach((key) => {
       const [pluginId, mcpName] = key.split('|');
       const mcp = unimportedPluginMcps.find(
-        (m) => m.pluginId === pluginId && m.mcpName === mcpName
+        (m) => m.pluginId === pluginId && m.mcpName === mcpName,
       );
       if (mcp) {
         itemsToImport.push({
@@ -195,7 +190,14 @@ export function ImportMcpModal({
     setSelectedPluginMcps(new Set());
     onImportComplete?.();
     onClose();
-  }, [selectedPluginCount, selectedPluginMcps, unimportedPluginMcps, importPluginMcps, onImportComplete, onClose]);
+  }, [
+    selectedPluginCount,
+    selectedPluginMcps,
+    unimportedPluginMcps,
+    importPluginMcps,
+    onImportComplete,
+    onClose,
+  ]);
 
   // Handle Escape key press
   const handleKeyDown = useCallback(
@@ -204,7 +206,7 @@ export function ImportMcpModal({
         onClose();
       }
     },
-    [onClose]
+    [onClose],
   );
 
   // Disable body scroll when modal is open
@@ -257,9 +259,7 @@ export function ImportMcpModal({
         {/* Modal Header - 80px height */}
         <div className="flex items-center justify-between h-20 px-6 border-b border-[#E5E5E5]">
           <div className="flex flex-col gap-1">
-            <h2 className="text-[18px] font-semibold text-[#18181B]">
-              Import MCP Servers
-            </h2>
+            <h2 className="text-[18px] font-semibold text-[#18181B]">Import MCP Servers</h2>
             <p className="text-[13px] font-normal text-[#71717A]">
               {activeTab === 'claude'
                 ? `Found ${totalMcps} MCP servers on your system`
@@ -282,9 +282,7 @@ export function ImportMcpModal({
             <button
               onClick={() => setActiveTab('claude')}
               className={`flex items-center gap-2 py-3 px-4 border-b-2 transition-colors ${
-                activeTab === 'claude'
-                  ? 'border-[#18181B]'
-                  : 'border-transparent'
+                activeTab === 'claude' ? 'border-[#18181B]' : 'border-transparent'
               }`}
             >
               <HardDrive
@@ -314,9 +312,7 @@ export function ImportMcpModal({
             <button
               onClick={() => setActiveTab('plugin')}
               className={`flex items-center gap-2 py-3 px-4 border-b-2 transition-colors ${
-                activeTab === 'plugin'
-                  ? 'border-[#18181B]'
-                  : 'border-transparent'
+                activeTab === 'plugin' ? 'border-[#18181B]' : 'border-transparent'
               }`}
             >
               <Puzzle
@@ -351,7 +347,9 @@ export function ImportMcpModal({
             <div className="w-px h-4 bg-[#E5E5E5]" />
             {/* Count */}
             <span className="text-[12px] font-normal text-[#A1A1AA]">
-              {activeTab === 'claude' ? `${selectedCount}/${totalMcps}` : `${selectedPluginCount}/${totalUnimportedPluginMcps}`}
+              {activeTab === 'claude'
+                ? `${selectedCount}/${totalMcps}`
+                : `${selectedPluginCount}/${totalUnimportedPluginMcps}`}
             </span>
             {/* Divider */}
             <div className="w-px h-4 bg-[#E5E5E5]" />
@@ -367,9 +365,7 @@ export function ImportMcpModal({
               ) : (
                 <div className="w-4 h-4 rounded-[4px] border-[1.5px] border-[#D4D4D8] bg-transparent" />
               )}
-              <span className="text-[13px] font-medium text-[#18181B]">
-                All
-              </span>
+              <span className="text-[13px] font-medium text-[#18181B]">All</span>
             </div>
           </div>
         </div>
@@ -381,15 +377,11 @@ export function ImportMcpModal({
             <div className="flex-1 overflow-y-auto py-4 px-6 flex flex-col gap-0.5">
               {isDetecting ? (
                 <div className="flex items-center justify-center h-full">
-                  <span className="text-[13px] text-[#71717A]">
-                    Detecting MCP servers...
-                  </span>
+                  <span className="text-[13px] text-[#71717A]">Detecting MCP servers...</span>
                 </div>
               ) : detectedMcps.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
-                  <span className="text-[13px] text-[#71717A]">
-                    No MCP servers found
-                  </span>
+                  <span className="text-[13px] text-[#71717A]">No MCP servers found</span>
                 </div>
               ) : (
                 detectedMcps.map((mcp) => {
@@ -436,7 +428,11 @@ export function ImportMcpModal({
             {/* Modal Footer */}
             <div className="flex items-center justify-between py-4 px-6 border-t border-[#E5E5E5]">
               {/* Info Button */}
-              <Tooltip content="Scans ~/.claude.json for configured MCP servers" position="top">
+              <Tooltip
+                content="Scans ~/.claude.json for configured MCP servers. Heads up: imported entries are removed from ~/.claude.json and managed by Ensemble, so they will no longer live in your Claude account config."
+                position="top"
+                maxWidth={320}
+              >
                 <button
                   className="w-7 h-7 flex items-center justify-center rounded-[6px] hover:bg-[#FAFAFA] transition-colors"
                   aria-label="More information"
@@ -478,16 +474,12 @@ export function ImportMcpModal({
             <div className="flex-1 overflow-y-auto py-4 px-6 flex flex-col gap-0.5">
               {isDetectingPluginMcps ? (
                 <div className="flex items-center justify-center h-full">
-                  <span className="text-[13px] text-[#71717A]">
-                    Detecting plugin MCPs...
-                  </span>
+                  <span className="text-[13px] text-[#71717A]">Detecting plugin MCPs...</span>
                 </div>
               ) : allPluginMcps.length === 0 ? (
                 <div className="flex items-center justify-center h-full flex-col gap-2">
                   <Puzzle className="w-8 h-8 text-[#D4D4D8]" />
-                  <span className="text-[13px] text-[#71717A]">
-                    No plugin MCPs available
-                  </span>
+                  <span className="text-[13px] text-[#71717A]">No plugin MCPs available</span>
                   <span className="text-[11px] text-[#A1A1AA]">
                     Install plugins with MCPs to import them here
                   </span>
@@ -523,7 +515,9 @@ export function ImportMcpModal({
                       <div className="flex-1 flex flex-col gap-1 min-w-0">
                         {/* Name row with Marketplace label - gap 8px */}
                         <div className="flex items-center gap-2">
-                          <span className={`text-[13px] font-medium truncate ${isAlreadyImported ? 'text-[#A1A1AA]' : 'text-[#18181B]'}`}>
+                          <span
+                            className={`text-[13px] font-medium truncate ${isAlreadyImported ? 'text-[#A1A1AA]' : 'text-[#18181B]'}`}
+                          >
                             {mcp.mcpName}
                           </span>
                           {isAlreadyImported && (
@@ -555,7 +549,10 @@ export function ImportMcpModal({
             {/* Modal Footer */}
             <div className="flex items-center justify-between py-4 px-6 border-t border-[#E5E5E5]">
               {/* Info Button */}
-              <Tooltip content="Shows MCP servers from installed Claude Code plugins" position="top">
+              <Tooltip
+                content="Shows MCP servers from installed Claude Code plugins"
+                position="top"
+              >
                 <button
                   className="w-7 h-7 flex items-center justify-center rounded-[6px] hover:bg-[#FAFAFA] transition-colors"
                   aria-label="More information"

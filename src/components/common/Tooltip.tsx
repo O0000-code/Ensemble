@@ -10,6 +10,8 @@ export interface TooltipProps {
   position?: 'top' | 'bottom';
   /** Additional CSS classes */
   className?: string;
+  /** Max width in px; when set, long content wraps instead of staying on one line */
+  maxWidth?: number;
 }
 
 /**
@@ -28,6 +30,7 @@ export function Tooltip({
   children,
   position = 'top',
   className = '',
+  maxWidth,
 }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
@@ -52,10 +55,7 @@ export function Tooltip({
     }
 
     // Ensure tooltip stays within viewport horizontally
-    const adjustedLeft = Math.max(
-      8,
-      Math.min(left, window.innerWidth - tooltipRect.width - 8)
-    );
+    const adjustedLeft = Math.max(8, Math.min(left, window.innerWidth - tooltipRect.width - 8));
 
     setTooltipPosition({ top, left: adjustedLeft });
   }, [position]);
@@ -104,7 +104,9 @@ export function Tooltip({
     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
     zIndex: 60,
     pointerEvents: 'none',
-    whiteSpace: 'nowrap',
+    whiteSpace: maxWidth ? 'normal' : 'nowrap',
+    maxWidth: maxWidth ? `${maxWidth}px` : undefined,
+    lineHeight: maxWidth ? 1.5 : undefined,
     opacity: isVisible ? 1 : 0,
     transform: isVisible
       ? 'translateY(0)'

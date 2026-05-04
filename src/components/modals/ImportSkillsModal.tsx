@@ -32,11 +32,7 @@ interface ImportSkillsModalProps {
  * - Local list item: Checkbox + Info(name + path), padding 10px 12px, gap 12px
  * - Plugin list item: Checkbox + Info(name row + description), padding 12px, gap 12px
  */
-export function ImportSkillsModal({
-  isOpen,
-  onClose,
-  onImportComplete,
-}: ImportSkillsModalProps) {
+export function ImportSkillsModal({ isOpen, onClose, onImportComplete }: ImportSkillsModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<TabType>('claude');
 
@@ -74,9 +70,7 @@ export function ImportSkillsModal({
 
   // Track selected skill names for this modal
   const selectedSkillNames = new Set(
-    selectedItems
-      .filter((item) => item.type === 'skill')
-      .map((item) => item.name)
+    selectedItems.filter((item) => item.type === 'skill').map((item) => item.name),
   );
   const selectedCount = selectedSkillNames.size;
 
@@ -137,7 +131,7 @@ export function ImportSkillsModal({
         sourcePath: skill.path,
       });
     },
-    [toggleItemSelection]
+    [toggleItemSelection],
   );
 
   // Handle import (Claude Code tab)
@@ -167,7 +161,7 @@ export function ImportSkillsModal({
     selectedPluginSkills.forEach((key) => {
       const [pluginId, skillName] = key.split('|');
       const skill = unimportedPluginSkills.find(
-        (s) => s.pluginId === pluginId && s.skillName === skillName
+        (s) => s.pluginId === pluginId && s.skillName === skillName,
       );
       if (skill) {
         itemsToImport.push({
@@ -185,7 +179,14 @@ export function ImportSkillsModal({
     setSelectedPluginSkills(new Set());
     onImportComplete?.();
     onClose();
-  }, [selectedPluginCount, selectedPluginSkills, unimportedPluginSkills, importPluginSkills, onImportComplete, onClose]);
+  }, [
+    selectedPluginCount,
+    selectedPluginSkills,
+    unimportedPluginSkills,
+    importPluginSkills,
+    onImportComplete,
+    onClose,
+  ]);
 
   // Handle Escape key press
   const handleKeyDown = useCallback(
@@ -194,7 +195,7 @@ export function ImportSkillsModal({
         onClose();
       }
     },
-    [onClose]
+    [onClose],
   );
 
   // Disable body scroll when modal is open
@@ -247,9 +248,7 @@ export function ImportSkillsModal({
         {/* Modal Header - 80px height */}
         <div className="flex items-center justify-between h-20 px-6 border-b border-[#E5E5E5]">
           <div className="flex flex-col gap-1">
-            <h2 className="text-[18px] font-semibold text-[#18181B]">
-              Import Skills
-            </h2>
+            <h2 className="text-[18px] font-semibold text-[#18181B]">Import Skills</h2>
             <p className="text-[13px] font-normal text-[#71717A]">
               {activeTab === 'claude'
                 ? `Found ${totalSkills} Skills on your system`
@@ -272,9 +271,7 @@ export function ImportSkillsModal({
             <button
               onClick={() => setActiveTab('claude')}
               className={`flex items-center gap-2 py-3 px-4 border-b-2 transition-colors ${
-                activeTab === 'claude'
-                  ? 'border-[#18181B]'
-                  : 'border-transparent'
+                activeTab === 'claude' ? 'border-[#18181B]' : 'border-transparent'
               }`}
             >
               <HardDrive
@@ -304,9 +301,7 @@ export function ImportSkillsModal({
             <button
               onClick={() => setActiveTab('plugin')}
               className={`flex items-center gap-2 py-3 px-4 border-b-2 transition-colors ${
-                activeTab === 'plugin'
-                  ? 'border-[#18181B]'
-                  : 'border-transparent'
+                activeTab === 'plugin' ? 'border-[#18181B]' : 'border-transparent'
               }`}
             >
               <Puzzle
@@ -341,7 +336,9 @@ export function ImportSkillsModal({
             <div className="w-px h-4 bg-[#E5E5E5]" />
             {/* Count */}
             <span className="text-[12px] font-normal text-[#A1A1AA]">
-              {activeTab === 'claude' ? `${selectedCount}/${totalSkills}` : `${selectedPluginCount}/${totalPluginSkills}`}
+              {activeTab === 'claude'
+                ? `${selectedCount}/${totalSkills}`
+                : `${selectedPluginCount}/${totalPluginSkills}`}
             </span>
             {/* Divider */}
             <div className="w-px h-4 bg-[#E5E5E5]" />
@@ -357,9 +354,7 @@ export function ImportSkillsModal({
               ) : (
                 <div className="w-4 h-4 rounded-[4px] border-[1.5px] border-[#D4D4D8] bg-transparent" />
               )}
-              <span className="text-[13px] font-medium text-[#18181B]">
-                All
-              </span>
+              <span className="text-[13px] font-medium text-[#18181B]">All</span>
             </div>
           </div>
         </div>
@@ -371,15 +366,11 @@ export function ImportSkillsModal({
             <div className="flex-1 overflow-y-auto py-4 px-6 flex flex-col gap-0.5">
               {isDetecting ? (
                 <div className="flex items-center justify-center h-full">
-                  <span className="text-[13px] text-[#71717A]">
-                    Detecting skills...
-                  </span>
+                  <span className="text-[13px] text-[#71717A]">Detecting skills...</span>
                 </div>
               ) : detectedSkills.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
-                  <span className="text-[13px] text-[#71717A]">
-                    No skills found
-                  </span>
+                  <span className="text-[13px] text-[#71717A]">No skills found</span>
                 </div>
               ) : (
                 detectedSkills.map((skill) => {
@@ -416,7 +407,11 @@ export function ImportSkillsModal({
             {/* Modal Footer */}
             <div className="flex items-center justify-between py-4 px-6 border-t border-[#E5E5E5]">
               {/* Info Button */}
-              <Tooltip content="Scans ~/.claude/skills/ and ~/.agents/skills/ for available Skills" position="top">
+              <Tooltip
+                content="Scans ~/.claude/skills/ and ~/.agents/skills/ for available Skills. Heads up: imported Skills are moved into Ensemble's managed folder (~/.ensemble/skills/) and removed from their original location, so they will no longer live under your Claude account directory."
+                position="top"
+                maxWidth={320}
+              >
                 <button
                   className="w-7 h-7 flex items-center justify-center rounded-[6px] hover:bg-[#FAFAFA] transition-colors"
                   aria-label="More information"
@@ -458,16 +453,12 @@ export function ImportSkillsModal({
             <div className="flex-1 overflow-y-auto py-4 px-6 flex flex-col gap-0.5">
               {isDetectingPluginSkills ? (
                 <div className="flex items-center justify-center h-full">
-                  <span className="text-[13px] text-[#71717A]">
-                    Detecting plugin skills...
-                  </span>
+                  <span className="text-[13px] text-[#71717A]">Detecting plugin skills...</span>
                 </div>
               ) : unimportedPluginSkills.length === 0 ? (
                 <div className="flex items-center justify-center h-full flex-col gap-2">
                   <Puzzle className="w-8 h-8 text-[#D4D4D8]" />
-                  <span className="text-[13px] text-[#71717A]">
-                    No plugin skills available
-                  </span>
+                  <span className="text-[13px] text-[#71717A]">No plugin skills available</span>
                   <span className="text-[11px] text-[#A1A1AA]">
                     Install plugins with skills to import them here
                   </span>
