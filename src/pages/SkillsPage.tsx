@@ -151,9 +151,7 @@ function ConfigItem({ label, value, isLast = false }: ConfigItemProps) {
         !isLast ? 'border-b border-[#E5E5E5]' : ''
       }`}
     >
-      <span className="w-24 flex-shrink-0 text-xs font-medium text-[#71717A]">
-        {label}
-      </span>
+      <span className="w-24 flex-shrink-0 text-xs font-medium text-[#71717A]">{label}</span>
       <div className="flex-1">{value}</div>
     </div>
   );
@@ -201,12 +199,8 @@ export function SkillsPage() {
 
   const { categories, tags: appTags, addTag: addGlobalTag } = useAppStore();
 
-  const {
-    isSkillsModalOpen,
-    openSkillsModal,
-    closeSkillsModal,
-    isDetectingSkills
-  } = useImportStore();
+  const { isSkillsModalOpen, openSkillsModal, closeSkillsModal, isDetectingSkills } =
+    useImportStore();
 
   const { scenes } = useScenesStore();
 
@@ -223,7 +217,7 @@ export function SkillsPage() {
 
   // Category dropdown options - only use categories from appStore
   const categoryOptions = useMemo(() => {
-    const options = categories.map(cat => ({
+    const options = categories.map((cat) => ({
       value: cat.name,
       label: cat.name,
       color: cat.color || '#71717A',
@@ -238,7 +232,7 @@ export function SkillsPage() {
   // Get the selected skill using useMemo
   const selectedSkill = useMemo(
     () => skills.find((s) => s.id === selectedSkillId) || null,
-    [skills, selectedSkillId]
+    [skills, selectedSkillId],
   );
 
   // Get scenes that use the selected skill
@@ -266,9 +260,8 @@ export function SkillsPage() {
   const tagSuggestions = useMemo(() => {
     if (!tagInputValue.trim()) return appTags;
     const query = tagInputValue.toLowerCase();
-    return appTags.filter(tag =>
-      tag.name.toLowerCase().includes(query) &&
-      !selectedSkill?.tags?.includes(tag.name)
+    return appTags.filter(
+      (tag) => tag.name.toLowerCase().includes(query) && !selectedSkill?.tags?.includes(tag.name),
     );
   }, [tagInputValue, appTags, selectedSkill?.tags]);
 
@@ -347,7 +340,7 @@ export function SkillsPage() {
       const trimmedName = tagName.trim();
 
       // Check if tag already exists in appStore
-      const existingTag = appTags.find(t => t.name.toLowerCase() === trimmedName.toLowerCase());
+      const existingTag = appTags.find((t) => t.name.toLowerCase() === trimmedName.toLowerCase());
 
       // If new tag, add to appStore first so it appears in sidebar
       if (!existingTag) {
@@ -368,7 +361,7 @@ export function SkillsPage() {
   // Handle removing a tag
   const handleRemoveTag = (tagName: string) => {
     if (selectedSkillId && selectedSkill) {
-      const newTags = selectedSkill.tags.filter(t => t !== tagName);
+      const newTags = selectedSkill.tags.filter((t) => t !== tagName);
       updateSkillTags(selectedSkillId, newTags);
     }
   };
@@ -406,9 +399,7 @@ export function SkillsPage() {
 
       {/* Title & Description */}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <h2 className="text-base font-semibold text-[#18181B]">
-          {selectedSkill.name}
-        </h2>
+        <h2 className="text-base font-semibold text-[#18181B]">{selectedSkill.name}</h2>
         {(() => {
           const { firstSentence } = parseDescription(selectedSkill.description);
           return (
@@ -432,10 +423,22 @@ export function SkillsPage() {
     <div className="flex flex-col gap-7">
       {/* Info Section */}
       <div className="flex gap-8">
-        <InfoItem label="Installed" value={formatDate(selectedSkill.installedAt || selectedSkill.createdAt)} />
-        <InfoItem label="Usage" value={`${(selectedSkillUsage?.call_count ?? 0).toLocaleString()} calls`} />
-        <InfoItem label="Last Used" value={formatRelativeTime(selectedSkillUsage?.last_used ?? undefined)} />
-        <InfoItem label="Scenes" value={`${scenesCount} ${scenesCount === 1 ? 'scene' : 'scenes'}`} />
+        <InfoItem
+          label="Installed"
+          value={formatDate(selectedSkill.installedAt || selectedSkill.createdAt)}
+        />
+        <InfoItem
+          label="Usage"
+          value={`${(selectedSkillUsage?.call_count ?? 0).toLocaleString()} calls`}
+        />
+        <InfoItem
+          label="Last Used"
+          value={formatRelativeTime(selectedSkillUsage?.last_used ?? undefined)}
+        />
+        <InfoItem
+          label="Scenes"
+          value={`${scenesCount} ${scenesCount === 1 ? 'scene' : 'scenes'}`}
+        />
       </div>
 
       {/* Category & Tags Section */}
@@ -505,7 +508,9 @@ export function SkillsPage() {
                       </button>
                     ))}
                     {/* Option to create new tag if not in suggestions */}
-                    {!tagSuggestions.some(t => t.name.toLowerCase() === tagInputValue.toLowerCase()) && (
+                    {!tagSuggestions.some(
+                      (t) => t.name.toLowerCase() === tagInputValue.toLowerCase(),
+                    ) && (
                       <button
                         onMouseDown={(e) => {
                           e.preventDefault();
@@ -636,9 +641,7 @@ export function SkillsPage() {
         <div className="flex flex-col gap-3 rounded-lg border border-[#E5E5E5] p-4">
           <div className="flex items-center gap-2.5">
             <span className="text-xs font-medium text-[#71717A]">Path</span>
-            <span className="font-mono text-xs text-[#18181B]">
-              {selectedSkill.sourcePath}
-            </span>
+            <span className="font-mono text-xs text-[#18181B]">{selectedSkill.sourcePath}</span>
           </div>
           <Button
             variant="secondary"
@@ -665,9 +668,7 @@ export function SkillsPage() {
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#F4F4F5]">
               <Layers className="h-3.5 w-3.5 text-[#A1A1AA]" />
             </div>
-            <span className="text-[13px] text-[#71717A]">
-              Not used in any scenes yet
-            </span>
+            <span className="text-[13px] text-[#71717A]">Not used in any scenes yet</span>
           </div>
         )}
       </div>
@@ -697,20 +698,30 @@ export function SkillsPage() {
               variant="secondary"
               size="small"
               icon={
-                isClassifying ? <span className="ai-spinner" /> :
-                classifySuccess ? <Check className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`} /> :
-                <Sparkles className={showRestoreAnimation ? 'classify-fade-in' : ''} />
+                isClassifying ? (
+                  <span className="ai-spinner" />
+                ) : classifySuccess ? (
+                  <Check
+                    className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`}
+                  />
+                ) : (
+                  <Sparkles className={showRestoreAnimation ? 'classify-fade-in' : ''} />
+                )
               }
               onClick={handleAutoClassify}
-              disabled={isClassifying || classifySuccess}
+              disabled={isClassifying || classifySuccess || skills.length === 0}
               className={`w-[132px] ${isClassifying ? 'ai-classifying' : ''} ${classifySuccess ? 'classify-success-bg' : ''} ${isFadingOut ? 'classify-fading-out' : ''}`}
             >
               {isClassifying ? (
                 <span className="ai-classifying-text">Classifying...</span>
               ) : classifySuccess ? (
-                <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>Done!</span>
+                <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>
+                  Done!
+                </span>
               ) : (
-                <span className={showRestoreAnimation ? 'classify-fade-in' : ''}>Auto Classify</span>
+                <span className={showRestoreAnimation ? 'classify-fade-in' : ''}>
+                  Auto Classify
+                </span>
               )}
             </Button>
           </div>

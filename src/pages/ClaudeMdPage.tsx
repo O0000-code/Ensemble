@@ -266,7 +266,7 @@ export function ClaudeMdPage() {
           )
         }
         onClick={() => autoClassify()}
-        disabled={isAutoClassifying || classifySuccess}
+        disabled={isAutoClassifying || classifySuccess || files.length === 0}
         className={`w-[132px] ${isAutoClassifying ? 'ai-classifying' : ''} ${classifySuccess ? 'classify-success-bg' : ''} ${isFadingOut ? 'classify-fading-out' : ''}`}
       >
         {isAutoClassifying ? (

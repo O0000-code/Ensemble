@@ -44,15 +44,15 @@ export function CategoryPage() {
   // Get selected skill/mcp/claudeMd objects
   const selectedSkill = useMemo(
     () => skills.find((s) => s.id === selectedSkillId) || null,
-    [skills, selectedSkillId]
+    [skills, selectedSkillId],
   );
   const selectedMcp = useMemo(
     () => mcpServers.find((m) => m.id === selectedMcpId) || null,
-    [mcpServers, selectedMcpId]
+    [mcpServers, selectedMcpId],
   );
   const selectedClaudeMd = useMemo(
     () => claudeMdFiles.find((f) => f.id === selectedClaudeMdId) || null,
-    [claudeMdFiles, selectedClaudeMdId]
+    [claudeMdFiles, selectedClaudeMdId],
   );
 
   // Filter skills, mcps, and claudeMd by category, then by search
@@ -77,17 +77,17 @@ export function CategoryPage() {
       skills: categorySkills.filter(
         (skill) =>
           skill.name.toLowerCase().includes(searchLower) ||
-          skill.description.toLowerCase().includes(searchLower)
+          skill.description.toLowerCase().includes(searchLower),
       ),
       mcps: categoryMcps.filter(
         (mcp) =>
           mcp.name.toLowerCase().includes(searchLower) ||
-          mcp.description.toLowerCase().includes(searchLower)
+          mcp.description.toLowerCase().includes(searchLower),
       ),
       claudeMd: categoryClaudeMd.filter(
         (file) =>
           file.name.toLowerCase().includes(searchLower) ||
-          file.description.toLowerCase().includes(searchLower)
+          file.description.toLowerCase().includes(searchLower),
       ),
     };
   }, [skills, mcpServers, claudeMdFiles, categoryName, categoryId, search]);
@@ -151,7 +151,10 @@ export function CategoryPage() {
     setSelectedClaudeMdId(null);
   };
 
-  const isEmpty = filteredData.skills.length === 0 && filteredData.mcps.length === 0 && filteredData.claudeMd.length === 0;
+  const isEmpty =
+    filteredData.skills.length === 0 &&
+    filteredData.mcps.length === 0 &&
+    filteredData.claudeMd.length === 0;
   const displayCategoryName = categoryName || 'Unknown Category';
 
   // Check if any panel is open for layout adjustment
@@ -172,12 +175,14 @@ export function CategoryPage() {
               size="small"
               icon={isClassifying ? <span className="ai-spinner" /> : <Sparkles />}
               onClick={handleAutoClassify}
-              disabled={isClassifying}
+              disabled={isClassifying || isEmpty}
               className={`w-[132px] ${isClassifying ? 'ai-classifying' : ''}`}
             >
               {isClassifying ? (
                 <span className="ai-classifying-text">Classifying...</span>
-              ) : 'Auto Classify'}
+              ) : (
+                'Auto Classify'
+              )}
             </Button>
           }
         />
@@ -207,7 +212,9 @@ export function CategoryPage() {
           >
             {isClassifying ? (
               <span className="ai-classifying-text">Classifying...</span>
-            ) : 'Auto Classify'}
+            ) : (
+              'Auto Classify'
+            )}
           </Button>
         }
       />
@@ -313,11 +320,7 @@ export function CategoryPage() {
       />
 
       {/* MCP Detail Panel - Always render, control visibility with isOpen */}
-      <McpDetailPanel
-        mcp={selectedMcp}
-        isOpen={!!selectedMcpId}
-        onClose={handleCloseMcpPanel}
-      />
+      <McpDetailPanel mcp={selectedMcp} isOpen={!!selectedMcpId} onClose={handleCloseMcpPanel} />
 
       {/* CLAUDE.md Detail Panel - Always render, control visibility with isOpen */}
       <ClaudeMdDetailPanel

@@ -22,7 +22,14 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { PageHeader, SlidePanel } from '@/components/layout';
-import { EmptyState, IconPicker, ICON_MAP, Dropdown, ScopeSelector, Button } from '@/components/common';
+import {
+  EmptyState,
+  IconPicker,
+  ICON_MAP,
+  Dropdown,
+  ScopeSelector,
+  Button,
+} from '@/components/common';
 import { McpListItem } from '@/components/mcps/McpListItem';
 import { ImportMcpModal } from '@/components/modals/ImportMcpModal';
 import { useMcpsStore } from '@/stores/mcpsStore';
@@ -115,12 +122,8 @@ const ToolItem: React.FC<ToolItemProps> = ({ tool, isLast }) => {
       </div>
       {/* Info */}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-[13px] font-medium text-[#18181B]">
-          {tool.name}
-        </span>
-        <span className="text-[11px] font-normal text-[#71717A] truncate">
-          {tool.description}
-        </span>
+        <span className="text-[13px] font-medium text-[#18181B]">{tool.name}</span>
+        <span className="text-[11px] font-normal text-[#71717A] truncate">{tool.description}</span>
       </div>
     </div>
   );
@@ -168,12 +171,7 @@ export const McpServersPage: React.FC = () => {
 
   const { categories, tags: appTags, addTag: addGlobalTag } = useAppStore();
 
-  const {
-    isMcpsModalOpen,
-    openMcpsModal,
-    closeMcpsModal,
-    isDetectingMcps
-  } = useImportStore();
+  const { isMcpsModalOpen, openMcpsModal, closeMcpsModal, isDetectingMcps } = useImportStore();
 
   const { scenes } = useScenesStore();
 
@@ -194,7 +192,7 @@ export const McpServersPage: React.FC = () => {
   // Get selected MCP data using useMemo
   const selectedMcp = useMemo(
     () => mcpServers.find((mcp) => mcp.id === selectedMcpId) || null,
-    [mcpServers, selectedMcpId]
+    [mcpServers, selectedMcpId],
   );
 
   // Get scenes that use the selected MCP
@@ -220,7 +218,7 @@ export const McpServersPage: React.FC = () => {
 
   // Category dropdown options - only use categories from appStore
   const categoryOptions = useMemo(() => {
-    const options = categories.map(cat => ({
+    const options = categories.map((cat) => ({
       value: cat.name,
       label: cat.name,
       color: cat.color || '#71717A',
@@ -238,9 +236,8 @@ export const McpServersPage: React.FC = () => {
   const tagSuggestions = useMemo(() => {
     if (!tagInputValue.trim()) return appTags;
     const query = tagInputValue.toLowerCase();
-    return appTags.filter(tag =>
-      tag.name.toLowerCase().includes(query) &&
-      !selectedMcp?.tags?.includes(tag.name)
+    return appTags.filter(
+      (tag) => tag.name.toLowerCase().includes(query) && !selectedMcp?.tags?.includes(tag.name),
     );
   }, [tagInputValue, appTags, selectedMcp?.tags]);
 
@@ -303,7 +300,7 @@ export const McpServersPage: React.FC = () => {
       const trimmedName = tagName.trim();
 
       // Check if tag already exists in appStore
-      const existingTag = appTags.find(t => t.name.toLowerCase() === trimmedName.toLowerCase());
+      const existingTag = appTags.find((t) => t.name.toLowerCase() === trimmedName.toLowerCase());
 
       // If new tag, add to appStore first so it appears in sidebar
       if (!existingTag) {
@@ -324,7 +321,7 @@ export const McpServersPage: React.FC = () => {
   // Handle removing a tag
   const handleRemoveTag = (tagName: string) => {
     if (selectedMcpId && selectedMcp) {
-      const newTags = selectedMcp.tags.filter(t => t !== tagName);
+      const newTags = selectedMcp.tags.filter((t) => t !== tagName);
       updateMcpTags(selectedMcpId, newTags);
     }
   };
@@ -363,19 +360,17 @@ export const McpServersPage: React.FC = () => {
       {/* Icon */}
       <div
         ref={detailIconRef}
-        onClick={() => handleIconClick(selectedMcp.id, detailIconRef as React.RefObject<HTMLDivElement>)}
+        onClick={() =>
+          handleIconClick(selectedMcp.id, detailIconRef as React.RefObject<HTMLDivElement>)
+        }
         className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F4F4F5] cursor-pointer hover:ring-2 hover:ring-[#18181B]/10 transition-shadow"
       >
         <SelectedMcpIcon className="h-5 w-5 text-[#52525B]" />
       </div>
       {/* Title Info */}
       <div className="flex flex-col gap-0.5">
-        <h2 className="text-sm font-semibold text-[#18181B]">
-          {selectedMcp.name}
-        </h2>
-        <p className="text-xs font-normal text-[#71717A]">
-          {selectedMcp.description}
-        </p>
+        <h2 className="text-sm font-semibold text-[#18181B]">{selectedMcp.name}</h2>
+        <p className="text-xs font-normal text-[#71717A]">{selectedMcp.description}</p>
       </div>
     </div>
   );
@@ -408,17 +403,18 @@ export const McpServersPage: React.FC = () => {
             </span>
           </div>
           <div className="flex flex-1 flex-col gap-1">
-            <span className="text-[11px] font-medium text-[#71717A]">
-              Total Calls
-            </span>
+            <span className="text-[11px] font-medium text-[#71717A]">Total Calls</span>
             <span className="text-[13px] font-medium text-[#18181B]">
-              {(usageStats[selectedMcp?.id ?? '']?.total_calls ?? usageStats[selectedMcp?.name ?? '']?.total_calls ?? 0).toLocaleString()} calls
+              {(
+                usageStats[selectedMcp?.id ?? '']?.total_calls ??
+                usageStats[selectedMcp?.name ?? '']?.total_calls ??
+                0
+              ).toLocaleString()}{' '}
+              calls
             </span>
           </div>
           <div className="flex flex-1 flex-col gap-1">
-            <span className="text-[11px] font-medium text-[#71717A]">
-              Scenes
-            </span>
+            <span className="text-[11px] font-medium text-[#71717A]">Scenes</span>
             <span className="text-[13px] font-medium text-[#18181B]">
               {usedInScenes.length} {usedInScenes.length === 1 ? 'scene' : 'scenes'}
             </span>
@@ -490,7 +486,9 @@ export const McpServersPage: React.FC = () => {
                       </button>
                     ))}
                     {/* Option to create new tag if not in suggestions */}
-                    {!tagSuggestions.some(t => t.name.toLowerCase() === tagInputValue.toLowerCase()) && (
+                    {!tagSuggestions.some(
+                      (t) => t.name.toLowerCase() === tagInputValue.toLowerCase(),
+                    ) && (
                       <button
                         onMouseDown={(e) => {
                           e.preventDefault();
@@ -538,9 +536,7 @@ export const McpServersPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-[#18181B]">Provided Tools</h3>
           {selectedMcp.mcpType === 'http' ? (
-            <span className="text-[11px] font-normal text-[#A1A1AA]">
-              HTTP MCP
-            </span>
+            <span className="text-[11px] font-normal text-[#A1A1AA]">HTTP MCP</span>
           ) : (
             <button
               onClick={() => fetchMcpTools(selectedMcp.id)}
@@ -598,9 +594,7 @@ export const McpServersPage: React.FC = () => {
 
       {/* Source Configuration Section */}
       <section className="flex flex-col gap-4">
-        <h3 className="text-sm font-semibold text-[#18181B]">
-          Source Configuration
-        </h3>
+        <h3 className="text-sm font-semibold text-[#18181B]">Source Configuration</h3>
         <div className="overflow-hidden rounded-lg border border-[#E5E5E5]">
           {/* Config Path */}
           <div className="flex items-center gap-3 px-3.5 py-3 border-b border-[#E5E5E5]">
@@ -633,12 +627,7 @@ export const McpServersPage: React.FC = () => {
           </div>
         </div>
         {/* Open in Finder Button */}
-        <Button
-          variant="secondary"
-          size="small"
-          icon={<FolderOpen />}
-          onClick={handleOpenInFinder}
-        >
+        <Button variant="secondary" size="small" icon={<FolderOpen />} onClick={handleOpenInFinder}>
           Open in Finder
         </Button>
       </section>
@@ -664,9 +653,7 @@ export const McpServersPage: React.FC = () => {
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#F4F4F5]">
               <Layers className="h-3.5 w-3.5 text-[#A1A1AA]" />
             </div>
-            <span className="text-[13px] text-[#71717A]">
-              Not used in any scenes yet
-            </span>
+            <span className="text-[13px] text-[#71717A]">Not used in any scenes yet</span>
           </div>
         )}
       </section>
@@ -697,20 +684,32 @@ export const McpServersPage: React.FC = () => {
                 variant="secondary"
                 size="small"
                 icon={
-                  isClassifying ? <span className="ai-spinner" /> :
-                  classifySuccess ? <Check className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`} /> :
-                  <Sparkles className={showRestoreAnimation ? 'classify-fade-in' : ''} />
+                  isClassifying ? (
+                    <span className="ai-spinner" />
+                  ) : classifySuccess ? (
+                    <Check
+                      className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`}
+                    />
+                  ) : (
+                    <Sparkles className={showRestoreAnimation ? 'classify-fade-in' : ''} />
+                  )
                 }
                 onClick={() => autoClassify()}
-                disabled={isClassifying || classifySuccess}
+                disabled={isClassifying || classifySuccess || mcpServers.length === 0}
                 className={`w-[132px] ${isClassifying ? 'ai-classifying' : ''} ${classifySuccess ? 'classify-success-bg' : ''} ${isFadingOut ? 'classify-fading-out' : ''}`}
               >
                 {isClassifying ? (
                   <span className="ai-classifying-text">Classifying...</span>
                 ) : classifySuccess ? (
-                  <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>Done!</span>
+                  <span
+                    className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}
+                  >
+                    Done!
+                  </span>
                 ) : (
-                  <span className={showRestoreAnimation ? 'classify-fade-in' : ''}>Auto Classify</span>
+                  <span className={showRestoreAnimation ? 'classify-fade-in' : ''}>
+                    Auto Classify
+                  </span>
                 )}
               </Button>
             </div>
@@ -759,20 +758,30 @@ export const McpServersPage: React.FC = () => {
               variant="secondary"
               size="small"
               icon={
-                isClassifying ? <span className="ai-spinner" /> :
-                classifySuccess ? <Check className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`} /> :
-                <Sparkles className={showRestoreAnimation ? 'classify-fade-in' : ''} />
+                isClassifying ? (
+                  <span className="ai-spinner" />
+                ) : classifySuccess ? (
+                  <Check
+                    className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`}
+                  />
+                ) : (
+                  <Sparkles className={showRestoreAnimation ? 'classify-fade-in' : ''} />
+                )
               }
               onClick={() => autoClassify()}
-              disabled={isClassifying || classifySuccess}
+              disabled={isClassifying || classifySuccess || mcpServers.length === 0}
               className={`w-[132px] ${isClassifying ? 'ai-classifying' : ''} ${classifySuccess ? 'classify-success-bg' : ''} ${isFadingOut ? 'classify-fading-out' : ''}`}
             >
               {isClassifying ? (
                 <span className="ai-classifying-text">Classifying...</span>
               ) : classifySuccess ? (
-                <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>Done!</span>
+                <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>
+                  Done!
+                </span>
               ) : (
-                <span className={showRestoreAnimation ? 'classify-fade-in' : ''}>Auto Classify</span>
+                <span className={showRestoreAnimation ? 'classify-fade-in' : ''}>
+                  Auto Classify
+                </span>
               )}
             </Button>
           </div>
