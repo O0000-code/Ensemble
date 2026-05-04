@@ -25,12 +25,7 @@ const EmptyStateDocIcon: React.FC = () => {
   return (
     <svg width="36" height="44" viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg">
       {/* Document outline with folded corner */}
-      <path
-        d="M0 0V44H36V10L26 0H0Z"
-        stroke="#D4D4D8"
-        strokeWidth="1.5"
-        fill="none"
-      />
+      <path d="M0 0V44H36V10L26 0H0Z" stroke="#D4D4D8" strokeWidth="1.5" fill="none" />
       {/* Fold lines */}
       <path d="M26 0V10H36" stroke="#E5E5E5" strokeWidth="1" fill="none" />
       {/* Text lines */}
@@ -60,7 +55,7 @@ const EmptyStateDocIcon: React.FC = () => {
  */
 const ClaudeMdEmptyState: React.FC = () => {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center">
+    <div className="flex h-full flex-col items-center justify-center">
       {/* Empty State Container - gap 20px */}
       <div className="flex flex-col items-center gap-5">
         {/* Document Icon - 36x44 */}
@@ -145,7 +140,7 @@ export function ClaudeMdPage() {
         (file) =>
           file.name.toLowerCase().includes(searchLower) ||
           file.description.toLowerCase().includes(searchLower) ||
-          file.content.toLowerCase().includes(searchLower)
+          file.content.toLowerCase().includes(searchLower),
       );
     }
 
@@ -156,9 +151,7 @@ export function ClaudeMdPage() {
 
     // Tags filter
     if (filter.tagIds && filter.tagIds.length > 0) {
-      filtered = filtered.filter((file) =>
-        filter.tagIds.some((tag) => file.tagIds.includes(tag))
-      );
+      filtered = filtered.filter((file) => filter.tagIds.some((tag) => file.tagIds.includes(tag)));
     }
 
     // Global only filter
@@ -180,7 +173,7 @@ export function ClaudeMdPage() {
   // Get selected file
   const selectedFile = useMemo(
     () => files.find((f) => f.id === selectedFileId) || null,
-    [files, selectedFileId]
+    [files, selectedFileId],
   );
 
   // Note: Files are already loaded in MainLayout, no need to load here
@@ -237,7 +230,6 @@ export function ClaudeMdPage() {
   // Header Buttons
   // ============================================================================
 
-
   // Header actions - always show Scan System, Import and Auto Classify buttons
   // Auto Classify should be on the rightmost position
   const headerActions = (
@@ -254,12 +246,7 @@ export function ClaudeMdPage() {
       </Button>
 
       {/* Import Button - Secondary style, icon=download */}
-      <Button
-        variant="secondary"
-        size="small"
-        icon={<Download />}
-        onClick={handleImport}
-      >
+      <Button variant="secondary" size="small" icon={<Download />} onClick={handleImport}>
         Import
       </Button>
 
@@ -268,9 +255,15 @@ export function ClaudeMdPage() {
         variant="secondary"
         size="small"
         icon={
-          isAutoClassifying ? <span className="ai-spinner" /> :
-          classifySuccess ? <Check className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`} /> :
-          <Sparkles className={showRestoreAnimation ? 'classify-fade-in' : ''} />
+          isAutoClassifying ? (
+            <span className="ai-spinner" />
+          ) : classifySuccess ? (
+            <Check
+              className={`classify-success-icon ${isFadingOut ? 'classify-fading-out' : ''}`}
+            />
+          ) : (
+            <Sparkles className={showRestoreAnimation ? 'classify-fade-in' : ''} />
+          )
         }
         onClick={() => autoClassify()}
         disabled={isAutoClassifying || classifySuccess}
@@ -279,7 +272,9 @@ export function ClaudeMdPage() {
         {isAutoClassifying ? (
           <span className="ai-classifying-text">Classifying...</span>
         ) : classifySuccess ? (
-          <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>Done!</span>
+          <span className={`ai-classifying-text ${isFadingOut ? 'classify-fading-out' : ''}`}>
+            Done!
+          </span>
         ) : (
           <span className={showRestoreAnimation ? 'classify-fade-in' : ''}>Auto Classify</span>
         )}
@@ -342,12 +337,8 @@ export function ClaudeMdPage() {
               <FileText className="h-8 w-8 text-[#A1A1AA]" />
             </div>
             <div className="text-center">
-              <h3 className="text-sm font-medium text-[#71717A]">
-                No files found
-              </h3>
-              <p className="mt-1 text-[13px] text-[#A1A1AA]">
-                No files match "{filter.search}"
-              </p>
+              <h3 className="text-sm font-medium text-[#71717A]">No files found</h3>
+              <p className="mt-1 text-[13px] text-[#A1A1AA]">No files match "{filter.search}"</p>
             </div>
           </div>
         ) : (
